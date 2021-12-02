@@ -1,0 +1,8 @@
+<launch>
+
+    <arg name="project" default="lis_slam"/>
+
+    <!--- Run Rviz-->
+    <node pkg="rviz" type="rviz" name="$(arg project)_rviz" args="-d $(find lis_slam)/launch/include/config/rviz.rviz" />
+
+</launch>

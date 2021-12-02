@@ -1,0 +1,15 @@
+<launch>
+
+    <arg name="project" default="lis_slam"/>
+    
+    <node pkg="$(arg project)" type="$(arg project)_laserPretreatment"   name="$(arg project)_laserPretreatment"    output="screen" 	respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_imuPreintegration"   name="$(arg project)_imuPreintegration"    output="screen" 	respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_imageProjection"     name="$(arg project)_imageProjection"      output="screen"     respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_featureExtraction"   name="$(arg project)_featureExtraction"    output="screen"     respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_mapOptmization"      name="$(arg project)_mapOptmization"       output="screen"     respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_loopClosure"      name="$(arg project)_loopClosure"       output="screen"     respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_makeSubMap"      name="$(arg project)_makeSubMap"       output="screen"     respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_transformFusion"      name="$(arg project)_transformFusion"       output="screen"     respawn="true"/> 
+
+
+</launch>
