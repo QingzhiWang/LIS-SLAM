@@ -1,39 +1,19 @@
 // Author of  EPSC-LOAM : QZ Wang  
 // Email wangqingzhi27@outlook.com
 
-#include "utility.h"
-#include "lis_slam/cloud_info.h"
 
 //local lib
-#include "laserPretreatment.h"
 #include "laserProcessing.h"
 
-#include <cmath>
-
-using std::atan2;
-using std::cos;
-using std::sin;
-
-const double scanPeriod = 0.1;
-const int queueLength = 2000;
-
-
-LaserPretreatment lpre;
 LaserProcessing lpro;
-
-std::mutex imuLock;
-std::mutex odoLock;
-std::mutex cloLock;
-
-std::deque<sensor_msgs::Imu> imuQueue;
-std::deque<nav_msgs::Odometry> odomQueue;
-std::deque<sensor_msgs::PointCloud2ConstPtr> cloudQueue;
 
 ros::Subscriber subImu;
 ros::Subscriber subOdom;
 ros::Subscriber subLaserCloud
 
 ros::Publisher pubCloudInfo;
+
+ros::Publisher pubRawPoints;
 ros::Publisher pubCornerPoints;
 ros::Publisher pubSurfacePoints;
 
@@ -69,35 +49,64 @@ void odometryHandler(const nav_msgs::Odometry::ConstPtr& odometryMsg){
 
 void cloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg){
     std::lock_guard<std::mutex> lock3(cloLock);
-    cloudQueue.push_back(laserCloudMsg);
+    cloudQueue.push_back(*laserCloudMsg);
 }
 
+
+
+double total_time =0;
+int total_frame=0;
 
 void laserProcessing(){
     while(1){
         if(!cloudQueue.empty()){
-            //激光预处理 增加ring time Label通道供后续步骤使用
-            ros::Time  startTime=ros::Time::now();
 
-            sensor_msgs::PointCloud2ConstPtr laserCloudMsg = *cloudQueue.front()
-
-            pcl::PointCloud<PointType> laserCloudIn;
-            pcl::fromROSMsg(*cloudQueue.front(), laserCloudIn);
-
-            pcl::PointCloud<PointXYZIRT> laserCloudOut;
-            laserCloudOut=lpre.process(laserCloudIn);
-
-            ros::Time  endTime=ros::Time::now();
-            // std::cout <<  "Laser Pretreatment  Time: " <<  (endTime - startTime).toSec() << "[sec]" << std::endl;
-            
-            if((endTime - startTime).toSec()> 1)
-                ROS_WARN("Laser Pretreatment process over 100ms");
+            std::chrono::time_point<std::chrono::system_clock> start, end;
+            start = std::chrono::system_clock::now();
 
             //激光运动畸变去除
-            
+            if(lpro.distortionRemoval() == false){
+                continue;
+            }
 
+            //线面特征提取
+            lpro.featureExtraction();
 
+            //更新并获取CouldInfo 
+            lpro.assignCouldInfo();
+            lis_slam::cloud_info cloudInfoOut =  lpro.getCloudInfo();
             
+            lpro.resetParameters();
+
+            end = std::chrono::system_clock::now();
+            std::chrono::duration<float> elapsed_seconds = end - start;
+            total_frame++;
+            float time_temp = elapsed_seconds.count() * 1000;
+            total_time+=time_temp;
+            ROS_INFO("Average laser processing time %f ms \n \n", total_time/total_frame);
+
+            //发布coudInfo
+            pubCloudInfo.publish(cloudInfoOut);
+
+            sensor_msgs::PointCloud2 laserCloudOutMsg;
+
+            //发布cloud_deskewed
+            pcl::toROSMsg(laserCloudOut.cloud_deskewed, laserCloudOutMsg);
+            laserCloudOutMsg.header.stamp = laserCloudMsg->header.stamp;
+            laserCloudOutMsg.header.frame_id = lidarFrame;
+            pubRawPoints.publish(laserCloudOutMsg);
+
+            //发布cloud_corner
+            pcl::toROSMsg(laserCloudOut.cloud_corner, laserCloudOutMsg);
+            laserCloudOutMsg.header.stamp = laserCloudMsg->header.stamp;
+            laserCloudOutMsg.header.frame_id = lidarFrame;
+            pubCornerPoints.publish(laserCloudOutMsg);
+
+            //发布cloud_surface
+            pcl::toROSMsg(laserCloudOut.cloud_surface, laserCloudOutMsg);
+            laserCloudOutMsg.header.stamp = laserCloudMsg->header.stamp;
+            laserCloudOutMsg.header.frame_id = lidarFrame;
+            pubSurfacePoints.publish(laserCloudOutMsg);       
         }
     }
     //sleep 2 ms every time
@@ -109,12 +118,6 @@ void laserProcessing(){
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "lis_slam");
-
-    if(N_SCAN != 16 && N_SCAN != 32 && N_SCAN != 64)
-    {
-        printf("only support velodyne with 16, 32 or 64 scan line!");
-        return 0;
-    }
 
     if(useImu==true){
         subImu        = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &ImageProjection::imuHandler, this, ros::TransportHints().tcpNoDelay());
@@ -128,9 +131,11 @@ int main(int argc, char** argv)
     }
 
     pubCloudInfo = nh.advertise<lis_slam::cloud_info> ("lis_slam/laser_process/cloud_info", 1);
+    pubRawPoints = nh.advertise<sensor_msgs::PointCloud2> ("lis_slam/laser_process/cloud_deskewed", 1);
+    pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2> ("lis_slam/laser_process/cloud_corner", 1);
+    pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2> ("lis_slam/laser_process/cloud_surface", 1);
 
     std::thread laser_processing_process{laserProcessing};
-
 
     ROS_INFO("\033[1;32m----> Laser Processing Node Started.\033[0m");
     

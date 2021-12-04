@@ -1,8 +1,6 @@
 // Author of  EPSC-LOAM : QZ Wang  
 // Email wangqingzhi27@outlook.com
 
-#include "utility.h"
-
 //local lib
 #include "laserPretreatment.h"
 

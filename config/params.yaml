@@ -60,7 +60,7 @@ lis_slam:
   # Sensor Settings
   N_SCAN:  64                            # number of lidar channel (i.e., 16, 32, 64, 128)
   Horizon_SCAN: 1800                          # lidar horizontal resolution (Velodyne:1800, Ouster:512,1024,2048)
-  timeField: "time"                           # point timestamp field, Velodyne - "time", Ouster - "t"
+  
   downsampleRate: 2                          # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1 
   lidarMinRange: 1.0                          # default: 1.0, minimum lidar range to be used
   lidarMaxRange: 65.0                 #70.0      # default: 1000.0, maximum lidar range to be used

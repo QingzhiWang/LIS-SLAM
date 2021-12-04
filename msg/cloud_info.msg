@@ -1,8 +1,8 @@
 # Cloud Info
 Header header 
 
-int64 imuAvailable
-int64 odomAvailable
+bool imuAvailable
+bool odomAvailable
 
 # Attitude for LOAM initialization
 float32 imuRollInit

@@ -31,7 +31,7 @@ find_package(GTSAM REQUIRED QUIET)
 
 # include directories
 include_directories(
-	include
+	src/include
 	${PCL_INCLUDE_DIRS}
 	${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
@@ -42,7 +42,7 @@ include_directories(
 
 # link directories
 link_directories(
-	include
+	src/include
 	${PCL_LIBRARY_DIRS}
   ${OpenCV_LIBRARY_DIRS}
   ${GTSAM_LIBRARY_DIRS}
@@ -55,10 +55,7 @@ add_message_files(
   cloud_info.msg
   submap.msg
   loop_info.msg
-  loop_container.msg
 )
-
-
 
 generate_messages(
   DEPENDENCIES
@@ -69,7 +66,7 @@ generate_messages(
 )
 
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS src/include
   DEPENDS PCL GTSAM
 
   CATKIN_DEPENDS 
@@ -83,47 +80,41 @@ catkin_package(
 )
 
 
-
 ###########
 ## Build ##
 ###########
 
 # Laser Pretreatment  新增laser预处理
-add_executable(${PROJECT_NAME}_laserPretreatment src/laserPretreatment.cpp)
+add_executable(${PROJECT_NAME}_laserPretreatment src/node/laserPretreatmentNode.cpp  src/core/laserPretreatment.cpp)
 add_dependencies(${PROJECT_NAME}_laserPretreatment ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_laserPretreatment ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 
-# Laser Pretreatment  新增laser预处理
-add_executable(${PROJECT_NAME}_makeSubMap src/makeSubMap.cpp)
-add_dependencies(${PROJECT_NAME}_makeSubMap ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_compile_options(${PROJECT_NAME}_makeSubMap PRIVATE ${OpenMP_CXX_FLAGS})
-target_link_libraries(${PROJECT_NAME}_makeSubMap ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS} gtsam)
+# Laser Processing
+add_executable(${PROJECT_NAME}_laserProcessing src/node/laserProcessingNode.cpp src/core/laserProcessing.cpp)
+add_dependencies(${PROJECT_NAME}_laserProcessing ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(${PROJECT_NAME}_laserProcessing ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 
-
-# Range Image Projection
-add_executable(${PROJECT_NAME}_imageProjection src/imageProjection.cpp)
-add_dependencies(${PROJECT_NAME}_imageProjection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(${PROJECT_NAME}_imageProjection ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-
-# Feature Association
-add_executable(${PROJECT_NAME}_featureExtraction src/featureExtraction.cpp)
-add_dependencies(${PROJECT_NAME}_featureExtraction ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(${PROJECT_NAME}_featureExtraction ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
+# Make SubMap
+# add_executable(${PROJECT_NAME}_makeSubMap src/makeSubMap.cpp)
+# add_dependencies(${PROJECT_NAME}_makeSubMap ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+# target_compile_options(${PROJECT_NAME}_makeSubMap PRIVATE ${OpenMP_CXX_FLAGS})
+# target_link_libraries(${PROJECT_NAME}_makeSubMap ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS} gtsam)
 
 # Mapping Optimization
-add_executable(${PROJECT_NAME}_mapOptmization src/mapOptmization.cpp)
-add_dependencies(${PROJECT_NAME}_mapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_compile_options(${PROJECT_NAME}_mapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
-target_link_libraries(${PROJECT_NAME}_mapOptmization ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam)
+# add_executable(${PROJECT_NAME}_mapOptmization src/mapOptmization.cpp)
+# add_dependencies(${PROJECT_NAME}_mapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+# target_compile_options(${PROJECT_NAME}_mapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
+# target_link_libraries(${PROJECT_NAME}_mapOptmization ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam)
 
 # Loop Closure
-add_executable(${PROJECT_NAME}_loopClosure  src/loopClosure.cpp src/Scancontext.cpp  src/epscGenerationClass.cpp)
-add_dependencies(${PROJECT_NAME}_loopClosure ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(${PROJECT_NAME}_loopClosure ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} )
+# add_executable(${PROJECT_NAME}_loopClosure  src/loopClosure.cpp src/Scancontext.cpp  src/epscGenerationClass.cpp)
+# add_dependencies(${PROJECT_NAME}_loopClosure ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+# target_link_libraries(${PROJECT_NAME}_loopClosure ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} )
 
 # IMU Preintegration
-add_executable(${PROJECT_NAME}_imuPreintegration src/imuPreintegration.cpp)
-target_link_libraries(${PROJECT_NAME}_imuPreintegration ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam)
+# add_executable(${PROJECT_NAME}_imuPreintegration src/imuPreintegration.cpp)
+# target_link_libraries(${PROJECT_NAME}_imuPreintegration ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam)
 
-add_executable(${PROJECT_NAME}_transformFusion src/transformFusion.cpp)
-target_link_libraries(${PROJECT_NAME}_transformFusion ${catkin_LIBRARIES}   )
+# Transform Fusion
+# add_executable(${PROJECT_NAME}_transformFusion src/transformFusion.cpp)
+# target_link_libraries(${PROJECT_NAME}_transformFusion ${catkin_LIBRARIES}   )
