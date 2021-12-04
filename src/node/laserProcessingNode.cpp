@@ -6,8 +6,7 @@
 
 //local lib
 #include "laserPretreatment.h"
-#include "imageProjection.h"
-#include "featureExtraction.h"
+#include "laserProcessing.h"
 
 #include <cmath>
 
@@ -20,8 +19,7 @@ const int queueLength = 2000;
 
 
 LaserPretreatment lpre;
-ImageProjection lpro;
-FeatureExtraction fext;
+LaserProcessing lpro;
 
 std::mutex imuLock;
 std::mutex odoLock;
@@ -29,7 +27,7 @@ std::mutex cloLock;
 
 std::deque<sensor_msgs::Imu> imuQueue;
 std::deque<nav_msgs::Odometry> odomQueue;
-std::deque<sensor_msgs::PointCloud2> cloudQueue;
+std::deque<sensor_msgs::PointCloud2ConstPtr> cloudQueue;
 
 ros::Subscriber subImu;
 ros::Subscriber subOdom;
@@ -81,8 +79,10 @@ void laserProcessing(){
             //激光预处理 增加ring time Label通道供后续步骤使用
             ros::Time  startTime=ros::Time::now();
 
+            sensor_msgs::PointCloud2ConstPtr laserCloudMsg = *cloudQueue.front()
+
             pcl::PointCloud<PointType> laserCloudIn;
-            pcl::fromROSMsg(*laserCloudMsg, laserCloudIn);
+            pcl::fromROSMsg(*cloudQueue.front(), laserCloudIn);
 
             pcl::PointCloud<PointXYZIRT> laserCloudOut;
             laserCloudOut=lpre.process(laserCloudIn);
@@ -94,6 +94,7 @@ void laserProcessing(){
                 ROS_WARN("Laser Pretreatment process over 100ms");
 
             //激光运动畸变去除
+            
 
 
             
@@ -133,7 +134,8 @@ int main(int argc, char** argv)
 
     ROS_INFO("\033[1;32m----> Laser Processing Node Started.\033[0m");
     
-    ros::spin();
+    ros::MultiThreadedSpinner spinner(3);
+    spinner.spin();
 
     return 0;
 }

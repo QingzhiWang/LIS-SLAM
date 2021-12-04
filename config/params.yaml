@@ -41,8 +41,6 @@ lis_slam:
   # gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
 
-  pretreatmentedCloudTopic: "points_pretreatmented"             #新增 经过laser 预处理
-
   # Frames
   lidarFrame: "base_link"
   baselinkFrame: "base_link"

@@ -60,8 +60,57 @@
 #include <array>
 #include <thread>
 #include <mutex>
+#include <chrono>
+#include <unordered_map>
 
 using namespace std;
+
+/*************************************
+0: 0      # "unlabeled", and others ignored
+1: 10     # "car"
+2: 11     # "bicycle"
+3: 15     # "motorcycle"
+4: 18     # "truck"
+5: 20     # "other-vehicle"
+6: 30     # "person"
+7: 31     # "bicyclist"
+8: 32     # "motorcyclist"
+9: 40     # "road"
+10: 44    # "parking"
+11: 48    # "sidewalk"
+12: 49    # "other-ground"
+13: 50    # "building"
+14: 51    # "fence"
+15: 70    # "vegetation"
+16: 71    # "trunk"
+17: 72    # "terrain"
+18: 80    # "pole"
+19: 81    # "traffic-sign"
+1              # "dynamic-object"
+*************************************/
+unordered_map<uint16_t, string> LABEL;
+LABEL[0] = "unlabeled";
+LABEL[10] = "car";
+LABEL[11] = "bicycle";
+LABEL[15] = "motorcycle";
+LABEL[18] = "truck";
+LABEL[20] = "other-vehicle";
+LABEL[30] = "person";
+LABEL[31] = "bicyclist";
+LABEL[32] = "motorcyclist";
+LABEL[40] = "road";
+LABEL[44] = "parking";
+LABEL[48] = "sidewalk";
+LABEL[49] = "other-ground";
+LABEL[50] = "building";
+LABEL[51] = "fence";
+LABEL[70] = "vegetation";
+LABEL[71] = "trunk";
+LABEL[72] = "terrain";
+LABEL[80] = "pole";
+LABEL[81] = "traffic-sign";
+LABEL[1] = "dynamic-object";
+
 
 // Velodyne
 struct PointXYZIRT
@@ -78,8 +127,39 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRT,
     (uint16_t, ring, ring) (float, time, time)
 )
 
+struct PointXYZIL
+{
+    PCL_ADD_POINT4D
+    PCL_ADD_INTENSITY;
+    uint16_t ring;
+    float time;
+    uint16_t label;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
+
+POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIL,  
+    (float, x, x) (float, y, y) (float, z, z) (float, intensity, intensity)
+    (uint16_t, label, label)
+)
+
+struct PointXYZIRTL
+{
+    PCL_ADD_POINT4D
+    PCL_ADD_INTENSITY;
+    uint16_t ring;
+    float time;
+    uint16_t label;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
+
+POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRTL,  
+    (float, x, x) (float, y, y) (float, z, z) (float, intensity, intensity)
+    (uint16_t, ring, ring) (float, time, time)(uint16_t, label, label)
+)
+
 
 typedef pcl::PointXYZI PointType;
+
 
 class ParamServer
 {
@@ -99,8 +179,7 @@ public:
     string imuTopic;
     string odomTopic;
     string gpsTopic;
-    //新增
-    string pretreatmentedCloudTopic;
+
 
     //Frames
     string lidarFrame;
@@ -227,7 +306,6 @@ public:
         nh.param<std::string>("lis_slam/odomTopic", odomTopic, "odometry/imu");
         nh.param<std::string>("lis_slam/gpsTopic", gpsTopic, "odometry/gps");
 
-        nh.param<std::string>("lis_slam/pretreatmentedCloudTopic", pretreatmentedCloudTopic, "points_pretreatmented");
 
         nh.param<std::string>("lis_slam/lidarFrame", lidarFrame, "base_link");
         nh.param<std::string>("lis_slam/baselinkFrame", baselinkFrame, "base_link");
@@ -367,7 +445,7 @@ public:
 };
 
 //新增
-sensor_msgs::PointCloud2 publishRawCloud(ros::Publisher *thisPub, pcl::PointCloud<PointXYZIRT>::Ptr thisCloud, ros::Time thisStamp, std::string thisFrame)
+sensor_msgs::PointCloud2 publishRawCloud(ros::Publisher *thisPub, pcl::PointCloud<PointXYZIRTL>::Ptr thisCloud, ros::Time thisStamp, std::string thisFrame)
 {
     sensor_msgs::PointCloud2 tempCloud;
     pcl::toROSMsg(*thisCloud, tempCloud);

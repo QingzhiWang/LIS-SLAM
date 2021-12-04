@@ -2,6 +2,31 @@
 // Author of  EPSC-LOAM : QZ Wang  
 // Email wangqingzhi27@outlook.com
 
+#ifndef _LASER_PROCESSING_H_
+#define _LASER_PROCESSING_H_
+
+#include "utility.h"
+#include "lis_slam/cloud_info.h"
+
+
+template <typename PointT>
+void removeClosedPointCloud(const pcl::PointCloud<PointT> &cloud_in,pcl::PointCloud<PointT> &cloud_out, float minthres,float maxthres);
+
+
+class LaserProcessing  : public ParamServer
+{
+    public:
+    	LaserProcessing();
+		void init();
+        pcl::PointCloud<PointXYZIRT>& process(pcl::PointCloud<PointType>& laserCloudIn);
+
+};
+
+
+
+#endif // _LASER_PROCESSING_H_
+
+
 #include "utility.h"
 #include "lis_slam/cloud_info.h"
 
