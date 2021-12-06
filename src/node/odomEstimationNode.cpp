@@ -50,7 +50,7 @@ public:
 
     bool FirstFlag=true;
 
-    uint64  subMapId=0;
+    uint64  keyFrameId=0;
 
     pcl::PointCloud<PointTypePose>::Ptr keyFramePose6D; 
     pcl::PointCloud<PointType>::Ptr keyFramePose3D;
@@ -83,10 +83,8 @@ public:
 
 
     ros::Time timeLaserInfoStamp;
-    ros::Time timeKeyFrameInfoStamp;
-    double timeLaserInfoCur;
 
-    float transformTobeSubMapped[6];
+    float transformTobeMapped[6];
 
     float afterMapOptmizationPoses[6];
     Eigen::Affine3f transDelta;
@@ -96,10 +94,9 @@ public:
 
     float transPredictionMapped[6];
 
-    Eigen::Affine3f transPointAssociateToSubMap;
+    Eigen::Affine3f transPointAssociateToMap;
     Eigen::Affine3f incrementalOdometryAffineFront;
     Eigen::Affine3f incrementalOdometryAffineBack;
-
 
     bool isDegenerate = false;
     Eigen::Matrix<float, 6, 6> matP;
@@ -182,7 +179,7 @@ public:
         std::fill(laserCloudOriSurfFlag.begin(), laserCloudOriSurfFlag.end(), false);
 
         for (int i = 0; i < 6; ++i){
-            transformTobeSubMapped[i] = 0;
+            transformTobeMapped[i] = 0;
             transformCurFrame2PriFrame[i] = 0;
             transformPriFrame[i] = 0;
 
@@ -235,21 +232,19 @@ public:
             timeLaserInfoStamp = cloudInfo.header.stamp;
             timeLaserInfoCur = cloudInfo.header.stamp.toSec();
 
-            
             pcl::fromROSMsg(cloudInfo.cloud_corner,  *laserCloudCornerLast);
             pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSurfLast);
-            //新增
-            pcl::fromROSMsg(cloudInfo.cloud_deskewed, *laserCloudRawLast);
+            // pcl::fromROSMsg(cloudInfo.cloud_deskewed, *laserCloudRawLast);
 
             // Downsample cloud from current scan
             downsampleCurrentScan();
             
-            if(subMapFirstFlag)
+            if(FirstFlag)
             {
                 updateInitialGuess();
                 firstMakeSubMap();
                 publishOdometry();
-                subMapFirstFlag=false;
+                FirstFlag=false;
                 continue;
             }
 
@@ -263,44 +258,18 @@ public:
 
             publishOdometry();
             
-
             calculateTranslation();
 
-            subMapYawSum+=abs(transformCurFrame2PriFrame[2]);
             if(abs(transformCurFrame2PriFrame[2])>=instertMiniYaw ||abs(transformCurFrame2PriFrame[3])>=instertMiniDistance || abs(transformCurFrame2PriFrame[4])>=instertMiniDistance)
-            // if((transformCurFrame2PriFrame[3]*transformCurFrame2PriFrame[3]+transformCurFrame2PriFrame[4]*transformCurFrame2PriFrame[4])>=instertMiniDistance*instertMiniDistance)
             {
                 insterSubMap();
 
-                curSubMapSize++;
-
-                // ros::Time frameEndTime=ros::Time::now();
-                // ROS_INFO("make %d frame time: %.3f", curSubMapSize,  (frameEndTime - frameStartTime).toSec());                   
-            }
-
-            if(curSubMapSize>=(int)(subMapFramesSize/3))
-            {
-
-                ros::Time submapEndTime=ros::Time::now();
-                float OdomEstimationNodeTime=(submapEndTime - submapStartTime).toSec();
-                // if(subMapYawSum>=subMapYawMax||curSubMapSize>=subMapFramesSize)
-                if(subMapYawSum>=subMapYawMax||curSubMapSize>=subMapFramesSize||OdomEstimationNodeTime>=subMapMaxTime)
-                {
-                    subMapYawSum=0;
-                    ROS_INFO("Make %d submap  has %d  Frames !", subMapId, curSubMapSize);
-
-                    publishSubMapInfo();
-                    publishCloud(&pubSubMapId, subMapPose3D, timeLaserInfoStamp, mapFrame);
-
-                    updateSubMap();
-
-                                    
-                    ros::Time submapEndTime=ros::Time::now();
-                    ROS_INFO("Make %d submap time: %.3f", subMapId-1,  (submapEndTime - submapStartTime).toSec());
-                    submapStartTime=ros::Time::now();
-                    
-                }
+                publishSubMapInfo();
                 
+                publishCloud(&pubSubMapId, keyFramePose3D, timeLaserInfoStamp, mapFrame);
+
+                updateSubMap();
+             
             }
 
             end = std::chrono::system_clock::now();
@@ -314,16 +283,13 @@ public:
         }
 
 
-
-
-
     }
 
-    void pointAssociateToSubMap(PointType const * const pi, PointType * const po)
+    void pointAssociateToMap(PointType const * const pi, PointType * const po)
     {
-        po->x = transPointAssociateToSubMap(0,0) * pi->x + transPointAssociateToSubMap(0,1) * pi->y + transPointAssociateToSubMap(0,2) * pi->z + transPointAssociateToSubMap(0,3);
-        po->y = transPointAssociateToSubMap(1,0) * pi->x + transPointAssociateToSubMap(1,1) * pi->y + transPointAssociateToSubMap(1,2) * pi->z + transPointAssociateToSubMap(1,3);
-        po->z = transPointAssociateToSubMap(2,0) * pi->x + transPointAssociateToSubMap(2,1) * pi->y + transPointAssociateToSubMap(2,2) * pi->z + transPointAssociateToSubMap(2,3);
+        po->x = transPointAssociateToMap(0,0) * pi->x + transPointAssociateToMap(0,1) * pi->y + transPointAssociateToMap(0,2) * pi->z + transPointAssociateToMap(0,3);
+        po->y = transPointAssociateToMap(1,0) * pi->x + transPointAssociateToMap(1,1) * pi->y + transPointAssociateToMap(1,2) * pi->z + transPointAssociateToMap(1,3);
+        po->z = transPointAssociateToMap(2,0) * pi->x + transPointAssociateToMap(2,1) * pi->y + transPointAssociateToMap(2,2) * pi->z + transPointAssociateToMap(2,3);
         po->intensity = pi->intensity;
     }
 
@@ -389,53 +355,35 @@ public:
 
 
 
-    void firstMakeSubMap()
+    void firstMakeSubaMap()
     {
-        timeSubMapInfoStamp=timeLaserInfoStamp;
+        timeLaserInfoStamp=timeLaserInfoStamp;
         PointTypePose  point6d;
         point6d.x=0;
         point6d.y=0;
         point6d.z=0;
-        point6d.intensity=subMapId;
-        point6d.roll=transformTobeSubMapped[0];
-        point6d.pitch=transformTobeSubMapped[1];
-        point6d.yaw=transformTobeSubMapped[2];
+        point6d.intensity=keyFrameId;
+        point6d.roll=transformTobeMapped[0];
+        point6d.pitch=transformTobeMapped[1];
+        point6d.yaw=transformTobeMapped[2];
         point6d.time=timeLaserInfoCur;
 
-        subMapPose6D->points.push_back(point6d);   
+        keyFramePose6D->points.push_back(point6d);   
 
         PointType  point3d;
         point3d.x=0;
         point3d.y=0;
         point3d.z=0;
-        point3d.intensity=subMapId;
+        point3d.intensity=keyFrameId;
 
-        subMapPose3D->points.push_back(point3d);   
+        keyFramePose3D->points.push_back(point3d);   
 
-        subMapPosesIndex3D[subMapId]=point3d;
-        subMapPosesIndex6D[subMapId]=point6d;
-
-
-        laserCloudRawFromSubMapDS->clear();
-        laserCloudCornerFromSubMapDS->clear();
-        laserCloudSurfFromSubMapDS->clear();
-
-
-        *laserCloudRawFromSubMapDS += *laserCloudRawLastDS;
-        *laserCloudCornerFromSubMapDS += *laserCloudCornerLastDS;
-        *laserCloudSurfFromSubMapDS += *laserCloudSurfLastDS;
-        
-        // laserCloudCornerFromSubMapDSNum= laserCloudCornerFromSubMapDS->size();  
-        // laserCloudSurfFromSubMapDSNum= laserCloudSurfFromSubMapDS->size(); 
-
-        laserCloudCornerFromPreSubMapDS->clear();
-        laserCloudSurfFromPreSubMapDS->clear();
-        *laserCloudCornerFromPreSubMapDS =*laserCloudCornerFromSubMapDS;
-        *laserCloudSurfFromPreSubMapDS =*laserCloudSurfFromSubMapDS;
-
+        keyFramePosesIndex3D[keyFrameId]=point3d;
+        keyFramePosesIndex6D[keyFrameId]=point6d;
 
         cloudKeyPoses3D->push_back(point3d);
         cloudKeyPoses6D->push_back(point6d);
+
         // save all the received edge and surf points
         pcl::PointCloud<PointType>::Ptr thisCornerKeyFrame(new pcl::PointCloud<PointType>());
         pcl::PointCloud<PointType>::Ptr thisSurfKeyFrame(new pcl::PointCloud<PointType>());
@@ -460,9 +408,9 @@ public:
         downSizeFilterSurf.filter(*laserCloudSurfLastDS);
         laserCloudSurfLastDSNum = laserCloudSurfLastDS->size();  
 
-        laserCloudRawLastDS->clear();
-        downSizeFilterSurf.setInputCloud(laserCloudRawLast);
-        downSizeFilterSurf.filter(*laserCloudRawLastDS);
+        // laserCloudRawLastDS->clear();
+        // downSizeFilterSurf.setInputCloud(laserCloudRawLast);
+        // downSizeFilterSurf.filter(*laserCloudRawLastDS);
     }
         
 
@@ -470,7 +418,7 @@ public:
     void calculateTranslation()
     {
         Eigen::Affine3f transBack = trans2Affine3f(transformPriFrame);
-        Eigen::Affine3f transTobe = trans2Affine3f(transformTobeSubMapped);
+        Eigen::Affine3f transTobe = trans2Affine3f(transformTobeMapped);
 
         Eigen::Affine3f transIncre = transBack.inverse() * transTobe;
 
@@ -483,7 +431,7 @@ public:
     void updateInitialGuess()
     {
         // save current transformation before any processing
-        incrementalOdometryAffineFront = trans2Affine3f(transformTobeSubMapped);
+        incrementalOdometryAffineFront = trans2Affine3f(transformTobeMapped);
 
         static Eigen::Affine3f lastImuTransformation;
         // initialization
@@ -491,12 +439,12 @@ public:
         if (firstTransAvailable==false)
         {
             // ROS_WARN("MakeSubmap: firstTransAvailable!");
-            transformTobeSubMapped[0] = cloudInfo.imuRollInit;
-            transformTobeSubMapped[1] = cloudInfo.imuPitchInit;
-            transformTobeSubMapped[2] = cloudInfo.imuYawInit;
+            transformTobeMapped[0] = cloudInfo.imuRollInit;
+            transformTobeMapped[1] = cloudInfo.imuPitchInit;
+            transformTobeMapped[2] = cloudInfo.imuYawInit;
         
             // if (!useImuHeadingInitialization)
-            //     transformTobeSubMapped[2] = 0;
+            //     transformTobeMapped[2] = 0;
 
             lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit); // save imu before return;
             firstTransAvailable = true;
@@ -519,16 +467,16 @@ public:
 
                 
                 Eigen::Affine3f transIncre = lastImuPreTransformation.inverse() * transBack;
-                Eigen::Affine3f transTobe = trans2Affine3f(transformTobeSubMapped);
+                Eigen::Affine3f transTobe = trans2Affine3f(transformTobeMapped);
                 Eigen::Affine3f transFinal = transTobe * transIncre;
-                pcl::getTranslationAndEulerAngles(transFinal, transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5], 
-                                                              transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
+                pcl::getTranslationAndEulerAngles(transFinal, transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
+                                                              transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
 
 
 
-                // transPredictionMapped=trans2Affine3f(transformTobeSubMapped);
+                // transPredictionMapped=trans2Affine3f(transformTobeMapped);
                 for(int i=0;i<6;++i){
-                    transPredictionMapped[i]=transformTobeSubMapped[i];
+                    transPredictionMapped[i]=transformTobeMapped[i];
                 }
 
                 lastImuPreTransformation = transBack;
@@ -546,16 +494,16 @@ public:
            
             Eigen::Affine3f transIncre = lastImuTransformation.inverse() * transBack;
 
-            Eigen::Affine3f transTobe = trans2Affine3f(transformTobeSubMapped);
+            Eigen::Affine3f transTobe = trans2Affine3f(transformTobeMapped);
             Eigen::Affine3f transFinal = transTobe * transIncre;
             
-            pcl::getTranslationAndEulerAngles(transFinal, transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5], 
-                                                          transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
+            pcl::getTranslationAndEulerAngles(transFinal, transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
+                                                          transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
             
 
-            // transPredictionMapped=trans2Affine3f(transformTobeSubMapped);
+            // transPredictionMapped=trans2Affine3f(transformTobeMapped);
             for(int i=0;i<6;++i){
-                transPredictionMapped[i]=transformTobeSubMapped[i];
+                transPredictionMapped[i]=transformTobeMapped[i];
             }
 
             lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit); // save imu before return;
@@ -563,14 +511,14 @@ public:
             return;
         }
 
-        static float lastTransformTobeSubMapped[6]={0.0};
+        static float lastTransformTobeMapped[6]={0.0};
         if (cloudInfo.odomAvailable == false && cloudInfo.imuAvailable == false)
         {
                 static bool first = false;
                 if (first==false)
                 {
                     for(int i=0;i<6;++i){
-                        lastTransformTobeSubMapped[i]=transformTobeSubMapped[i];
+                        lastTransformTobeMapped[i]=transformTobeMapped[i];
                     }
 
                     first = true;
@@ -578,34 +526,31 @@ public:
                 }
 
                 // ROS_WARN("MakeSubmap: cloudInfo.imuAvailable == true!");
-                Eigen::Affine3f transBack = pcl::getTransformation(transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5],
-                                                                                                                         transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
+                Eigen::Affine3f transBack = pcl::getTransformation(transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5],
+                                                                                                                         transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
                 
-                Eigen::Affine3f transLast = pcl::getTransformation(lastTransformTobeSubMapped[3], lastTransformTobeSubMapped[4], lastTransformTobeSubMapped[5],
-                                                                                                                         lastTransformTobeSubMapped[0], lastTransformTobeSubMapped[1], lastTransformTobeSubMapped[2]);
+                Eigen::Affine3f transLast = pcl::getTransformation(lastTransformTobeMapped[3], lastTransformTobeMapped[4], lastTransformTobeMapped[5],
+                                                                                                                         lastTransformTobeMapped[0], lastTransformTobeMapped[1], lastTransformTobeMapped[2]);
                 
                 for(int i=0;i<6;++i){
-                    lastTransformTobeSubMapped[i]=transformTobeSubMapped[i];
+                    lastTransformTobeMapped[i]=transformTobeMapped[i];
                 }
                 
                 Eigen::Affine3f transIncre = transLast.inverse() * transBack;
 
-                Eigen::Affine3f transTobe = trans2Affine3f(transformTobeSubMapped);
+                Eigen::Affine3f transTobe = trans2Affine3f(transformTobeMapped);
                 Eigen::Affine3f transFinal = transTobe * transIncre;
                 
-                pcl::getTranslationAndEulerAngles(transFinal, transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5], 
-                                                            transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
+                pcl::getTranslationAndEulerAngles(transFinal, transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
+                                                            transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
                 
 
-                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[0] : %f",transformTobeSubMapped[0]);
-                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[1] : %f",transformTobeSubMapped[1]);
-                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[2] : %f",transformTobeSubMapped[2]);
-                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[3] : %f",transformTobeSubMapped[3]);
-                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[4] : %f",transformTobeSubMapped[4]);
-                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[5] : %f",transformTobeSubMapped[5]);
-
-
-
+                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[0] : %f",transformTobeMapped[0]);
+                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[1] : %f",transformTobeMapped[1]);
+                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[2] : %f",transformTobeMapped[2]);
+                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[3] : %f",transformTobeMapped[3]);
+                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[4] : %f",transformTobeMapped[4]);
+                // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[5] : %f",transformTobeMapped[5]);
         }
 
     }
@@ -613,9 +558,9 @@ public:
     void saveKeyFrames()
     {
         PointType thisPose3D;
-        thisPose3D.x = transformTobeSubMapped[3];
-        thisPose3D.y = transformTobeSubMapped[4];
-        thisPose3D.z = transformTobeSubMapped[5];
+        thisPose3D.x = transformTobeMapped[3];
+        thisPose3D.y = transformTobeMapped[4];
+        thisPose3D.z = transformTobeMapped[5];
         thisPose3D.intensity = cloudKeyPoses3D->size(); // this can be used as index
         cloudKeyPoses3D->push_back(thisPose3D);
 
@@ -624,9 +569,9 @@ public:
         thisPose6D.y = thisPose3D.y;
         thisPose6D.z = thisPose3D.z;
         thisPose6D.intensity = thisPose3D.intensity ; // this can be used as index
-        thisPose6D.roll  = transformTobeSubMapped[0];
-        thisPose6D.pitch = transformTobeSubMapped[1];
-        thisPose6D.yaw   = transformTobeSubMapped[2];
+        thisPose6D.roll  = transformTobeMapped[0];
+        thisPose6D.pitch = transformTobeMapped[1];
+        thisPose6D.yaw   = transformTobeMapped[2];
         thisPose6D.time = timeLaserInfoCur;
         cloudKeyPoses6D->push_back(thisPose6D);
 
@@ -646,9 +591,9 @@ public:
     void insterSubMap()
     {
 
-        int lastId=subMapPose6D->points.size()-1;
-        Eigen::Affine3f transTobe = trans2Affine3f(transformTobeSubMapped);
-        Eigen::Affine3f transSubMap = pclPointToAffine3f(subMapPose6D->points[lastId]);
+        int lastId=keyFramePose6D->points.size()-1;
+        Eigen::Affine3f transTobe = trans2Affine3f(transformTobeMapped);
+        Eigen::Affine3f transSubMap = pclPointToAffine3f(keyFramePose6D->points[lastId]);
         // Eigen::Affine3f transSubMapIncre = transTobe.inverse() * transSubMap;
         Eigen::Affine3f transSubMapIncre = transSubMap.inverse() * transTobe;
 
@@ -670,7 +615,7 @@ public:
         downSizeFilterSurf.filter(*laserCloudSurfFromSubMapDS);     
         // laserCloudSurfFromSubMapDSNum= laserCloudSurfFromSubMapDS->size(); 
 
-        if(subMapId==0)
+        if(keyFrameId==0)
         {
             laserCloudCornerFromPreSubMapDS->clear();
             laserCloudSurfFromPreSubMapDS->clear();
@@ -678,12 +623,12 @@ public:
             *laserCloudSurfFromPreSubMapDS =*laserCloudSurfFromSubMapDS;
         }
 
-        transformPriFrame[0]=transformTobeSubMapped[0];
-        transformPriFrame[1]=transformTobeSubMapped[1];
-        transformPriFrame[2]=transformTobeSubMapped[2];
-        transformPriFrame[3]=transformTobeSubMapped[3];
-        transformPriFrame[4]=transformTobeSubMapped[4];
-        transformPriFrame[5]=transformTobeSubMapped[5];
+        transformPriFrame[0]=transformTobeMapped[0];
+        transformPriFrame[1]=transformTobeMapped[1];
+        transformPriFrame[2]=transformTobeMapped[2];
+        transformPriFrame[3]=transformTobeMapped[3];
+        transformPriFrame[4]=transformTobeMapped[4];
+        transformPriFrame[5]=transformTobeMapped[5];
 
         
         publishCloud(&pubSubMapRawTest, laserCloudSurfFromSubMapDS, timeLaserInfoStamp, mapFrame);
@@ -701,32 +646,32 @@ public:
         *laserCloudCornerFromPreSubMapDS =*laserCloudCornerFromSubMapDS;
         *laserCloudSurfFromPreSubMapDS =*laserCloudSurfFromSubMapDS;
 
-        timeSubMapInfoStamp=timeLaserInfoStamp;
-        subMapId++;
+        timeLaserInfoStamp=timeLaserInfoStamp;
+        keyFrameId++;
         curSubMapSize=0;
 
         PointTypePose  point6d;
-        point6d.x=transformTobeSubMapped[3];
-        point6d.y=transformTobeSubMapped[4];
-        point6d.z=transformTobeSubMapped[5];
-        point6d.intensity=subMapId;
-        point6d.roll=transformTobeSubMapped[0];
-        point6d.pitch=transformTobeSubMapped[1];
-        point6d.yaw=transformTobeSubMapped[2];
+        point6d.x=transformTobeMapped[3];
+        point6d.y=transformTobeMapped[4];
+        point6d.z=transformTobeMapped[5];
+        point6d.intensity=keyFrameId;
+        point6d.roll=transformTobeMapped[0];
+        point6d.pitch=transformTobeMapped[1];
+        point6d.yaw=transformTobeMapped[2];
         point6d.time=timeLaserInfoCur;
 
-        subMapPose6D->points.push_back(point6d);      
+        keyFramePose6D->points.push_back(point6d);      
             
         PointType  point3d;
         point3d.x=point6d.x;
         point3d.y=point6d.y;
         point3d.z=point6d.z;
-        point3d.intensity=subMapId;
+        point3d.intensity=keyFrameId;
 
-        subMapPose3D->points.push_back(point3d);   
+        keyFramePose3D->points.push_back(point3d);   
 
-        subMapPosesIndex3D[subMapId]=point3d;
-        subMapPosesIndex6D[subMapId]=point6d;
+        keyFramePosesIndex3D[keyFrameId]=point3d;
+        keyFramePosesIndex6D[keyFrameId]=point6d;
 
         laserCloudRawFromSubMap->clear();
         laserCloudCornerFromSubMap->clear();
@@ -737,12 +682,12 @@ public:
 
     void publishSubMapInfo()
     {
-            submapInfo.header.stamp=timeSubMapInfoStamp;
+            submapInfo.header.stamp=timeLaserInfoStamp;
 
-            submapInfo.subMapId=subMapId;
+            submapInfo.keyFrameId=keyFrameId;
 
-            auto it_=subMapPosesIndex6D.find(subMapId);
-            if(it_!=subMapPosesIndex6D.end())
+            auto it_=keyFramePosesIndex6D.find(keyFrameId);
+            if(it_!=keyFramePosesIndex6D.end())
             {
                 submapInfo.subMapPoseX=it_->second.x;
                 submapInfo.subMapPoseY=it_->second.y;
@@ -780,16 +725,16 @@ public:
 
             }else
             {
-                ROS_WARN("Do not Find subMapPosesIndex6D : %d",subMapId);
+                ROS_WARN("Do not Find keyFramePosesIndex6D : %d",keyFrameId);
                 return;
             }
 
-            // submapInfo.subMapPoseX=transformTobeSubMapped[3];
-            // submapInfo.subMapPoseY=transformTobeSubMapped[4];
-            // submapInfo.subMapPoseZ=transformTobeSubMapped[5];
-            // submapInfo.subMapPoseRoll=transformTobeSubMapped[0];
-            // submapInfo.subMapPosePitch=transformTobeSubMapped[1];
-            // submapInfo.subMapPoseYaw=transformTobeSubMapped[2];
+            // submapInfo.subMapPoseX=transformTobeMapped[3];
+            // submapInfo.subMapPoseY=transformTobeMapped[4];
+            // submapInfo.subMapPoseZ=transformTobeMapped[5];
+            // submapInfo.subMapPoseRoll=transformTobeMapped[0];
+            // submapInfo.subMapPosePitch=transformTobeMapped[1];
+            // submapInfo.subMapPoseYaw=transformTobeMapped[2];
 
 
             submapInfo.poseAvailable=true;
@@ -813,24 +758,8 @@ public:
 
     void extractSurroundingKeyFrames()
     {
-        
-
         pcl::PointCloud<PointType>::Ptr surroundingKeyPoses(new pcl::PointCloud<PointType>());
         pcl::PointCloud<PointType>::Ptr surroundingKeyPosesDS(new pcl::PointCloud<PointType>());
-        // std::vector<int> pointSearchInd;
-        // std::vector<float> pointSearchSqDis;
-
-        // // extract all the nearby key poses and downsample them
-        // kdtreeSurroundingKeyPoses->setInputCloud(cloudKeyPoses3D); // create kd-tree
-        // kdtreeSurroundingKeyPoses->radiusSearch(cloudKeyPoses3D->back(), (double)surroundingKeyframeSearchRadius, pointSearchInd, pointSearchSqDis);
-        // for (int i = 0; i < (int)pointSearchInd.size(); ++i)
-        // {
-        //     int id = pointSearchInd[i];
-        //     surroundingKeyPoses->push_back(cloudKeyPoses3D->points[id]);
-        // }
-
-        // downSizeFilterSurroundingKeyPoses.setInputCloud(surroundingKeyPoses);
-        // downSizeFilterSurroundingKeyPoses.filter(*surroundingKeyPosesDS);
 
         // also extract some latest key frames in case the robot rotates in one position
         int numPoses = cloudKeyPoses3D->size();
@@ -881,7 +810,6 @@ public:
         downSizeFilterSurf.filter(*laserCloudSurfFromMapDS);
         laserCloudSurfFromMapDSNum = laserCloudSurfFromMapDS->size();
 
-        
         // clear map cache if too large
         if (laserCloudMapContainer.size() > 1000)
             laserCloudMapContainer.clear();
@@ -896,14 +824,10 @@ public:
         if (laserCloudCornerLastDSNum > edgeFeatureMinValidNum && laserCloudSurfLastDSNum > surfFeatureMinValidNum)
         {
             // ROS_INFO("laserCloudCornerLastDSNum: %d laserCloudSurfLastDSNum: %d .", laserCloudCornerLastDSNum, laserCloudSurfLastDSNum);
-            
-            // kdtreeCornerFromSubMap->setInputCloud(laserCloudCornerFromPreSubMapDS);
-            // kdtreeSurfFromSubMap->setInputCloud(laserCloudSurfFromPreSubMapDS);
 
             kdtreeCornerFromMap->setInputCloud(laserCloudCornerFromMapDS);
             kdtreeSurfFromMap->setInputCloud(laserCloudSurfFromMapDS);
         
-
             for (int iterCount = 0; iterCount < 30; iterCount++)   //30
             {
 
@@ -929,7 +853,7 @@ public:
 
     void updatePointAssociateToSubMap()
     {
-        transPointAssociateToSubMap = trans2Affine3f(transformTobeSubMapped);
+        transPointAssociateToMap = trans2Affine3f(transformTobeMapped);
     }
 
     void cornerOptimization()
@@ -945,7 +869,7 @@ public:
             std::vector<float> pointSearchSqDis;
 
             pointOri = laserCloudCornerLastDS->points[i];
-            pointAssociateToSubMap(&pointOri, &pointSel);
+            pointAssociateToMap(&pointOri, &pointSel);
             // kdtreeCornerFromSubMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
 
             kdtreeCornerFromMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
@@ -1054,7 +978,7 @@ public:
             std::vector<float> pointSearchSqDis;
 
             pointOri = laserCloudSurfLastDS->points[i];
-            pointAssociateToSubMap(&pointOri, &pointSel); 
+            pointAssociateToMap(&pointOri, &pointSel); 
             // kdtreeSurfFromSubMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
 
             kdtreeSurfFromMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
@@ -1165,12 +1089,12 @@ public:
         // yaw = pitch          ---     yaw = roll
 
         // lidar -> camera
-        float srx = sin(transformTobeSubMapped[1]);
-        float crx = cos(transformTobeSubMapped[1]);
-        float sry = sin(transformTobeSubMapped[2]);
-        float cry = cos(transformTobeSubMapped[2]);
-        float srz = sin(transformTobeSubMapped[0]);
-        float crz = cos(transformTobeSubMapped[0]);
+        float srx = sin(transformTobeMapped[1]);
+        float crx = cos(transformTobeMapped[1]);
+        float sry = sin(transformTobeMapped[2]);
+        float cry = cos(transformTobeMapped[2]);
+        float srz = sin(transformTobeMapped[0]);
+        float crz = cos(transformTobeMapped[0]);
 
         int laserCloudSelNum = laserCloudOri->size();
         if (laserCloudSelNum < 50) {
@@ -1257,12 +1181,12 @@ public:
             matX = matP * matX2;
         }
 
-        transformTobeSubMapped[0] += matX.at<float>(0, 0);
-        transformTobeSubMapped[1] += matX.at<float>(1, 0);
-        transformTobeSubMapped[2] += matX.at<float>(2, 0);
-        transformTobeSubMapped[3] += matX.at<float>(3, 0);
-        transformTobeSubMapped[4] += matX.at<float>(4, 0);
-        transformTobeSubMapped[5] += matX.at<float>(5, 0);
+        transformTobeMapped[0] += matX.at<float>(0, 0);
+        transformTobeMapped[1] += matX.at<float>(1, 0);
+        transformTobeMapped[2] += matX.at<float>(2, 0);
+        transformTobeMapped[3] += matX.at<float>(3, 0);
+        transformTobeMapped[4] += matX.at<float>(4, 0);
+        transformTobeMapped[5] += matX.at<float>(5, 0);
 
         float deltaR = sqrt(
                             pow(pcl::rad2deg(matX.at<float>(0, 0)), 2) +
@@ -1291,79 +1215,24 @@ public:
                 double rollMid, pitchMid, yawMid;
 
                 // slerp roll
-                transformQuaternion.setRPY(transformTobeSubMapped[0], 0, 0);
+                transformQuaternion.setRPY(transformTobeMapped[0], 0, 0);
                 imuQuaternion.setRPY(cloudInfo.imuRollInit, 0, 0);
                 tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
-                transformTobeSubMapped[0] = rollMid;
+                transformTobeMapped[0] = rollMid;
 
                 // slerp pitch
-                transformQuaternion.setRPY(0, transformTobeSubMapped[1], 0);
+                transformQuaternion.setRPY(0, transformTobeMapped[1], 0);
                 imuQuaternion.setRPY(0, cloudInfo.imuPitchInit, 0);
                 tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
-                transformTobeSubMapped[1] = pitchMid;
+                transformTobeMapped[1] = pitchMid;
             }
         }
 
-        transformTobeSubMapped[0] = constraintTransformation(transformTobeSubMapped[0], rotation_tollerance);
-        transformTobeSubMapped[1] = constraintTransformation(transformTobeSubMapped[1], rotation_tollerance);
-        transformTobeSubMapped[5] = constraintTransformation(transformTobeSubMapped[5], z_tollerance);
+        transformTobeMapped[0] = constraintTransformation(transformTobeMapped[0], rotation_tollerance);
+        transformTobeMapped[1] = constraintTransformation(transformTobeMapped[1], rotation_tollerance);
+        transformTobeMapped[5] = constraintTransformation(transformTobeMapped[5], z_tollerance);
 
-
-
-
-
-        // Eigen::Affine3f odometrySub = pcl::getTransformation(cloudInfo.initialGuessX,    cloudInfo.initialGuessY,     cloudInfo.initialGuessZ, 
-        //                                                        cloudInfo.initialGuessRoll, cloudInfo.initialGuessPitch, cloudInfo.initialGuessYaw);
-        // Eigen::Affine3f afterOptmization = pcl::getTransformation(transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5], 
-        //                                                     transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
-        
-        // Eigen::Affine3f transBetween = transPredictionMapped.inverse() * afterOptmization;
-        // float x, y, z, roll, pitch, yaw;
-        // pcl::getTranslationAndEulerAngles(transBetween, x, y, z, roll, pitch, yaw);
-
-        // float transPreX, transPreY, transPreZ, transPreRoll, transPrePitch, transPreYaw;
-        // pcl::getTranslationAndEulerAngles(transPredictionMapped, transPreX, transPreY, transPreZ, transPreRoll, transPrePitch, transPreYaw);
-
-
-        // ROS_INFO("scan2MapOptimization transformUpdate : transPreX : %f",transPredictionMapped[3]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transPreY : %f",transPredictionMapped[4]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transPreZ : %f",transPredictionMapped[5]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transPreRoll : %f",transPredictionMapped[0]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transPrePitch : %f",transPredictionMapped[1]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transPreYaw : %f",transPredictionMapped[2]);
-
-        // ROS_INFO("scan2MapOptimization transformUpdate : transformTobeSubMapped[0] : %f",transformTobeSubMapped[0]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transformTobeSubMapped[1] : %f",transformTobeSubMapped[1]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transformTobeSubMapped[2] : %f",transformTobeSubMapped[2]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transformTobeSubMapped[3] : %f",transformTobeSubMapped[3]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transformTobeSubMapped[4] : %f",transformTobeSubMapped[4]);
-        // ROS_INFO("scan2MapOptimization transformUpdate : transformTobeSubMapped[5] : %f",transformTobeSubMapped[5]);
-
-        // float x, y, z, roll, pitch, yaw;
-        // x=transPredictionMapped[3]-transformTobeSubMapped[3];
-        // y=transPredictionMapped[4]-transformTobeSubMapped[4];
-        // z=transPredictionMapped[5]-transformTobeSubMapped[5];
-        // roll=transPredictionMapped[0]-transformTobeSubMapped[0];
-        // pitch=transPredictionMapped[1]-transformTobeSubMapped[1];
-        // yaw=transPredictionMapped[2]-transformTobeSubMapped[2];
-
-        // ROS_INFO("scan2MapOptimization transformUpdate : x : %f",x);
-        // ROS_INFO("scan2MapOptimization transformUpdate : y : %f",y);
-        // ROS_INFO("scan2MapOptimization transformUpdate : z : %f",z);
-        // ROS_INFO("scan2MapOptimization transformUpdate : roll : %f",roll);
-        // ROS_INFO("scan2MapOptimization transformUpdate : pitch : %f",pitch);
-        // ROS_INFO("scan2MapOptimization transformUpdate : yaw : %f",yaw);
-
-
-        // transformTobeSubMapped[0] = constraintTransformation(roll,odometerAndOptimizedAngleDifference,transformTobeSubMapped[0],transPreRoll);
-        // transformTobeSubMapped[1] = constraintTransformation(pitch,odometerAndOptimizedAngleDifference,transformTobeSubMapped[1],transPrePitch);
-        // transformTobeSubMapped[2] = constraintTransformation(yaw,odometerAndOptimizedAngleDifference,transformTobeSubMapped[2],transPreYaw);
-        // transformTobeSubMapped[3] = constraintTransformation(x,odometerAndOptimizedDistanceDifference,transformTobeSubMapped[3],transPredictionMapped[3]);
-        // transformTobeSubMapped[4] = constraintTransformation(y,odometerAndOptimizedDistanceDifference,transformTobeSubMapped[4],transPredictionMapped[4]);
-        // transformTobeSubMapped[5] = constraintTransformation(z,odometerAndOptimizedDistanceDifference,transformTobeSubMapped[5],transPredictionMapped[5]);
-
-
-        incrementalOdometryAffineBack = trans2Affine3f(transformTobeSubMapped);
+        incrementalOdometryAffineBack = trans2Affine3f(transformTobeMapped);
     }
 
     float constraintTransformation(float value, float limit)
@@ -1398,18 +1267,18 @@ public:
         nav_msgs::Odometry laserOdometryROS;
         laserOdometryROS.header.stamp = timeLaserInfoStamp;
         laserOdometryROS.header.frame_id = odometryFrame;
-        laserOdometryROS.child_frame_id = "odom_mapping";
-        laserOdometryROS.pose.pose.position.x = transformTobeSubMapped[3];
-        laserOdometryROS.pose.pose.position.y = transformTobeSubMapped[4];
-        laserOdometryROS.pose.pose.position.z = transformTobeSubMapped[5];
-        laserOdometryROS.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
+        laserOdometryROS.child_frame_id = "odom_estimation";
+        laserOdometryROS.pose.pose.position.x = transformTobeMapped[3];
+        laserOdometryROS.pose.pose.position.y = transformTobeMapped[4];
+        laserOdometryROS.pose.pose.position.z = transformTobeMapped[5];
+        laserOdometryROS.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
         pubLaserOdometryGlobal.publish(laserOdometryROS);
         // Publish TF
-        static tf::TransformBroadcaster br;
-        tf::Transform t_odom_to_lidar = tf::Transform(tf::createQuaternionFromRPY(transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]),
-                                                      tf::Vector3(transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5]));
-        tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, "lidar_link");
-        br.sendTransform(trans_odom_to_lidar);
+        // static tf::TransformBroadcaster br;
+        // tf::Transform t_odom_to_lidar = tf::Transform(tf::createQuaternionFromRPY(transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]),
+        //                                               tf::Vector3(transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5]));
+        // tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, "lidar_link");
+        // br.sendTransform(trans_odom_to_lidar);
 
         // Publish odometry for ROS (incremental)
         static bool lastIncreOdomPubFlag = false;
@@ -1419,7 +1288,7 @@ public:
         {
             lastIncreOdomPubFlag = true;
             laserOdomIncremental = laserOdometryROS;
-            increOdomAffine = trans2Affine3f(transformTobeSubMapped);
+            increOdomAffine = trans2Affine3f(transformTobeMapped);
         } else {
             Eigen::Affine3f affineIncre = incrementalOdometryAffineFront.inverse() * incrementalOdometryAffineBack;
             increOdomAffine = increOdomAffine * affineIncre;
@@ -1428,7 +1297,7 @@ public:
 
             laserOdomIncremental.header.stamp = timeLaserInfoStamp;
             laserOdomIncremental.header.frame_id = odometryFrame;
-            laserOdomIncremental.child_frame_id = "odom_mapping";
+            laserOdomIncremental.child_frame_id = "odom_estimation";
             laserOdomIncremental.pose.pose.position.x = x;
             laserOdomIncremental.pose.pose.position.y = y;
             laserOdomIncremental.pose.pose.position.z = z;
