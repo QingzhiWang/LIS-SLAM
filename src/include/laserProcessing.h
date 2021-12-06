@@ -8,15 +8,15 @@
 #include "lis_slam/cloud_info.h"
 #include "utility.h"
 
-std::mutex imuLock;
-std::mutex odoLock;
-std::mutex cloLock;
+extern std::mutex imuLock;
+extern std::mutex odoLock;
+extern std::mutex cloLock;
 
-std::deque<sensor_msgs::Imu> imuQueue;
-std::deque<nav_msgs::Odometry> odomQueue;
-std::deque<sensor_msgs::PointCloud2> cloudQueue;
+extern std::deque<sensor_msgs::Imu> imuQueue;
+extern std::deque<nav_msgs::Odometry> odomQueue;
+extern std::deque<sensor_msgs::PointCloud2> cloudQueue;
 
-const int queueLength = 2000;
+extern const int queueLength;
 
 struct smoothness_t {
   float value;
@@ -78,9 +78,9 @@ class LaserProcessing : public ParamServer {
     cloudInfo.imuPitchInit = 0.0;
     cloudInfo.imuPitchInit = 0.0;
 
-    cloudInfo.cloud_deskewed.clear();
-    cloudInfo.cloud_corner.clear();
-    cloudInfo.cloud_surface.clear();
+    // cloudInfo.cloud_deskewed.clear();
+    // cloudInfo.cloud_corner.clear();
+    // cloudInfo.cloud_surface.clear();
   }
 
  private:
@@ -118,11 +118,11 @@ class LaserProcessing : public ParamServer {
   double timeScanCur;
   double timeScanEnd;
 
-  int32_t[] startRingIndex;
-  int32_t[] endRingIndexnew;
+  int32_t *startRingIndex;
+  int32_t *endRingIndex;
 
-  int32_t[] pointColInd;
-  float[] pointRange;
+  int32_t *pointColInd;
+  float *pointRange;
 
   std::vector<smoothness_t> cloudSmoothness;
   float *cloudCurvature;

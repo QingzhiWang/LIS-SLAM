@@ -47,6 +47,7 @@ link_directories(
   ${OpenCV_LIBRARY_DIRS}
   ${GTSAM_LIBRARY_DIRS}
   ${rangenet_lib_LIBRARIES} ####
+  ${TENSORRT_LIBRARIES}  ####
 )
 
 add_message_files(
@@ -85,7 +86,7 @@ catkin_package(
 ###########
 
 # Laser Pretreatment  新增laser预处理
-add_executable(${PROJECT_NAME}_laserPretreatment src/node/laserPretreatmentNode.cpp  src/core/laserPretreatment.cpp)
+add_executable(${PROJECT_NAME}_laserPretreatment src/node/laserPretreatmentNode.cpp src/core/laserPretreatment.cpp)
 add_dependencies(${PROJECT_NAME}_laserPretreatment ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_laserPretreatment ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 

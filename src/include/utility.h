@@ -2,7 +2,6 @@
 // Author of  EPSC-LOAM : QZ Wang
 // Email wangqingzhi27@outlook.com
 
-#pragma once
 #ifndef _UTILITY_LIDAR_ODOMETRY_H_
 #define _UTILITY_LIDAR_ODOMETRY_H_
 
@@ -83,28 +82,28 @@ using namespace std;
 19: 81    # "traffic-sign"
 1              # "dynamic-object"
 *************************************/
-unordered_map<uint16_t, string> LABEL;
-LABEL[0] = "unlabeled";
-LABEL[10] = "car";
-LABEL[11] = "bicycle";
-LABEL[15] = "motorcycle";
-LABEL[18] = "truck";
-LABEL[20] = "other-vehicle";
-LABEL[30] = "person";
-LABEL[31] = "bicyclist";
-LABEL[32] = "motorcyclist";
-LABEL[40] = "road";
-LABEL[44] = "parking";
-LABEL[48] = "sidewalk";
-LABEL[49] = "other-ground";
-LABEL[50] = "building";
-LABEL[51] = "fence";
-LABEL[70] = "vegetation";
-LABEL[71] = "trunk";
-LABEL[72] = "terrain";
-LABEL[80] = "pole";
-LABEL[81] = "traffic-sign";
-LABEL[1] = "dynamic-object";
+extern map<int, string> LABEL;
+// LABEL[0] = "unlabeled";
+// LABEL[10] = "car";
+// LABEL[11] = "bicycle";
+// LABEL[15] = "motorcycle";
+// LABEL[18] = "truck";
+// LABEL[20] = "other-vehicle";
+// LABEL[30] = "person";
+// LABEL[31] = "bicyclist";
+// LABEL[32] = "motorcyclist";
+// LABEL[40] = "road";
+// LABEL[44] = "parking";
+// LABEL[48] = "sidewalk";
+// LABEL[49] = "other-ground";
+// LABEL[50] = "building";
+// LABEL[51] = "fence";
+// LABEL[70] = "vegetation";
+// LABEL[71] = "trunk";
+// LABEL[72] = "terrain";
+// LABEL[80] = "pole";
+// LABEL[81] = "traffic-sign";
+// LABEL[1] = "dynamic-object";
 
 // Velodyne
 struct PointXYZIRT {
@@ -146,8 +145,12 @@ struct PointXYZIRTL {
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     PointXYZIRTL,
-    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
-        uint16_t, ring, ring)(float, time, time)(uint16_t, label, label))
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity,
+                                            intensity)(uint16_t, ring,
+                                                       ring)(float, time,
+                                                             time)(uint16_t,
+                                                                   label,
+                                                                   label))
 
 typedef pcl::PointXYZI PointType;
 
@@ -160,10 +163,10 @@ class ParamServer {
   bool useImu;
 
   std::string RESULT_PATH;
-  std::string MODEL_PATH
+  std::string MODEL_PATH;
 
-      // Topics
-      string pointCloudTopic;
+  // Topics
+  string pointCloudTopic;
   string imuTopic;
   string odomTopic;
   string gpsTopic;
@@ -470,7 +473,7 @@ class ParamServer {
 };
 
 //新增
-sensor_msgs::PointCloud2 publishRawCloud(
+static sensor_msgs::PointCloud2 publishRawCloud(
     ros::Publisher *thisPub, pcl::PointCloud<PointXYZIRTL>::Ptr thisCloud,
     ros::Time thisStamp, std::string thisFrame) {
   sensor_msgs::PointCloud2 tempCloud;
@@ -481,7 +484,7 @@ sensor_msgs::PointCloud2 publishRawCloud(
   return tempCloud;
 }
 
-sensor_msgs::PointCloud2 publishCloud(ros::Publisher *thisPub,
+static sensor_msgs::PointCloud2 publishCloud(ros::Publisher *thisPub,
                                       pcl::PointCloud<PointType>::Ptr thisCloud,
                                       ros::Time thisStamp,
                                       std::string thisFrame) {

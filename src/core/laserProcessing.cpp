@@ -4,6 +4,16 @@
 
 #include "laserProcessing.h"
 
+std::mutex imuLock;
+std::mutex odoLock;
+std::mutex cloLock;
+
+std::deque<sensor_msgs::Imu> imuQueue;
+std::deque<nav_msgs::Odometry> odomQueue;
+std::deque<sensor_msgs::PointCloud2> cloudQueue;
+
+const int queueLength = 2000;
+
 /****************************************
  *
  *****************************************/
@@ -18,11 +28,11 @@ void LaserProcessing ::allocateMemory() {
 
   fullCloud->points.resize(N_SCAN * Horizon_SCAN);
 
-  startRingIndex.assign(N_SCAN, 0);
-  endRingIndex.assign(N_SCAN, 0);
+  startRingIndex = new int32_t[N_SCAN];
+  endRingIndex = new int32_t[N_SCAN];
 
-  pointColInd.assign(N_SCAN * Horizon_SCAN, 0);
-  pointRange.assign(N_SCAN * Horizon_SCAN, 0);
+  pointColInd = new int32_t[N_SCAN * Horizon_SCAN];
+  pointRange = new float[N_SCAN * Horizon_SCAN];
 
   cloudSmoothness.resize(N_SCAN * Horizon_SCAN);
   cloudCurvature = new float[N_SCAN * Horizon_SCAN];
@@ -57,15 +67,16 @@ void LaserProcessing ::resetParameters() {
     imuRotZ[i] = 0;
   }
 
-  startRingIndex.assign(N_SCAN, 0);
-  endRingIndex.assign(N_SCAN, 0);
-
-  pointColInd.assign(N_SCAN * Horizon_SCAN, 0);
-  pointRange.assign(N_SCAN * Horizon_SCAN, 0);
-
   cloudSmoothness.clear();
 
+  for (int i=0;i<N_SCAN;++i){
+    startRingIndex = 0;
+    endRingIndex = 0;
+  }
+
   for (int i = 0; i < N_SCAN * Horizon_SCAN; ++i) {
+    pointColInd[i] = 0;
+    pointRange = 0;
     cloudCurvature[i] = 0;
     cloudNeighborPicked[i] = 0;
     cloudLabel[i] = 0;
@@ -76,7 +87,7 @@ void LaserProcessing ::resetParameters() {
  *
  *****************************************/
 bool LaserProcessing ::distortionRemoval() {
-  if (!cachePointCloud(laserCloudMsg)) return false;
+  if (!cachePointCloud()) return false;
 
   if (!deskewInfo()) return false;
 
@@ -674,17 +685,17 @@ void LaserProcessing ::assignCouldInfo() {
   sensor_msgs::PointCloud2 tempCloud;
 
   pcl::toROSMsg(*extractedCloud, tempCloud);
-  tempCloud.header.stamp = cloudHeader;
+  tempCloud.header.stamp = cloudHeader.stamp;
   tempCloud.header.frame_id = lidarFrame;
-  cloudInfo.cloud_deskewed = tempCloud；
+  cloudInfo.cloud_deskewed = tempCloud;
 
-      pcl::toROSMsg(*cornerCloud, tempCloud);
-  tempCloud.header.stamp = cloudHeader;
+  pcl::toROSMsg(*cornerCloud, tempCloud);
+  tempCloud.header.stamp = cloudHeader.stamp;
   tempCloud.header.frame_id = lidarFrame;
-  cloudInfo.cloud_corner = tempCloud；
+  cloudInfo.cloud_corner = tempCloud;
 
-      pcl::toROSMsg(*surfaceCloud, tempCloud);
-  tempCloud.header.stamp = cloudHeader;
+  pcl::toROSMsg(*surfaceCloud, tempCloud);
+  tempCloud.header.stamp = cloudHeader.stamp;
   tempCloud.header.frame_id = lidarFrame;
-  cloudInfo.cloud_surface = tempCloud；
+  cloudInfo.cloud_surface = tempCloud;
 }

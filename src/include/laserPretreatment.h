@@ -20,7 +20,7 @@ void removeClosedPointCloud(const pcl::PointCloud<PointT>& cloud_in,
 
 class LaserPretreatment : public ParamServer {
  public:
-  LaserPretreatment();
+  LaserPretreatment(){};
   void init();
   pcl::PointCloud<PointXYZIRTL>& process(
       pcl::PointCloud<PointType>& laserCloudIn);
