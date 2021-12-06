@@ -259,10 +259,10 @@ class ParamServer {
 
   //新增 make Submap
   int subMapFramesSize;
-  float instertMiniDistance;
+  float keyFrameMiniDistance;
   float subMapYawMax;
   float subMapMaxTime;
-  float instertMiniYaw;
+  float keyFrameMiniYaw;
 
   float subMapOptmizationDistanceThresh;
   float subMapOptmizationYawThresh;
@@ -405,8 +405,8 @@ class ParamServer {
     nh.param<int>("lis_slam/subMapFramesSize", subMapFramesSize, 10);
     nh.param<float>("lis_slam/subMapYawMax", subMapYawMax, 0.5);
 
-    nh.param<float>("lis_slam/instertMiniDistance", instertMiniDistance, 0.1);
-    nh.param<float>("lis_slam/instertMiniYaw", instertMiniYaw, 0.2);
+    nh.param<float>("lis_slam/keyFrameMiniDistance", keyFrameMiniDistance, 0.1);
+    nh.param<float>("lis_slam/keyFrameMiniYaw", keyFrameMiniYaw, 0.2);
 
     nh.param<float>("lis_slam/subMapOptmizationDistanceThresh",
                     subMapOptmizationDistanceThresh, 0.2);

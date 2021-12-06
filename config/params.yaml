@@ -133,8 +133,8 @@ lis_slam:
 
 
   #新增 make Submap
-  instertMiniDistance: 0.2  #0.2
-  instertMiniYaw : 0.13  # 0.3-indoor    0.15-outdoor
+  keyFrameMiniDistance: 0.2  #0.2
+  keyFrameMiniYaw : 0.13  # 0.3-indoor    0.15-outdoor
 
   subMapYawMax: 0.4  # 0.6-indoor    0.4outdoor
   subMapFramesSize: 7  #10
@@ -152,7 +152,6 @@ lis_slam:
   odometerAndOptimizedAngleDifference: 0.01  #  radians
 
   # Loop closure
-
   loopClosureFrequency: 1                    # 0.5Hz, regulate loop closure constraint add frequency
   surroundingKeyframeSize: 50                   # submap size (when loop closure enabled)
   historyKeyframeSearchRadius: 15.0      #15.0       # meters, key frame that is within n meters from current pose will be considerd for loop closure
