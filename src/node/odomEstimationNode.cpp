@@ -30,6 +30,8 @@ class OdomEstimationNode : public ParamServer
 {
 
 public:
+    double total_time = 0;
+    int total_frame = 0;
 
     ros::Subscriber subCloudInfo;
     ros::Publisher pubKeyFrameInfo;    
@@ -218,13 +220,13 @@ public:
         
         while(ros::ok()){
 
+            std::chrono::time_point<std::chrono::system_clock> start, end;
+            start = std::chrono::system_clock::now();
+
             if(cloudInfoQueue.empty())
             {
                 continue;
             }
-
-            static ros::Time startTime=ros::Time::now();
-            ros::Time frameStartTime=ros::Time::now();
 
             // extract info and feature cloud
             cloudInfo = cloudInfoQueue.front();
@@ -301,7 +303,13 @@ public:
                 
             }
 
-
+            end = std::chrono::system_clock::now();
+            std::chrono::duration<float> elapsed_seconds = end - start;
+            total_frame++;
+            float time_temp = elapsed_seconds.count() * 1000;
+            total_time += time_temp;
+            ROS_INFO("Average laser pretreatment time %f ms \n \n",
+                    total_time / total_frame);
 
         }
 
