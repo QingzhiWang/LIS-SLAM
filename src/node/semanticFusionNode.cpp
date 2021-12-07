@@ -6,7 +6,7 @@
 #include "rangenetAPI.h"
 #include "utility.h"
 
-class SemanticFusionNode : public Paramserver {
+class SemanticFusionNode : public ParamServer {
  private:
   double total_time = 0;
   int total_frame = 0;
@@ -141,7 +141,7 @@ class SemanticFusionNode : public Paramserver {
     std::vector<std::vector<float>> semantic_scan = range_net.getSemanticScan();
 
     std::vector<int> label_map = range_net.getLabelMap();
-    std::map<uint32_t, semantic_color> color_map = range_net.getColorMap();
+    // std::map<uint32_t, semantic_color> color_map = range_net.getColorMap();
 
     std::vector<cv::Vec3f> points = range_net.getPointCloud(values);
     std::vector<cv::Vec3b> color_mask = range_net.getColorMask();
@@ -187,7 +187,7 @@ class SemanticFusionNode : public Paramserver {
       point.y = currentCloudIn->points[i].y;
       point.z = currentCloudIn->points[i].z;
       point.intensity = currentCloudIn->points[i].intensity;
-      point.label = currentCloudIn->points[i].label;
+      point.label = labels[i];
       semanticCloudOut->points.push_back(point);
     }
   }

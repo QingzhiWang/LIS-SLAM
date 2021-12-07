@@ -30,6 +30,7 @@ find_package(OpenCV REQUIRED QUIET)
 find_package(GTSAM REQUIRED QUIET)
 
 find_package(Boost REQUIRED COMPONENTS timer)
+find_package(rangenet_lib)
 
 # include directories
 include_directories(
