@@ -103,6 +103,10 @@ add_dependencies(${PROJECT_NAME}_odomEstimation ${catkin_EXPORTED_TARGETS} ${PRO
 target_compile_options(${PROJECT_NAME}_odomEstimation PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME}_odomEstimation ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS} gtsam)
 
+# Laser Processing
+add_executable(${PROJECT_NAME}_laserProcessing src/node/laserProcessingNode.cpp src/core/laserProcessing.cpp)
+add_dependencies(${PROJECT_NAME}_laserProcessing ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(${PROJECT_NAME}_laserProcessing ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 
 # Make SubMap
 # add_executable(${PROJECT_NAME}_makeSubMap src/makeSubMap.cpp)
