@@ -39,7 +39,7 @@ class LaserPretreatmentNode : public ParamServer {
   }
 
   void laserPretreatment() {
-    while (1) {
+    while (ros::ok()) {
       if (!cloudQueue.empty()) {
         //激光预处理 增加ring time Label通道供后续步骤使用
 
@@ -54,7 +54,7 @@ class LaserPretreatmentNode : public ParamServer {
 
         // ros::Time  startTime=ros::Time::now();
 
-        // pcl::PointCloud<PointXYZIRTL> laserCloudOut;
+        // pcl::PointCloud<PointXYZIRT> laserCloudOut;
         // laserCloudOut=lpre.process(*laserCloudIn);
 
         // ros::Time  endTime=ros::Time::now();
@@ -67,7 +67,7 @@ class LaserPretreatmentNode : public ParamServer {
         std::chrono::time_point<std::chrono::system_clock> start, end;
         start = std::chrono::system_clock::now();
 
-        pcl::PointCloud<PointXYZIRTL> laserCloudOut;
+        pcl::PointCloud<PointXYZIRT> laserCloudOut;
         laserCloudOut = lpre.process(*laserCloudIn);
 
         end = std::chrono::system_clock::now();

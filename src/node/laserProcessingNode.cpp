@@ -106,7 +106,7 @@ class LaserProcessingNode : public ParamServer {
   }
 
   void laserProcessing() {
-    while (1) {
+    while (ros::ok()) {
       if (!cloudQueue.empty()) {
         std::chrono::time_point<std::chrono::system_clock> start, end;
         start = std::chrono::system_clock::now();

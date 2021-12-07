@@ -18,9 +18,13 @@ struct PointXYZIRPYT {
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     PointXYZIRPYT,
-    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
-        float, roll, roll)(float, pitch, pitch)(float, yaw, yaw)(double, time,
-                                                                 time))
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity,
+                                            intensity)(float, roll,
+                                                       roll)(float, pitch,
+                                                             pitch)(float, yaw,
+                                                                    yaw)(double,
+                                                                         time,
+                                                                         time))
 
 typedef PointXYZIRPYT PointTypePose;
 
@@ -120,19 +124,19 @@ class OdomEstimationNode : public ParamServer {
 
   OdomEstimationNode() {
     subCloudInfo = nh.subscribe<lis_slam::cloud_info>(
-        "lis_slam/laser_process/cloud_info", 1,
+        "lis_slam/laser_process/cloud_info", 10,
         &OdomEstimationNode::laserCloudInfoHandler, this);
 
-    pubKeyFrameInfo = nh.advertise<lis_slam::submap>(
-        "lis_slam/odom_estimation/cloud_info", 1);
+    pubKeyFrameInfo = nh.advertise<lis_slam::cloud_info>(
+        "lis_slam/odom_estimation/cloud_info", 10);
 
     pubLaserOdometryGlobal = nh.advertise<nav_msgs::Odometry>(
-        "lis_slam/odom_estimation/odometry", 1);
+        "lis_slam/odom_estimation/odometry", 10);
     pubLaserOdometryIncremental = nh.advertise<nav_msgs::Odometry>(
-        "lis_slam/odom_estimation/odometry_incremental", 1);
+        "lis_slam/odom_estimation/odometry_incremental", 10);
 
     pubKeyFrameId = nh.advertise<sensor_msgs::PointCloud2>(
-        "lis_slam/odom_estimation/keyframe_id", 1);
+        "lis_slam/odom_estimation/keyframe_id", 10);
 
     downSizeFilterCorner.setLeafSize(
         mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
@@ -148,7 +152,6 @@ class OdomEstimationNode : public ParamServer {
   }
 
   void allocateMemory() {
-
     laserCloudCornerLast.reset(new pcl::PointCloud<PointType>());
     laserCloudSurfLast.reset(new pcl::PointCloud<PointType>());
     laserCloudCornerLastDS.reset(new pcl::PointCloud<PointType>());
@@ -207,8 +210,11 @@ class OdomEstimationNode : public ParamServer {
       }
 
       // extract info and feature cloud
+      mtx.lock();
       cloudInfo = cloudInfoQueue.front();
       cloudInfoQueue.pop_front();
+      mtx.unlock();
+      
       // extract time stamp
       timeLaserInfoStamp = cloudInfo.header.stamp;
       timeLaserInfoCur = timeLaserInfoStamp.toSec();
@@ -247,7 +253,7 @@ class OdomEstimationNode : public ParamServer {
       total_frame++;
       float time_temp = elapsed_seconds.count() * 1000;
       total_time += time_temp;
-      ROS_INFO("Average laser pretreatment time %f ms \n \n",
+      ROS_INFO("Average odom estimation time %f ms \n \n",
                total_time / total_frame);
     }
   }
@@ -337,7 +343,6 @@ class OdomEstimationNode : public ParamServer {
                                   transformIn[1], transformIn[2]);
   }
 
-
   void downsampleCurrentScan() {
     // Downsample cloud from current scan
     laserCloudCornerLastDS->clear();
@@ -348,7 +353,7 @@ class OdomEstimationNode : public ParamServer {
     laserCloudSurfLastDS->clear();
     downSizeFilterSurf.setInputCloud(laserCloudSurfLast);
     downSizeFilterSurf.filter(*laserCloudSurfLastDS);
-    laserCloudSurfLastDSNum = laserCloudSurfLastDS->size()
+    laserCloudSurfLastDSNum = laserCloudSurfLastDS->size();
   }
 
   void calculateTranslation() {
@@ -543,11 +548,23 @@ class OdomEstimationNode : public ParamServer {
   void publishCloudInfo() {
     keyFrameInfo = cloudInfo;
 
-    // keyFrameInfo.header.stamp = timeLaserInfoStamp;
-
     // keyFrameInfo.cloud_deskewed = cloudInfo.cloud_deskewed;
     // keyFrameInfo.cloud_corner = cloudInfo.cloud_corner;
     // keyFrameInfo.cloud_surface = cloudInfo.cloud_surface;
+
+    keyFrameInfo.header.stamp = timeLaserInfoStamp;
+
+    sensor_msgs::PointCloud2 tempCloud;
+
+    pcl::toROSMsg(*laserCloudCornerLast, tempCloud);
+    tempCloud.header.stamp = timeLaserInfoStamp;
+    tempCloud.header.frame_id = lidarFrame;
+    keyFrameInfo.cloud_corner = tempCloud;
+
+    pcl::toROSMsg(*laserCloudSurfLast, tempCloud);
+    tempCloud.header.stamp = timeLaserInfoStamp;
+    tempCloud.header.frame_id = lidarFrame;
+    keyFrameInfo.cloud_surface = tempCloud;
 
     keyFrameInfo.initialGuessX = transformTobeMapped[3];
     keyFrameInfo.initialGuessY = transformTobeMapped[4];
@@ -568,9 +585,10 @@ class OdomEstimationNode : public ParamServer {
     // std::vector<float> pointSearchSqDis;
 
     // // extract all the nearby key poses and downsample them
-    // kdtreeSurroundingKeyPoses->setInputCloud(cloudKeyPoses3D); // create kd-tree
-    // kdtreeSurroundingKeyPoses->radiusSearch(cloudKeyPoses3D->back(), (double)surroundingKeyframeSearchRadius, pointSearchInd, pointSearchSqDis);
-    // for (int i = 0; i < (int)pointSearchInd.size(); ++i)
+    // kdtreeSurroundingKeyPoses->setInputCloud(cloudKeyPoses3D); // create
+    // kd-tree kdtreeSurroundingKeyPoses->radiusSearch(cloudKeyPoses3D->back(),
+    // (double)surroundingKeyframeSearchRadius, pointSearchInd,
+    // pointSearchSqDis); for (int i = 0; i < (int)pointSearchInd.size(); ++i)
     // {
     //     int id = pointSearchInd[i];
     //     surroundingKeyPoses->push_back(cloudKeyPoses3D->points[id]);
@@ -1141,7 +1159,7 @@ int main(int argc, char** argv) {
 
   OdomEstimationNode ODN;
 
-  ROS_INFO("\033[1;32m----> Odom EstimationNode Started.\033[0m");
+  ROS_INFO("\033[1;32m----> Odom Estimation Node Started.\033[0m");
 
   std::thread odom_estimation_thread(
       &OdomEstimationNode::OdomEstimationNodeThread, &ODN);

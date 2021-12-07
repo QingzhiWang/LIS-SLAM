@@ -29,6 +29,8 @@ find_package(PCL REQUIRED QUIET)
 find_package(OpenCV REQUIRED QUIET)
 find_package(GTSAM REQUIRED QUIET)
 
+find_package(Boost REQUIRED COMPONENTS timer)
+
 # include directories
 include_directories(
 	src/include
@@ -94,6 +96,13 @@ target_link_libraries(${PROJECT_NAME}_laserPretreatment ${catkin_LIBRARIES} ${PC
 add_executable(${PROJECT_NAME}_laserProcessing src/node/laserProcessingNode.cpp src/core/laserProcessing.cpp)
 add_dependencies(${PROJECT_NAME}_laserProcessing ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_laserProcessing ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
+
+# Odom Estimation
+add_executable(${PROJECT_NAME}_odomEstimation src/node/odomEstimationNode.cpp)
+add_dependencies(${PROJECT_NAME}_odomEstimation ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+target_compile_options(${PROJECT_NAME}_odomEstimation PRIVATE ${OpenMP_CXX_FLAGS})
+target_link_libraries(${PROJECT_NAME}_odomEstimation ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS} gtsam)
+
 
 # Make SubMap
 # add_executable(${PROJECT_NAME}_makeSubMap src/makeSubMap.cpp)

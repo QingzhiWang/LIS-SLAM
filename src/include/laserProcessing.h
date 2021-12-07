@@ -52,7 +52,7 @@ class LaserProcessing : public ParamServer {
                     float *rotZCur);
   void findPosition(double relTime, float *posXCur, float *posYCur,
                     float *posZCur);
-  PointXYZIRTL deskewPoint(PointXYZIRTL *point, double relTime);
+  PointXYZIRT deskewPoint(PointXYZIRT *point, double relTime);
   void projectPointCloud();
   void cloudExtraction();
 
@@ -89,13 +89,13 @@ class LaserProcessing : public ParamServer {
 
   lis_slam::cloud_info cloudInfo;
 
-  pcl::PointCloud<PointXYZIRTL>::Ptr laserCloudIn;
+  pcl::PointCloud<PointXYZIRT>::Ptr laserCloudIn;
 
-  pcl::PointCloud<PointXYZIRTL>::Ptr fullCloud;
-  pcl::PointCloud<PointXYZIRTL>::Ptr extractedCloud;
+  pcl::PointCloud<PointXYZIRT>::Ptr fullCloud;
+  pcl::PointCloud<PointXYZIRT>::Ptr extractedCloud;
 
-  pcl::PointCloud<PointXYZIRTL>::Ptr cornerCloud;
-  pcl::PointCloud<PointXYZIRTL>::Ptr surfaceCloud;
+  pcl::PointCloud<PointXYZIRT>::Ptr cornerCloud;
+  pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloud;
 
   double *imuTime = new double[queueLength];
   double *imuRotX = new double[queueLength];
@@ -129,7 +129,7 @@ class LaserProcessing : public ParamServer {
   int *cloudNeighborPicked;
   int *cloudLabel;
 
-  // pcl::VoxelGrid<PointXYZIRTL> downSizeFilter;
+  // pcl::VoxelGrid<PointXYZIRT> downSizeFilter;
 };
 
 #endif  // _LASER_PROCESSING_H_

@@ -34,7 +34,7 @@ void removeClosedPointCloud(const pcl::PointCloud<PointT>& cloud_in,
 
 void LaserPretreatment::init() {}
 
-pcl::PointCloud<PointXYZIRTL>& LaserPretreatment::process(
+pcl::PointCloud<PointXYZIRT>& LaserPretreatment::process(
     pcl::PointCloud<PointType>& laserCloudIn) {
   std::vector<int> indices;
 
@@ -56,8 +56,8 @@ pcl::PointCloud<PointXYZIRTL>& LaserPretreatment::process(
 
   bool halfPassed = false;
   int count = cloudSize;
-  PointXYZIRTL point;
-  pcl::PointCloud<PointXYZIRTL> laserCloudOut;
+  PointXYZIRT point;
+  pcl::PointCloud<PointXYZIRT> laserCloudOut;
   for (int i = 0; i < cloudSize; i++) {
     point.x = laserCloudIn.points[i].x;
     point.y = laserCloudIn.points[i].y;
@@ -118,7 +118,6 @@ pcl::PointCloud<PointXYZIRTL>& LaserPretreatment::process(
     float relTime = (ori - startOri) / (endOri - startOri);
     point.ring = scanID;
     point.time = scanPeriod * relTime;
-    point.label = 0;
     laserCloudOut.points.push_back(point);
   }
 }

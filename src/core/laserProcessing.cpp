@@ -18,13 +18,13 @@ const int queueLength = 2000;
  *
  *****************************************/
 void LaserProcessing ::allocateMemory() {
-  laserCloudIn.reset(new pcl::PointCloud<PointXYZIRTL>());
+  laserCloudIn.reset(new pcl::PointCloud<PointXYZIRT>());
 
-  fullCloud.reset(new pcl::PointCloud<PointXYZIRTL>());
-  extractedCloud.reset(new pcl::PointCloud<PointXYZIRTL>());
+  fullCloud.reset(new pcl::PointCloud<PointXYZIRT>());
+  extractedCloud.reset(new pcl::PointCloud<PointXYZIRT>());
 
-  cornerCloud.reset(new pcl::PointCloud<PointXYZIRTL>());
-  surfaceCloud.reset(new pcl::PointCloud<PointXYZIRTL>());
+  cornerCloud.reset(new pcl::PointCloud<PointXYZIRT>());
+  surfaceCloud.reset(new pcl::PointCloud<PointXYZIRT>());
 
   fullCloud->points.resize(N_SCAN * Horizon_SCAN);
 
@@ -115,9 +115,14 @@ bool LaserProcessing ::cachePointCloud() {
   // cache point cloud
   if (cloudQueue.size() <= 2) return false;
 
+  std::lock_guard<std::mutex> lock1(cloLock);
+
   // convert cloud
+  cloLock.lock();
   currentCloudMsg = cloudQueue.front();
   cloudQueue.pop_front();
+  cloLock.unlock();
+
   pcl::fromROSMsg(currentCloudMsg, *laserCloudIn);
 
   // check dense flag
@@ -405,7 +410,7 @@ void LaserProcessing ::findPosition(double relTime, float *posXCur,
 /****************************************
  *
  *****************************************/
-PointXYZIRTL LaserProcessing ::deskewPoint(PointXYZIRTL *point,
+PointXYZIRT LaserProcessing ::deskewPoint(PointXYZIRT *point,
                                            double relTime) {
   if (deskewFlag == -1 || cloudInfo.imuAvailable == false) return *point;
 
@@ -429,7 +434,7 @@ PointXYZIRTL LaserProcessing ::deskewPoint(PointXYZIRTL *point,
       posXCur, posYCur, posZCur, rotXCur, rotYCur, rotZCur);
   Eigen::Affine3f transBt = transStartInverse * transFinal;
 
-  PointXYZIRTL newPoint;
+  PointXYZIRT newPoint;
   newPoint.x = transBt(0, 0) * point->x + transBt(0, 1) * point->y +
                transBt(0, 2) * point->z + transBt(0, 3);
   newPoint.y = transBt(1, 0) * point->x + transBt(1, 1) * point->y +
@@ -440,7 +445,6 @@ PointXYZIRTL LaserProcessing ::deskewPoint(PointXYZIRTL *point,
   //新增
   newPoint.ring = point->ring;
   newPoint.time = point->time;
-  newPoint.label = point->label;
 
   return newPoint;
 }
@@ -453,7 +457,7 @@ void LaserProcessing ::projectPointCloud() {
   // range image projection
   for (int i = 0; i < cloudSize; ++i) {
     // PointType thisPoint;
-    PointXYZIRTL thisPoint;
+    PointXYZIRT thisPoint;
     thisPoint.x = laserCloudIn->points[i].x;
     thisPoint.y = laserCloudIn->points[i].y;
     thisPoint.z = laserCloudIn->points[i].z;
@@ -588,10 +592,10 @@ void LaserProcessing ::extractFeatures() {
   cornerCloud->clear();
   surfaceCloud->clear();
 
-  pcl::PointCloud<PointXYZIRTL>::Ptr surfaceCloudScan(
-      new pcl::PointCloud<PointXYZIRTL>());
-  pcl::PointCloud<PointXYZIRTL>::Ptr surfaceCloudScanDS(
-      new pcl::PointCloud<PointXYZIRTL>());
+  pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloudScan(
+      new pcl::PointCloud<PointXYZIRT>());
+  pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloudScanDS(
+      new pcl::PointCloud<PointXYZIRT>());
 
   for (int i = 0; i < N_SCAN; i++) {
     surfaceCloudScan->clear();

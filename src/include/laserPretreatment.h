@@ -22,7 +22,7 @@ class LaserPretreatment : public ParamServer {
  public:
   LaserPretreatment(){};
   void init();
-  pcl::PointCloud<PointXYZIRTL>& process(
+  pcl::PointCloud<PointXYZIRT>& process(
       pcl::PointCloud<PointType>& laserCloudIn);
 
  private:
