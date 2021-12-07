@@ -58,6 +58,7 @@ add_message_files(
   cloud_info.msg
   submap.msg
   loop_info.msg
+  semantic_info.msg
 )
 
 generate_messages(

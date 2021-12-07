@@ -1,8 +1,9 @@
 // Author of  EPSC-LOAM : QZ Wang
 // Email wangqingzhi27@outlook.com
 
-#include "RangenetAPI.h"
 #include "lis_slam/cloud_info.h"
+#include "lis_slam/semantic_info.h"
+#include "rangenetAPI.h"
 #include "utility.h"
 
 class SemanticFusionNode : public Paramserver {
@@ -14,11 +15,10 @@ class SemanticFusionNode : public Paramserver {
 
   ros::Publisher pubSemanticInfo;
   ros::Publisher pubSemanticCloud;
-  ros::Publisher pubSemanticRGBCloud
-      //   ros::Publisher pubDynObjCloud;
+  ros::Publisher pubSemanticRGBCloud;
+  //   ros::Publisher pubDynObjCloud;
 
-      std::deque<lis_slam::cloud_info>
-          cloudInfoQueue;
+  std::deque<lis_slam::cloud_info> cloudInfoQueue;
   std::mutex mtx;
 
   lis_slam::cloud_info cloudInfo;
@@ -38,7 +38,7 @@ class SemanticFusionNode : public Paramserver {
 
   pcl::VoxelGrid<PointType> downSizeFilter;
 
-  pcl::PointCloud<pcl::PointXYZRGB> RGBCloudOut;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr RGBCloudOut;
   pcl::PointCloud<PointXYZIL>::Ptr semanticCloudOut;
   lis_slam::semantic_info semanticInfo;
 
@@ -143,10 +143,10 @@ class SemanticFusionNode : public Paramserver {
     std::vector<int> label_map = range_net.getLabelMap();
     std::map<uint32_t, semantic_color> color_map = range_net.getColorMap();
 
-    std::vector<cv::Vec3f> points = range_net.getPointCloud();
+    std::vector<cv::Vec3f> points = range_net.getPointCloud(values);
     std::vector<cv::Vec3b> color_mask = range_net.getColorMask();
 
-    std::cout << "num_points size: " << num_points.size() << std::endl;
+    std::cout << "num_points size: " << num_points << std::endl;
     std::cout << "semantic_scan size: " << semantic_scan.size() << std::endl;
     std::cout << "points size: " << points.size() << std::endl;
 
@@ -157,7 +157,7 @@ class SemanticFusionNode : public Paramserver {
 
     for (uint32_t i = 0; i < num_points; ++i) {
       labels_prob[i] = 0;
-      for (int32_t j = 0; j < _n_classes; ++j) {
+      for (int32_t j = 0; j < 20; ++j) {
         if (labels_prob[i] <= semantic_scan[i][j]) {
           labels[i] = label_map[j];
           labels_prob[i] = semantic_scan[i][j];
@@ -204,8 +204,6 @@ class SemanticFusionNode : public Paramserver {
     tempCloud.header.stamp = cloudHeader.stamp;
     tempCloud.header.frame_id = lidarFrame;
     pubSemanticCloud.publish(tempCloud);
-
-    
   }
 };
 

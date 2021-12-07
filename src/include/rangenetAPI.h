@@ -54,8 +54,8 @@ class RangenetAPI {
   }
 
   /** @brief      Get the point cloud **/
-  std::vector<cv::Vec3f> getPointCloud() {
-    return net->getPoints(semantic_scan, num_points);
+  std::vector<cv::Vec3f> getPointCloud(const std::vector<float>& scan) {
+    return net->getPoints(scan, num_points);
   }
 
   /** @brief      Get the color mask **/
