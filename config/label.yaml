@@ -185,7 +185,7 @@ learning_ignore: # Ignore classes
   18: False    # "pole"
   19: False    # "traffic-sign"
 using_label:
-  10: 10     # "car" Probability is a dynamic object
+  10: 10     # "car" There is a probability of dynamic objects
   11: 10     # "bicycle" to "car"
   15: 10     # "motorcycle" to "car"
   18: 10     # "truck" to "car"
