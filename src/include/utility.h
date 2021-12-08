@@ -156,8 +156,6 @@ class ParamServer {
  public:
   ros::NodeHandle nh;
 
-  std::string robot_id;
-
   bool useImu;
 
   std::string RESULT_PATH;
@@ -279,8 +277,6 @@ class ParamServer {
   float globalMapVisualizationLeafSize;
 
   ParamServer() {
-    nh.param<std::string>("/robot_id", robot_id, "roboat");
-
     nh.param<bool>("lis_slam/useImu", useImu, true);
 
     nh.param<std::string>("lis_slam/RESULT_PATH", RESULT_PATH,
