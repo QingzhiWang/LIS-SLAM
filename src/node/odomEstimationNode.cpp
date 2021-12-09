@@ -196,25 +196,15 @@ class OdomEstimationNode : public ParamServer {
   }
 
   void laserCloudInfoHandler(const lis_slam::cloud_infoConstPtr& msgIn) {
-    std::lock_guard<std::mutex> lock(mtx);
-    cloudInfoQueue.push_back(*msgIn);
-  }
+    // std::lock_guard<std::mutex> lock(mtx);
+    // cloudInfoQueue.push_back(*msgIn);
 
-  void OdomEstimationNodeThread() {
-    while (ros::ok()) {
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
 
-      if (cloudInfoQueue.empty()) {
-        continue;
-      }
 
-      // extract info and feature cloud
-      mtx.lock();
-      cloudInfo = cloudInfoQueue.front();
-      cloudInfoQueue.pop_front();
-      mtx.unlock();
-      
+      cloudInfo = *msgIn;
+
       // extract time stamp
       timeLaserInfoStamp = cloudInfo.header.stamp;
       timeLaserInfoCur = timeLaserInfoStamp.toSec();
@@ -226,12 +216,13 @@ class OdomEstimationNode : public ParamServer {
       downsampleCurrentScan();
       updateInitialGuess();
 
+
       if (FirstFlag) {
         saveKeyFrames();
         publishOdometry();
         publishCloudInfo();
         FirstFlag = false;
-        continue;
+        return;
       }
 
       extractSurroundingKeyFrames();
@@ -253,10 +244,12 @@ class OdomEstimationNode : public ParamServer {
       total_frame++;
       float time_temp = elapsed_seconds.count() * 1000;
       total_time += time_temp;
-      ROS_INFO("Average odom estimation time %f ms \n \n",
+      ROS_INFO("Average odom estimation time %f ms \n",
                total_time / total_frame);
-    }
+
   }
+
+
 
   void pointAssociateToMap(PointType const* const pi, PointType* const po) {
     po->x = transPointAssociateToMap(0, 0) * pi->x +
@@ -506,14 +499,12 @@ class OdomEstimationNode : public ParamServer {
   }
 
   void saveKeyFrames() {
-    keyFrameId++;
-
     PointType thisPose3D;
     thisPose3D.x = transformTobeMapped[3];
     thisPose3D.y = transformTobeMapped[4];
     thisPose3D.z = transformTobeMapped[5];
     thisPose3D.intensity = keyFrameId;
-    cloudKeyPoses3D->push_back(thisPose3D);
+    cloudKeyPoses3D->points.push_back(thisPose3D);
 
     PointTypePose thisPose6D;
     thisPose6D.x = thisPose3D.x;
@@ -524,7 +515,7 @@ class OdomEstimationNode : public ParamServer {
     thisPose6D.pitch = transformTobeMapped[1];
     thisPose6D.yaw = transformTobeMapped[2];
     thisPose6D.time = timeLaserInfoCur;
-    cloudKeyPoses6D->push_back(thisPose6D);
+    cloudKeyPoses6D->points.push_back(thisPose6D);
 
     pcl::PointCloud<PointType>::Ptr thisCornerKeyFrame(
         new pcl::PointCloud<PointType>());
@@ -543,6 +534,8 @@ class OdomEstimationNode : public ParamServer {
     transformPriFrame[3] = transformTobeMapped[3];
     transformPriFrame[4] = transformTobeMapped[4];
     transformPriFrame[5] = transformTobeMapped[5];
+
+    keyFrameId++;
   }
 
   void publishCloudInfo() {
@@ -601,8 +594,8 @@ class OdomEstimationNode : public ParamServer {
     // position
     int numPoses = cloudKeyPoses3D->size();
     for (int i = numPoses - 1; i >= 0; --i) {
-      if (timeLaserInfoCur - cloudKeyPoses6D->points[i].time < 20.0)  // 10.0
-        surroundingKeyPosesDS->push_back(cloudKeyPoses3D->points[i]);
+      if (timeLaserInfoCur - cloudKeyPoses6D->points[i].time < 10.0)  // 10.0
+        surroundingKeyPosesDS->points.push_back(cloudKeyPoses3D->points[i]);
       else
         break;
     }
@@ -651,6 +644,7 @@ class OdomEstimationNode : public ParamServer {
 
     // clear map cache if too large
     if (laserCloudMapContainer.size() > 1000) laserCloudMapContainer.clear();
+    
   }
 
   void scan2SubMapOptimization() {
@@ -1041,7 +1035,7 @@ class OdomEstimationNode : public ParamServer {
                         pow(matX.at<float>(4, 0) * 100, 2) +
                         pow(matX.at<float>(5, 0) * 100, 2));
 
-    if (deltaR < 0.03 && deltaT < 0.03) {
+    if (deltaR < 0.05 && deltaT < 0.05) {
       return true;  // converged
     }
     return false;  // keep optimizing
@@ -1103,7 +1097,8 @@ class OdomEstimationNode : public ParamServer {
     nav_msgs::Odometry laserOdometryROS;
     laserOdometryROS.header.stamp = timeLaserInfoStamp;
     laserOdometryROS.header.frame_id = odometryFrame;
-    laserOdometryROS.child_frame_id = "odom_estimation";
+    // laserOdometryROS.child_frame_id = "odom_estimation";
+    laserOdometryROS.child_frame_id = lidarFrame;
     laserOdometryROS.pose.pose.position.x = transformTobeMapped[3];
     laserOdometryROS.pose.pose.position.y = transformTobeMapped[4];
     laserOdometryROS.pose.pose.position.z = transformTobeMapped[5];
@@ -1113,16 +1108,16 @@ class OdomEstimationNode : public ParamServer {
                                                 transformTobeMapped[2]);
     pubLaserOdometryGlobal.publish(laserOdometryROS);
     // Publish TF
-    // static tf::TransformBroadcaster br;
-    // tf::Transform t_odom_to_lidar =
-    // tf::Transform(tf::createQuaternionFromRPY(transformTobeMapped[0],
-    // transformTobeMapped[1], transformTobeMapped[2]),
-    //                                               tf::Vector3(transformTobeMapped[3],
-    //                                               transformTobeMapped[4],
-    //                                               transformTobeMapped[5]));
-    // tf::StampedTransform trans_odom_to_lidar =
-    // tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame,
-    // "lidar_link"); br.sendTransform(trans_odom_to_lidar);
+    static tf::TransformBroadcaster br;
+    tf::Transform t_odom_to_lidar =
+    tf::Transform(tf::createQuaternionFromRPY(transformTobeMapped[0],
+    transformTobeMapped[1], transformTobeMapped[2]),
+                                                  tf::Vector3(transformTobeMapped[3],
+                                                  transformTobeMapped[4],
+                                                  transformTobeMapped[5]));
+    tf::StampedTransform trans_odom_to_lidar =
+    tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame,
+    "lidar_link"); br.sendTransform(trans_odom_to_lidar);
 
     // Publish odometry for ROS (incremental)
     static bool lastIncreOdomPubFlag = false;
@@ -1142,7 +1137,8 @@ class OdomEstimationNode : public ParamServer {
 
       laserOdomIncremental.header.stamp = timeLaserInfoStamp;
       laserOdomIncremental.header.frame_id = odometryFrame;
-      laserOdomIncremental.child_frame_id = "odom_estimation";
+      // laserOdomIncremental.child_frame_id = "odom_estimation";
+      laserOdometryROS.child_frame_id = lidarFrame;
       laserOdomIncremental.pose.pose.position.x = x;
       laserOdomIncremental.pose.pose.position.y = y;
       laserOdomIncremental.pose.pose.position.z = z;
@@ -1161,12 +1157,7 @@ int main(int argc, char** argv) {
 
   ROS_INFO("\033[1;32m----> Odom Estimation Node Started.\033[0m");
 
-  std::thread odom_estimation_thread(
-      &OdomEstimationNode::OdomEstimationNodeThread, &ODN);
-
   ros::spin();
-
-  odom_estimation_thread.join();
 
   return 0;
 }

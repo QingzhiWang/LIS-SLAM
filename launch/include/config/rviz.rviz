@@ -8,15 +8,14 @@ Panels:
         - /links1
         - /Odometry1/Odom IMU1
         - /Point Cloud1
+        - /Point Cloud1/Velodyne1
         - /Feature Cloud1
-        - /Mapping1
         - /Mapping1/Map (global)1
         - /Mapping1/Map (global)1/Autocompute Value Bounds1
-        - /Submap1
         - /EPSC1/Image_LPSC1
         - /Test1
       Splitter Ratio: 0.5600000023841858
-    Tree Height: 988
+    Tree Height: 1234
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Views
@@ -200,17 +199,15 @@ Visualization Manager:
             Min Value: -10
             Value: true
           Axis: Z
-          Channel Name: intensity
+          Channel Name: ring
           Class: rviz/PointCloud2
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.9900000095367432
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: Velodyne
           Position Transformer: XYZ
           Queue Size: 10
@@ -218,11 +215,11 @@ Visualization Manager:
           Size (Pixels): 2
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /points_pretreatmented
+          Topic: /lis_slam/points_pretreatmented
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -238,9 +235,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.9900000095367432
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: points_pretreatmented
           Position Transformer: XYZ
           Queue Size: 10
@@ -272,9 +267,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 15.077729225158691
           Min Color: 0; 0; 0
-          Min Intensity: 0.019985778257250786
           Name: Edge Feature
           Position Transformer: XYZ
           Queue Size: 10
@@ -302,9 +295,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 15.100607872009277
           Min Color: 0; 0; 0
-          Min Intensity: 0.0007188677554950118
           Name: Plannar Feature
           Position Transformer: XYZ
           Queue Size: 10
@@ -336,9 +327,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.9900000095367432
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: Map (cloud)
           Position Transformer: XYZ
           Queue Size: 10
@@ -366,9 +355,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.699999988079071
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: Map (local)
           Position Transformer: XYZ
           Queue Size: 10
@@ -473,7 +460,7 @@ Visualization Manager:
             {}
           Queue Size: 100
           Value: false
-      Enabled: true
+      Enabled: false
       Name: Mapping
     - Class: rviz/Group
       Displays:
@@ -492,9 +479,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 154
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: submap_id
           Position Transformer: XYZ
           Queue Size: 10
@@ -522,9 +507,7 @@ Visualization Manager:
           Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.950629472732544
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: submap_raw
           Position Transformer: XYZ
           Queue Size: 10
@@ -552,9 +535,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 125
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: submap_corner
           Position Transformer: XYZ
           Queue Size: 10
@@ -582,9 +563,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.9900000095367432
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: submap_surf
           Position Transformer: XYZ
           Queue Size: 10
@@ -612,9 +591,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.9666666984558105
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: make_submap
           Position Transformer: XYZ
           Queue Size: 10
@@ -655,7 +632,7 @@ Visualization Manager:
           Transport Hint: raw
           Unreliable: false
           Value: false
-      Enabled: true
+      Enabled: false
       Name: EPSC
     - Class: rviz/Group
       Displays:
@@ -671,7 +648,7 @@ Visualization Manager:
           Transport Hint: raw
           Unreliable: false
           Value: false
-      Enabled: true
+      Enabled: false
       Name: Test
     - Alpha: 1
       Buffer Length: 1
@@ -700,7 +677,7 @@ Visualization Manager:
   Global Options:
     Background Color: 255; 255; 255
     Default Light: true
-    Fixed Frame: map
+    Fixed Frame: base_link
     Frame Rate: 30
   Name: root
   Tools:
@@ -719,18 +696,18 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -41.80149841308594
-        Y: -53.988311767578125
-        Z: -21.54051399230957
+        X: -23.64484977722168
+        Y: -34.652896881103516
+        Z: -21.534334182739258
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7297971248626709
+      Pitch: 1.5697963237762451
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 2.5379250049591064
+      Yaw: 2.622924327850342
     Saved: ~
 Window Geometry:
   Displays:
@@ -744,7 +721,7 @@ Window Geometry:
     collapsed: false
   Image_SC:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000001560000050ffc020000000cfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d00000419000000c900fffffffb000000140049006d006100670065005f004c005000530043010000045c000000f00000001600fffffffb000000120049006d006100670065005f004900530043000000045c0000010b0000001600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730000000286000000a70000005c00fffffffb000000100049006d006100670065005f005300430000000324000000c00000001600fffffffb0000000a0049006d0061006700650100000355000000aa000000000000000000000001000001110000052afc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000052a000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004b000000040fc0100000002fb0000000800540069006d00650000000000000004b00000000000000000fb0000000800540069006d00650100000000000004500000000000000000000008610000050f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001560000050ffc020000000cfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d0000050f000000c900fffffffb000000140049006d006100670065005f004c005000530043000000045c000000f00000001600fffffffb000000120049006d006100670065005f004900530043000000045c0000010b0000001600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730000000286000000a70000005c00fffffffb000000100049006d006100670065005f005300430000000324000000c00000001600fffffffb0000000a0049006d0061006700650100000355000000aa000000000000000000000001000001110000052afc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000052a000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004b000000040fc0100000002fb0000000800540069006d00650000000000000004b00000000000000000fb0000000800540069006d00650100000000000004500000000000000000000008610000050f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Tool Properties:

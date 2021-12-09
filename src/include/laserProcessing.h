@@ -62,7 +62,8 @@ class LaserProcessing : public ParamServer {
 
   void assignCouldInfo();
 
-  lis_slam::cloud_info &getCloudInfo() { return cloudInfo; }
+  lis_slam::cloud_info getCloudInfo() { return cloudInfo; }
+  
   void freeCloudInfoMemory() {
     cloudInfo.imuAvailable = false;
     cloudInfo.odomAvailable = false;

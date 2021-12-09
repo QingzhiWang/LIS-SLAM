@@ -1,108 +1,204 @@
 // Author of  EPSC-LOAM : QZ Wang
 // Email wangqingzhi27@outlook.com
 
+#include <cmath>
 
-// local lib
-#include "laserPretreatment.h"
+#include "utility.h"
 
-LaserPretreatment lpre;
+using std::atan2;
+using std::cos;
+using std::sin;
 
-class LaserPretreatmentNode : public ParamServer {
- private:
+const double scanPeriod = 0.1;
+
+//************************************************************************
+//对激光雷达数据预处理
+//实现在原始sensor_msgs::PointCloud2增加ring 和time 通道供后续步骤使用
+//************************************************************************
+class laserPretreatmentNode : public ParamServer {
+ public:
+  ros::Publisher pubPretreatmentedCloud;
+  ros::Subscriber subPointCloud;
+
   double total_time = 0;
   int total_frame = 0;
-  
-  std::mutex cloudLock;
-  std::deque<sensor_msgs::PointCloud2ConstPtr> cloudQueue;
 
-  ros::Subscriber subLaserCloud;
-  ros::Publisher pubLaserCloud;
-
- public:
-  LaserPretreatmentNode() {
+  laserPretreatmentNode() {
     if (N_SCAN != 16 && N_SCAN != 32 && N_SCAN != 64) {
       printf("only support velodyne with 16, 32 or 64 scan line!");
-      return;
+      ROS_BREAK();
     }
 
-    subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(
-        pointCloudTopic, 5, &LaserPretreatmentNode::cloudHandler, this);
-    pubLaserCloud = nh.advertise<sensor_msgs::PointCloud2>(
-        "lis_slam/points_pretreatmented", 1);
+    subPointCloud = nh.subscribe<sensor_msgs::PointCloud2>(
+        pointCloudTopic, 10, &laserPretreatmentNode::laserCloudInfoHandler, this,
+        ros::TransportHints().tcpNoDelay());
+    pubPretreatmentedCloud = nh.advertise<sensor_msgs::PointCloud2>(
+        "lis_slam/points_pretreatmented", 100);
+
+    allocateMemory();
   }
 
-  ~LaserPretreatmentNode() {}
-
-  void cloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg) {
-    std::lock_guard<std::mutex> lock(cloudLock);
-    cloudQueue.push_back(laserCloudMsg);
+  void allocateMemory() {
+    // laserCloudRaw.reset(new pcl::PointCloud<PointType>());
+    // laserCloudRawDS.reset(new pcl::PointCloud<PointType>());
   }
 
-  void laserPretreatment() {
-    while (ros::ok()) {
-      if (!cloudQueue.empty()) {
-        //激光预处理 增加ring time Label通道供后续步骤使用
+  void laserCloudInfoHandler(
+      const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg) {
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
 
-        // read data
-        cloudLock.lock();
-        sensor_msgs::PointCloud2ConstPtr laserCloudMsg = cloudQueue.front();
-        pcl::PointCloud<PointType>::Ptr laserCloudIn(
-            new pcl::PointCloud<PointType>());
-        pcl::fromROSMsg(*laserCloudMsg, *laserCloudIn);
-        cloudQueue.pop_front();
-        cloudLock.unlock();
+    ros::Time startTime = ros::Time::now();
 
-        // ros::Time  startTime=ros::Time::now();
+    pcl::PointCloud<PointType> laserCloudIn;
+    pcl::fromROSMsg(*laserCloudMsg, laserCloudIn);
 
-        // pcl::PointCloud<PointXYZIRT> laserCloudOut;
-        // laserCloudOut=lpre.process(*laserCloudIn);
+    std::vector<int> indices;
 
-        // ros::Time  endTime=ros::Time::now();
-        // std::cout <<  "Laser Pretreatment  Time: " <<  (endTime -
-        // startTime).toSec() << "[sec]" << std::endl;
+    pcl::removeNaNFromPointCloud(laserCloudIn, laserCloudIn, indices);
+    removeClosedPointCloud(laserCloudIn, laserCloudIn, lidarMinRange,
+                           lidarMaxRange);
 
-        // if((endTime - startTime).toSec()> 1)
-        //     ROS_WARN("Laser Pretreatment process over 100ms");
+    int cloudSize = laserCloudIn.points.size();
+    float startOri = -atan2(laserCloudIn.points[0].y, laserCloudIn.points[0].x);
+    float endOri = -atan2(laserCloudIn.points[cloudSize - 1].y,
+                          laserCloudIn.points[cloudSize - 1].x) +
+                   2 * M_PI;
 
-        std::chrono::time_point<std::chrono::system_clock> start, end;
-        start = std::chrono::system_clock::now();
+    if (endOri - startOri > 3 * M_PI) {
+      endOri -= 2 * M_PI;
+    } else if (endOri - startOri < M_PI) {
+      endOri += 2 * M_PI;
+    }
 
-        pcl::PointCloud<PointXYZIRT> laserCloudOut;
-        laserCloudOut = lpre.process(*laserCloudIn);
+    bool halfPassed = false;
+    int count = cloudSize;
+    PointXYZIRT point;
+    pcl::PointCloud<PointXYZIRT> laserCloudOut;
+    for (int i = 0; i < cloudSize; i++) {
+      point.x = laserCloudIn.points[i].x;
+      point.y = laserCloudIn.points[i].y;
+      point.z = laserCloudIn.points[i].z;
+      point.intensity = laserCloudIn.points[i].intensity;
 
-        end = std::chrono::system_clock::now();
-        std::chrono::duration<float> elapsed_seconds = end - start;
-        total_frame++;
-        float time_temp = elapsed_seconds.count() * 1000;
-        total_time += time_temp;
-        ROS_INFO("Average laser pretreatment time %f ms \n \n",
-                 total_time / total_frame);
+      float angle =
+          atan(point.z / sqrt(point.x * point.x + point.y * point.y)) * 180 /
+          M_PI;
+      int scanID = 0;
 
-        sensor_msgs::PointCloud2 laserCloudOutMsg;
-        pcl::toROSMsg(laserCloudOut, laserCloudOutMsg);
-        laserCloudOutMsg.header.stamp = laserCloudMsg->header.stamp;
-        laserCloudOutMsg.header.frame_id = lidarFrame;
-        pubLaserCloud.publish(laserCloudOutMsg);
+      if (N_SCAN == 16) {
+        scanID = int((angle + 15) / 2 + 0.5);
+        if (scanID > (N_SCAN - 1) || scanID < 0) {
+          count--;
+          continue;
+        }
+      } else if (N_SCAN == 32) {
+        scanID = int((angle + 92.0 / 3.0) * 3.0 / 4.0);
+        if (scanID > (N_SCAN - 1) || scanID < 0) {
+          count--;
+          continue;
+        }
+      } else if (N_SCAN == 64) {
+        if (angle >= -8.83)
+          scanID = int((2 - angle) * 3.0 + 0.5);
+        else
+          scanID = N_SCAN / 2 + int((-8.83 - angle) * 2.0 + 0.5);
+
+        // use [0 50]  > 50 remove outlies
+        if (angle > 2 || angle < -24.33 || scanID > 50 || scanID < 0) {
+          count--;
+          continue;
+        }
+      } else {
+        printf("wrong scan number\n");
+        ROS_BREAK();
       }
+
+      float ori = -atan2(point.y, point.x);
+      if (!halfPassed) {
+        if (ori < startOri - M_PI / 2) {
+          ori += 2 * M_PI;
+        } else if (ori > startOri + M_PI * 3 / 2) {
+          ori -= 2 * M_PI;
+        }
+
+        if (ori - startOri > M_PI) {
+          halfPassed = true;
+        }
+      } else {
+        ori += 2 * M_PI;
+        if (ori < endOri - M_PI * 3 / 2) {
+          ori += 2 * M_PI;
+        } else if (ori > endOri + M_PI / 2) {
+          ori -= 2 * M_PI;
+        }
+      }
+      float relTime = (ori - startOri) / (endOri - startOri);
+      point.ring = scanID;
+      point.time = scanPeriod * relTime;
+      laserCloudOut.points.push_back(point);
     }
-    // sleep 2 ms every time
-    std::chrono::milliseconds dura(2);
-    std::this_thread::sleep_for(dura);
+
+    ros::Time endTime = ros::Time::now();
+    // std::cout <<  "Laser Pretreatment  Time: " <<  (endTime -
+    // startTime).toSec() << "[sec]" << std::endl;
+
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<float> elapsed_seconds = end - start;
+    total_frame++;
+    float time_temp = elapsed_seconds.count() * 1000;
+    total_time += time_temp;
+    ROS_INFO("Average laser Pretreatment time %f ms",
+              total_time / total_frame);
+
+    if ((endTime - startTime).toSec() > 1)
+      ROS_WARN("Laser Pretreatment process over 100ms");
+
+    sensor_msgs::PointCloud2 laserCloudOutMsg;
+    pcl::toROSMsg(laserCloudOut, laserCloudOutMsg);
+    laserCloudOutMsg.header.stamp = laserCloudMsg->header.stamp;
+    laserCloudOutMsg.header.frame_id = lidarFrame;
+    pubPretreatmentedCloud.publish(laserCloudOutMsg);
+  }
+
+  template <typename PointT>
+  void removeClosedPointCloud(const pcl::PointCloud<PointT>& cloud_in,
+                              pcl::PointCloud<PointT>& cloud_out,
+                              float minthres, float maxthres) {
+    if (&cloud_in != &cloud_out) {
+      cloud_out.header = cloud_in.header;
+      cloud_out.points.resize(cloud_in.points.size());
+    }
+
+    size_t j = 0;
+
+    for (size_t i = 0; i < cloud_in.points.size(); ++i) {
+      float thisRange = cloud_in.points[i].x * cloud_in.points[i].x +
+                        cloud_in.points[i].y * cloud_in.points[i].y +
+                        cloud_in.points[i].z * cloud_in.points[i].z;
+      if (thisRange < minthres * minthres) continue;
+      if (thisRange > maxthres * maxthres) continue;
+      cloud_out.points[j] = cloud_in.points[i];
+      j++;
+    }
+    if (j != cloud_in.points.size()) {
+      cloud_out.points.resize(j);
+    }
+
+    cloud_out.height = 1;
+    cloud_out.width = static_cast<uint32_t>(j);
+    cloud_out.is_dense = true;
   }
 };
 
 int main(int argc, char** argv) {
-  ros::init(argc, argv, "lis_slam");
+  ros::init(argc, argv, "epsc_lio");
 
-  LaserPretreatmentNode LPN;
+  laserPretreatmentNode LP;
 
-  std::thread pretreatment_process(&LaserPretreatmentNode::laserPretreatment, &LPN);
-
-  ROS_INFO("\033[1;32m----> Laser Pretreatment Node Started.\033[0m");
+  ROS_INFO("\033[1;32m----> Laser Pretreatment Started.\033[0m");
 
   ros::spin();
-
-  pretreatment_process.join();
 
   return 0;
 }

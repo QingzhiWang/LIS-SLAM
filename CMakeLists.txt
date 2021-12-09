@@ -17,11 +17,11 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   # rangenet_lib 
   # msgs
+  message_generation
   std_msgs
   sensor_msgs
   geometry_msgs
   nav_msgs
-  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -33,6 +33,8 @@ find_package(GTSAM REQUIRED QUIET)
 find_package(Boost REQUIRED COMPONENTS timer)
 
 # find_package(rangenet_lib)
+
+
 
 # libyaml-cpp (required)
 find_package (yaml-cpp)
@@ -51,7 +53,6 @@ if(Boost_FOUND)
 else()
   message(FATAL_ERROR "Boost NOT FOUND\n")
 endif()
-
 
 ####################################
 ## TensorRT specific configuration ##
@@ -78,6 +79,24 @@ if(NOT TENSORRT_FOUND)
   TENSORRT_FOUND ${TENSORRT_FOUND}\n")
 endif()
 
+
+add_message_files(
+  DIRECTORY msg
+  FILES
+  cloud_info.msg
+  submap.msg
+  loop_info.msg
+  semantic_info.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  std_msgs
+  nav_msgs
+  sensor_msgs
+)
+
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -93,6 +112,7 @@ catkin_package(
   DEPENDS
     YAML_CPP
     PCL
+    GTSAM
   CFG_EXTRAS
     tensorrt-config.cmake
 )
@@ -135,7 +155,7 @@ set(semantic_lib_SOURCES src/segnet/net.cpp src/segnet/selector.cpp)
 
 if(TENSORRT_FOUND)
   message("Building TensorRT")
-  list(APPEND semantic_lib_SOURCES src/netTensorRT.cpp)
+  list(APPEND semantic_lib_SOURCES src/segnet/netTensorRT.cpp)
 endif()
 
 # make the library and link stuff to it
@@ -155,43 +175,14 @@ target_link_libraries(semantic_lib
 # link directories
 # link_directories(
 # 	src/include
+#   src/segnet 
 # 	${PCL_LIBRARY_DIRS}
 #   ${OpenCV_LIBRARY_DIRS}
 #   ${GTSAM_LIBRARY_DIRS}
-#   ${rangenet_lib_LIBRARIES} ####
+#   ${semantic_lib_SOURCES} ####
 #   ${TENSORRT_LIBRARIES}  ####
 # )
 
-add_message_files(
-  DIRECTORY msg
-  FILES
-  cloud_info.msg
-  submap.msg
-  loop_info.msg
-  semantic_info.msg
-)
-
-generate_messages(
-  DEPENDENCIES
-  geometry_msgs
-  std_msgs
-  nav_msgs
-  sensor_msgs
-)
-
-catkin_package(
-  INCLUDE_DIRS src/include
-  DEPENDS PCL GTSAM
-
-  CATKIN_DEPENDS 
-  pcl_ros
-  std_msgs
-  nav_msgs
-  geometry_msgs
-  sensor_msgs
-  message_runtime 
-  message_generation
-)
 
 
 ###########
@@ -199,7 +190,7 @@ catkin_package(
 ###########
 
 # Laser Pretreatment  新增laser预处理
-add_executable(${PROJECT_NAME}_laserPretreatment src/node/laserPretreatmentNode.cpp src/core/laserPretreatment.cpp)
+add_executable(${PROJECT_NAME}_laserPretreatment src/node/laserPretreatmentNode.cpp)
 add_dependencies(${PROJECT_NAME}_laserPretreatment ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_laserPretreatment ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 
@@ -215,9 +206,9 @@ target_compile_options(${PROJECT_NAME}_odomEstimation PRIVATE ${OpenMP_CXX_FLAGS
 target_link_libraries(${PROJECT_NAME}_odomEstimation ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS} gtsam)
 
 # Semantic Fusion
-add_executable(${PROJECT_NAME}_semanticFusionNode src/node/semanticFusionNode.cpp)
-add_dependencies(${PROJECT_NAME}_semanticFusionNode ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(${PROJECT_NAME}_semanticFusionNode ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} semantic_lib)
+add_executable(${PROJECT_NAME}_semanticFusion src/node/semanticFusionNode.cpp)
+add_dependencies(${PROJECT_NAME}_semanticFusion ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(${PROJECT_NAME}_semanticFusion ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} semantic_lib)
 
 # Make SubMap
 # add_executable(${PROJECT_NAME}_makeSubMap src/makeSubMap.cpp)

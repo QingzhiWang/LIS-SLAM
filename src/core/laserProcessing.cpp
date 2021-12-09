@@ -70,13 +70,13 @@ void LaserProcessing ::resetParameters() {
   cloudSmoothness.clear();
 
   for (int i=0;i<N_SCAN;++i){
-    startRingIndex = 0;
-    endRingIndex = 0;
+    startRingIndex[i] = 0;
+    endRingIndex[i] = 0;
   }
 
   for (int i = 0; i < N_SCAN * Horizon_SCAN; ++i) {
     pointColInd[i] = 0;
-    pointRange = 0;
+    pointRange[i] = 0;
     cloudCurvature[i] = 0;
     cloudNeighborPicked[i] = 0;
     cloudLabel[i] = 0;
@@ -87,11 +87,13 @@ void LaserProcessing ::resetParameters() {
  *
  *****************************************/
 bool LaserProcessing ::distortionRemoval() {
+
   if (!cachePointCloud()) return false;
 
   if (!deskewInfo()) return false;
 
   projectPointCloud();
+
   cloudExtraction();
 
   return true;
@@ -114,8 +116,6 @@ void LaserProcessing ::featureExtraction() {
 bool LaserProcessing ::cachePointCloud() {
   // cache point cloud
   if (cloudQueue.size() <= 2) return false;
-
-  std::lock_guard<std::mutex> lock1(cloLock);
 
   // convert cloud
   cloLock.lock();

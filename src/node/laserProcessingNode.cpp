@@ -37,10 +37,10 @@ class LaserProcessingNode : public ParamServer {
       subImu = nh.subscribe<sensor_msgs::Imu>(
           imuTopic, 2000, &LaserProcessingNode::imuHandler, this,
           ros::TransportHints().tcpNoDelay());
-      subOdom = nh.subscribe<nav_msgs::Odometry>(
-          odomTopic + "_incremental", 2000,
-          &LaserProcessingNode::odometryHandler, this,
-          ros::TransportHints().tcpNoDelay());
+      // subOdom = nh.subscribe<nav_msgs::Odometry>(
+      //     odomTopic + "_incremental", 2000,
+      //     &LaserProcessingNode::odometryHandler, this,
+      //     ros::TransportHints().tcpNoDelay());
       subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(
           "lis_slam/points_pretreatmented", 5,
           &LaserProcessingNode::cloudHandler, this,
@@ -115,6 +115,7 @@ class LaserProcessingNode : public ParamServer {
         if (lpro.distortionRemoval() == false) {
           continue;
         }
+        // ROS_WARN("Laser Distortion Removal end!");
 
         //线面特征提取
         lpro.featureExtraction();
@@ -130,7 +131,7 @@ class LaserProcessingNode : public ParamServer {
         total_frame++;
         float time_temp = elapsed_seconds.count() * 1000;
         total_time += time_temp;
-        ROS_INFO("Average laser processing time %f ms \n \n",
+        ROS_INFO("Average laser processing time %f ms",
                  total_time / total_frame);
 
         //发布coudInfo

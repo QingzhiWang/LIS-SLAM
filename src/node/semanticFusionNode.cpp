@@ -77,8 +77,37 @@ class SemanticFusionNode : public ParamServer {
   }
 
   void laserCloudInfoHandler(const lis_slam::cloud_infoConstPtr& msgIn) {
-    std::lock_guard<std::mutex> lock(mtx);
-    cloudInfoQueue.push_back(*msgIn);
+    // std::lock_guard<std::mutex> lock(mtx);
+    // cloudInfoQueue.push_back(*msgIn);
+
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
+
+    // extract info and feature cloud
+    cloudInfo = *msgIn;
+
+    // extract time stamp
+    cloudHeader = cloudInfo.header;
+
+    currentCloudMsg = cloudInfo.cloud_deskewed;
+    currentCloudCornerMsg = cloudInfo.cloud_corner;
+    currentCloudSurfMsg = cloudInfo.cloud_surface;
+
+    pcl::fromROSMsg(currentCloudMsg, *currentCloudIn);
+    pcl::fromROSMsg(currentCloudCornerMsg, *currentCloudCornerIn);
+    pcl::fromROSMsg(currentCloudSurfMsg, *currentCloudSurfIn);
+
+    semanticSegmentation();
+
+    publishCloudInfo();
+
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<float> elapsed_seconds = end - start;
+    total_frame++;
+    float time_temp = elapsed_seconds.count() * 1000;
+    total_time += time_temp;
+    ROS_INFO("Average semantic fusion time %f ms \n \n",
+             total_time / total_frame);
   }
 
   void SemanticFusionNodeThread() {
@@ -214,12 +243,12 @@ int main(int argc, char** argv) {
 
   ROS_INFO("\033[1;32m----> Semantic Fusion Node Started.\033[0m");
 
-  std::thread semantic_fusion_thread(
-      &SemanticFusionNode::SemanticFusionNodeThread, &SFN);
+  // std::thread semantic_fusion_thread(
+  //     &SemanticFusionNode::SemanticFusionNodeThread, &SFN);
 
   ros::spin();
 
-  semantic_fusion_thread.join();
+  // semantic_fusion_thread.join();
 
   return 0;
 }
