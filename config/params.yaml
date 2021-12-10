@@ -8,11 +8,12 @@ lis_slam:
   useImu: true       # If using IMU data, set to "true" 
   loopClosureEnableFlag: true
   
-  RESULT_PATH: "~/AWorkSpace/LIS-SLAM/src/lis-slam/assets/trajectory/00_pred_loop.txt"
-  MODEL_PATH: "~/AWorkSpace/darknet53"
+  PROJECT_PATH: "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/"
+  RESULT_PATH: "./assets/trajectory/00_pred_loop.txt"
+  MODEL_PATH: "/home/wqz/AWorkSpace/darknet53"
   # Export settings
   savePCD: false                              # https://github.com/TixiaoShan/LIO-SAM/issues/3
-  savePCDDirectory: "~/AWorkSpace/LIS-SLAM/src/lis-slam/assets/MyNoLoop/kitti_05/"        # in your home folder, starts and ends with "/". Warning: the code deletes "LOAM" folder then recreates it. See "mapOptimization" for implementation
+  savePCDDirectory: "./assets/MyNoLoop/kitti_00/"        # in your home folder, starts and ends with "/". Warning: the code deletes "LOAM" folder then recreates it. See "mapOptimization" for implementation
 
 
   useOdometryPitchPrediction: true   #  在结构性较强时可使用前端里程计pitch预测值
@@ -130,11 +131,11 @@ lis_slam:
 
 
   #新增 make Submap
-  keyFrameMiniDistance: 0.2  #0.2
-  keyFrameMiniYaw : 0.13  # 0.3-indoor    0.15-outdoor
+  keyFrameMiniDistance: 0.6  #0.2
+  keyFrameMiniYaw : 0.4  # 0.2-indoor    0.4-outdoor
 
-  subMapYawMax: 0.4  # 0.6-indoor    0.4outdoor
-  subMapFramesSize: 7  #10
+  subMapYawMax: 0.9  # 0.6-indoor    0.9outdoor
+  subMapFramesSize: 20  #10
   subMapMaxTime: 3.0  #3.0
 
   subMapOptmizationDistanceThresh: 1.2   #1.5   1.3       

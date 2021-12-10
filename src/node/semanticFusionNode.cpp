@@ -4,13 +4,13 @@
 #include "lis_slam/cloud_info.h"
 #include "lis_slam/semantic_info.h"
 #include "rangenetAPI.h"
-#include "utility.h"
 
-class SemanticFusionNode : public ParamServer {
+class SemanticFusionNode : public ParamServer, SemanticLabelParam {
  private:
   double total_time = 0;
   int total_frame = 0;
 
+  ros::Subscriber subCloudRaw;
   ros::Subscriber subCloudInfo;
 
   ros::Publisher pubSemanticInfo;
@@ -28,22 +28,32 @@ class SemanticFusionNode : public ParamServer {
   pcl::PointCloud<PointType>::Ptr currentCloudIn;
   pcl::PointCloud<PointType>::Ptr currentCloudInDS;
 
-  sensor_msgs::PointCloud2 currentCloudCornerMsg;
-  pcl::PointCloud<PointType>::Ptr currentCloudCornerIn;
-  pcl::PointCloud<PointType>::Ptr currentCloudCornerInDS;
+  // sensor_msgs::PointCloud2 currentCloudCornerMsg;
+  // pcl::PointCloud<PointType>::Ptr currentCloudCornerIn;
+  // pcl::PointCloud<PointType>::Ptr currentCloudCornerInDS;
 
-  sensor_msgs::PointCloud2 currentCloudSurfMsg;
-  pcl::PointCloud<PointType>::Ptr currentCloudSurfIn;
-  pcl::PointCloud<PointType>::Ptr currentCloudSurfInDS;
+  // sensor_msgs::PointCloud2 currentCloudSurfMsg;
+  // pcl::PointCloud<PointType>::Ptr currentCloudSurfIn;
+  // pcl::PointCloud<PointType>::Ptr currentCloudSurfInDS;
 
   pcl::VoxelGrid<PointType> downSizeFilter;
 
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr RGBCloudOut;
-  pcl::PointCloud<PointXYZIL>::Ptr semanticCloudOut;
+  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr semanticCloudOut;
+  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr dynamicCloudOut;
+  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr staticCloudOut;
+  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr outlierCloudOut;
+
   lis_slam::semantic_info semanticInfo;
+
+  // RangenetAPI range_net;
+  RangenetAPI range_net = RangenetAPI(MODEL_PATH);
 
  public:
   SemanticFusionNode() {
+    // subCloudRaw = nh.subscribe<sensor_msgs::PointCloud2>(
+    //     pointCloudTopic, 10,
+    //     &SemanticFusionNode::laserCloudRawHandler, this);
+
     subCloudInfo = nh.subscribe<lis_slam::cloud_info>(
         "lis_slam/odom_estimation/cloud_info", 10,
         &SemanticFusionNode::laserCloudInfoHandler, this);
@@ -66,40 +76,79 @@ class SemanticFusionNode : public ParamServer {
   void allocateMemory() {
     currentCloudIn.reset(new pcl::PointCloud<PointType>());
     currentCloudInDS.reset(new pcl::PointCloud<PointType>());
-    currentCloudCornerIn.reset(new pcl::PointCloud<PointType>());
-    currentCloudCornerInDS.reset(new pcl::PointCloud<PointType>());
-    currentCloudSurfIn.reset(new pcl::PointCloud<PointType>());
-    currentCloudSurfInDS.reset(new pcl::PointCloud<PointType>());
+    // currentCloudCornerIn.reset(new pcl::PointCloud<PointType>());
+    // currentCloudCornerInDS.reset(new pcl::PointCloud<PointType>());
+    // currentCloudSurfIn.reset(new pcl::PointCloud<PointType>());
+    // currentCloudSurfInDS.reset(new pcl::PointCloud<PointType>());
 
-    RGBCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+    semanticCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
+    dynamicCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
+    staticCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
+    outlierCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
+  }
 
-    semanticCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
+  void resetParameters() {
+    currentCloudIn->clear();
+    currentCloudInDS->clear();
+    // currentCloudCornerIn->clear();
+    // currentCloudCornerInDS->clear();
+    // currentCloudSurfIn->clear();
+    // currentCloudSurfInDS->clear();
+
+    semanticCloudOut->clear();
+    dynamicCloudOut->clear();
+    staticCloudOut->clear();
+    outlierCloudOut->clear();
+  }
+
+  void laserCloudRawHandler(const sensor_msgs::PointCloud2ConstPtr& msgIn) {
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
+
+    currentCloudMsg = *msgIn;
+    cloudHeader = msgIn->header;
+
+    pcl::fromROSMsg(currentCloudMsg, *currentCloudIn);
+
+    range_net.infer(*currentCloudIn);
+    semanticCloudOut = range_net.getSemanticCloud();
+
+    publishCloudInfo();
+
+    resetParameters();
+
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<float> elapsed_seconds = end - start;
+    total_frame++;
+    float time_temp = elapsed_seconds.count() * 1000;
+    total_time += time_temp;
+    ROS_INFO("Average semantic fusion time %f ms \n", total_time / total_frame);
   }
 
   void laserCloudInfoHandler(const lis_slam::cloud_infoConstPtr& msgIn) {
-    // std::lock_guard<std::mutex> lock(mtx);
-    // cloudInfoQueue.push_back(*msgIn);
-
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
 
     // extract info and feature cloud
     cloudInfo = *msgIn;
-
-    // extract time stamp
     cloudHeader = cloudInfo.header;
 
     currentCloudMsg = cloudInfo.cloud_deskewed;
-    currentCloudCornerMsg = cloudInfo.cloud_corner;
-    currentCloudSurfMsg = cloudInfo.cloud_surface;
+    // currentCloudCornerMsg = cloudInfo.cloud_corner;
+    // currentCloudSurfMsg = cloudInfo.cloud_surface;
 
     pcl::fromROSMsg(currentCloudMsg, *currentCloudIn);
-    pcl::fromROSMsg(currentCloudCornerMsg, *currentCloudCornerIn);
-    pcl::fromROSMsg(currentCloudSurfMsg, *currentCloudSurfIn);
+    // pcl::fromROSMsg(currentCloudCornerMsg, *currentCloudCornerIn);
+    // pcl::fromROSMsg(currentCloudSurfMsg, *currentCloudSurfIn);
 
-    semanticSegmentation();
+    range_net.infer(*currentCloudIn);
+    semanticCloudOut = range_net.getSemanticCloud();
+
+    categoryMapping();
 
     publishCloudInfo();
+
+    resetParameters();
 
     end = std::chrono::system_clock::now();
     std::chrono::duration<float> elapsed_seconds = end - start;
@@ -110,129 +159,64 @@ class SemanticFusionNode : public ParamServer {
              total_time / total_frame);
   }
 
-  void SemanticFusionNodeThread() {
-    while (ros::ok()) {
-      std::chrono::time_point<std::chrono::system_clock> start, end;
-      start = std::chrono::system_clock::now();
 
-      if (cloudInfoQueue.empty()) {
-        continue;
-      }
+  void categoryMapping() {
+    uint32_t num_points = semanticCloudOut->size();
 
-      // extract info and feature cloud
-      mtx.lock();
-      cloudInfo = cloudInfoQueue.front();
-      cloudInfoQueue.pop_front();
-      mtx.unlock();
-
-      // extract time stamp
-      cloudHeader = cloudInfo.header;
-
-      currentCloudMsg = cloudInfo.cloud_deskewed;
-      currentCloudCornerMsg = cloudInfo.cloud_corner;
-      currentCloudSurfMsg = cloudInfo.cloud_surface;
-
-      pcl::fromROSMsg(currentCloudMsg, *currentCloudIn);
-      pcl::fromROSMsg(currentCloudCornerMsg, *currentCloudCornerIn);
-      pcl::fromROSMsg(currentCloudSurfMsg, *currentCloudSurfIn);
-
-      semanticSegmentation();
-
-      publishCloudInfo();
-
-      end = std::chrono::system_clock::now();
-      std::chrono::duration<float> elapsed_seconds = end - start;
-      total_frame++;
-      float time_temp = elapsed_seconds.count() * 1000;
-      total_time += time_temp;
-      ROS_INFO("Average semantic fusion time %f ms \n \n",
-               total_time / total_frame);
-    }
-  }
-
-  void semanticSegmentation() {
-    class RangenetAPI range_net(MODEL_PATH);
-
-    uint32_t num_points = currentCloudIn->points.size();
-
-    std::cout << "点云数量：" << num_points << std::endl;
-
-    std::vector<float> values;
-
-    for (size_t i = 0; i < num_points; i++) {
-      values.push_back(currentCloudIn->points[i].x);
-      values.push_back(currentCloudIn->points[i].y);
-      values.push_back(currentCloudIn->points[i].z);
-      values.push_back(currentCloudIn->points[i].intensity);
-    }
-
-    range_net.infer(values, num_points);
-    std::vector<std::vector<float>> semantic_scan = range_net.getSemanticScan();
-
-    std::vector<int> label_map = range_net.getLabelMap();
-    // std::map<uint32_t, semantic_color> color_map = range_net.getColorMap();
-
-    std::vector<cv::Vec3f> points = range_net.getPointCloud(values);
-    std::vector<cv::Vec3b> color_mask = range_net.getColorMask();
-
-    std::cout << "num_points size: " << num_points << std::endl;
-    std::cout << "semantic_scan size: " << semantic_scan.size() << std::endl;
-    std::cout << "points size: " << points.size() << std::endl;
-
-    std::vector<uint32_t> labels;
-    std::vector<float> labels_prob;
-    labels.resize(num_points);
-    labels_prob.resize(num_points);
-
-    for (uint32_t i = 0; i < num_points; ++i) {
-      labels_prob[i] = 0;
-      for (int32_t j = 0; j < 20; ++j) {
-        if (labels_prob[i] <= semantic_scan[i][j]) {
-          labels[i] = label_map[j];
-          labels_prob[i] = semantic_scan[i][j];
-        }
-      }
-    }
-
-    for (size_t i = 0; i < points.size(); i++) {
-      pcl::PointXYZRGB p;
-
-      // 剔除动态物体(假剔除，因为将静态的目标也剔除掉了) 目前仅剔除 car
-      // if(color_mask[i][0] == 245 && color_mask[i][1] == 150 &&
-      // color_mask[i][2] == 100)
-      //     continue;
-
-      p.x = points[i][0];
-      p.y = points[i][1];
-      p.z = points[i][2];
-      p.b = color_mask[i][0];
-      p.g = color_mask[i][1];
-      p.r = color_mask[i][2];
-      RGBCloudOut->points.push_back(p);
-
-      PointXYZIL point;
-
-      point.x = currentCloudIn->points[i].x;
-      point.y = currentCloudIn->points[i].y;
-      point.z = currentCloudIn->points[i].z;
-      point.intensity = currentCloudIn->points[i].intensity;
-      point.label = labels[i];
-      semanticCloudOut->points.push_back(point);
+    for (int i = 0; i < num_points; ++i) {
+      if (UsingLableMap[semanticCloudOut->points[i].label] == 10)
+        dynamicCloudOut->points.push_back(semanticCloudOut->points[i]);
+      else if (UsingLableMap[semanticCloudOut->points[i].label] == 40 ||
+               UsingLableMap[semanticCloudOut->points[i].label] == 81)
+        staticCloudOut->points.push_back(semanticCloudOut->points[i]);
+      else
+        outlierCloudOut->points.push_back(semanticCloudOut->points[i]);
     }
   }
 
   void publishCloudInfo() {
-    sensor_msgs::PointCloud2 tempCloud;
+    semanticInfo.header = cloudHeader;
+    semanticInfo.imuAvailable = cloudInfo.imuAvailable;
+    semanticInfo.odomAvailable = cloudInfo.odomAvailable;
+    
+    semanticInfo.imuRollInit = cloudInfo.imuRollInit;
+    semanticInfo.imuPitchInit = cloudInfo.imuPitchInit;
+    semanticInfo.imuYawInit = cloudInfo.imuYawInit;
 
-    pcl::toROSMsg(*RGBCloudOut, tempCloud);
-    tempCloud.header.stamp = cloudHeader.stamp;
-    tempCloud.header.frame_id = lidarFrame;
-    pubSemanticRGBCloud.publish(tempCloud);
+    semanticInfo.initialGuessX = cloudInfo.initialGuessX;
+    semanticInfo.initialGuessY = cloudInfo.initialGuessY;
+    semanticInfo.initialGuessZ = cloudInfo.initialGuessZ;
+    semanticInfo.initialGuessRoll = cloudInfo.initialGuessRoll;
+    semanticInfo.initialGuessPitch = cloudInfo.initialGuessPitch;
+    semanticInfo.initialGuessYaw = cloudInfo.initialGuessYaw;
+
+    semanticInfo.cloud_corner = cloudInfo.cloud_corner;
+    semanticInfo.cloud_surface = cloudInfo.cloud_surface;
+
+
+    sensor_msgs::PointCloud2 tempCloud;
 
     pcl::toROSMsg(*semanticCloudOut, tempCloud);
     tempCloud.header.stamp = cloudHeader.stamp;
     tempCloud.header.frame_id = lidarFrame;
     pubSemanticCloud.publish(tempCloud);
+    semanticInfo.cloud_semantic = tempCloud;
+
+    pcl::toROSMsg(*dynamicCloudOut, tempCloud);
+    tempCloud.header.stamp = cloudHeader.stamp;
+    tempCloud.header.frame_id = lidarFrame;
+    semanticInfo.cloud_dynamic = tempCloud;
+
+    pcl::toROSMsg(*staticCloudOut, tempCloud);
+    tempCloud.header.stamp = cloudHeader.stamp;
+    tempCloud.header.frame_id = lidarFrame;
+    semanticInfo.cloud_static = tempCloud;
+
+    pcl::toROSMsg(*outlierCloudOut, tempCloud);
+    tempCloud.header.stamp = cloudHeader.stamp;
+    tempCloud.header.frame_id = lidarFrame;
+    semanticInfo.cloud_outlier = tempCloud;
+
   }
 };
 
@@ -243,12 +227,7 @@ int main(int argc, char** argv) {
 
   ROS_INFO("\033[1;32m----> Semantic Fusion Node Started.\033[0m");
 
-  // std::thread semantic_fusion_thread(
-  //     &SemanticFusionNode::SemanticFusionNodeThread, &SFN);
-
   ros::spin();
-
-  // semantic_fusion_thread.join();
 
   return 0;
 }

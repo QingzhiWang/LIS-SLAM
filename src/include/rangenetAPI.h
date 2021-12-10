@@ -14,44 +14,12 @@
 
 namespace cl = rangenet::segmentation;
 
-/** \brief A class of rangenet apis.
- *
- * \author Xieyuanli Chen
- */
 
-class RangenetAPI {
+class RangenetAPI : public ParamServer, SemanticLabelParam {
  public:
   typedef std::tuple<u_char, u_char, u_char> semantic_color;
 
-  RangenetAPI(){};
-  RangenetAPI(const string& params) {
-    std::string model_path;
-    //   if (params.hasParam("model_path")) {
-    //     model_path = std::string(params["model_path"]);
-    //   }
-    //   else{
-    //     std::cerr << "No model could be found!" << std::endl;
-    //   }
-    model_path = params;
-    std::string backend = "tensorrt";
-
-    // initialize a network
-    net = cl::make_net(model_path, backend);
-  }
-
-  /** @brief      Infer logits from LiDAR scan **/
-  void infer(const std::vector<float>& scan, const uint32_t num_points) {
-    this->semantic_scan = net->infer(scan, num_points);
-    this->num_points = num_points;
-  }
-
-  /** @brief      Get the label map from rangenet_lib **/
-  std::vector<int> getLabelMap() { return net->getLabelMap(); }
-
-  /** @brief      Get the color map from rangenet_lib **/
-  std::map<uint32_t, semantic_color> getColorMap() {
-    return net->getColorMap();
-  }
+  RangenetAPI(const string& params);
 
   /** @brief      Get the point cloud **/
   std::vector<cv::Vec3f> getPointCloud(const std::vector<float>& scan) {
@@ -63,13 +31,39 @@ class RangenetAPI {
     return net->getLabels(semantic_scan, num_points);
   }
 
+  /** @brief      infer **/
+  void infer(pcl::PointCloud<PointType>& currentCloudIn);
+
   /** @brief      Get semantic scan **/
   std::vector<std::vector<float>> getSemanticScan() { return semantic_scan; }
 
+  /** @brief      Get Point Cloud With Label**/
+  pcl::PointCloud<PointXYZIL>::Ptr getLabelPointCloud() {
+    return semanticLabelCloud;
+  }
+
+  /** @brief      Get Point Cloud With RGB **/
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr getRGBPointCloud() {
+    return semanticRGBCloud;
+  }
+
+  /** @brief      Get Point Cloud With RGB and Label **/
+  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr getSemanticCloud() {
+    return semanticCloud;
+  }
+
  protected:
   std::unique_ptr<cl::Net> net;
+
   std::vector<std::vector<float>> semantic_scan;
   uint32_t num_points;
+
+  std::vector<uint32_t> labels;
+  std::vector<cv::Vec3b> colors;
+
+  pcl::PointCloud<PointXYZIL>::Ptr semanticLabelCloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr semanticRGBCloud;
+  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr semanticCloud;
 };
 
 #endif /* RANGENETAPI_H_ */

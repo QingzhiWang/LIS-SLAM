@@ -194,14 +194,48 @@ using_label:
   31: 10     # "bicyclist" to "car"
   32: 10     # "motorcyclist" to "car"
   40: 40     # "road"
-  44: 44     # "parking"
-  48: 48     # "sidewalk"
+  44: 40     # "parking"
+  48: 40     # "sidewalk"
   49: 70     # "other-ground" to "vegetation"
-  50: 50     # "building"
-  51: 51     # "fence"
+  50: 40     # "building"
+  51: 40     # "fence"
   70: 70     # "vegetation" Not Used
-  71: 71     # "trunk"
+  71: 81     # "trunk"
   72: 70     # "terrain" to "vegetation"
-  80: 80     # "pole"
+  80: 81     # "pole"
   81: 81     # "traffic-sign"
 
+  # 10: 10     # "car" There is a probability of dynamic objects
+  # 11: 10     # "bicycle" to "car"
+  # 15: 10     # "motorcycle" to "car"
+  # 18: 10     # "truck" to "car"
+  # 20: 10     # "other-vehicle" to "car"
+  # 30: 10     # "person" to "car"
+  # 31: 10     # "bicyclist" to "car"
+  # 32: 10     # "motorcyclist" to "car"
+  # 40: 40     # "road"
+  # 44: 44     # "parking"
+  # 48: 48     # "sidewalk"
+  # 49: 70     # "other-ground" to "vegetation"
+  # 50: 50     # "building"
+  # 51: 51     # "fence"
+  # 70: 70     # "vegetation" Not Used
+  # 71: 71     # "trunk"
+  # 72: 70     # "terrain" to "vegetation"
+  # 80: 80     # "pole"
+  # 81: 81     # "traffic-sign"
+
+  
+  # 10 ---- dynamic
+
+  # 40 ---- road
+  # 44 ---- parking
+  # 48 ---- sideWalk
+  # 50 ---- building
+  # 51 ---- fence
+
+  # 71 ---- trunk
+  # 80 ---- pole
+  # 81 ---- traffic-sign
+
+  # 70 ---- Have outlier

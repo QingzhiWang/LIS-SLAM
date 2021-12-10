@@ -206,9 +206,10 @@ target_compile_options(${PROJECT_NAME}_odomEstimation PRIVATE ${OpenMP_CXX_FLAGS
 target_link_libraries(${PROJECT_NAME}_odomEstimation ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS} gtsam)
 
 # Semantic Fusion
-add_executable(${PROJECT_NAME}_semanticFusion src/node/semanticFusionNode.cpp)
+add_executable(${PROJECT_NAME}_semanticFusion src/node/semanticFusionNode.cpp src/core/rangenetAPI.cpp)
 add_dependencies(${PROJECT_NAME}_semanticFusion ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(${PROJECT_NAME}_semanticFusion ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} semantic_lib)
+target_compile_options(${PROJECT_NAME}_semanticFusion PRIVATE ${OpenMP_CXX_FLAGS})
+target_link_libraries(${PROJECT_NAME}_semanticFusion ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} semantic_lib)
 
 # Make SubMap
 # add_executable(${PROJECT_NAME}_makeSubMap src/makeSubMap.cpp)

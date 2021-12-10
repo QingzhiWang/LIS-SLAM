@@ -57,53 +57,14 @@
 #include <unordered_map>
 #include <vector>
 
+// yamlcpp
+#include "yaml-cpp/yaml.h"
+
 using namespace std;
 
-/*************************************
-0: 0      # "unlabeled", and others ignored
-1: 10     # "car"
-2: 11     # "bicycle"
-3: 15     # "motorcycle"
-4: 18     # "truck"
-5: 20     # "other-vehicle"
-6: 30     # "person"
-7: 31     # "bicyclist"
-8: 32     # "motorcyclist"
-9: 40     # "road"
-10: 44    # "parking"
-11: 48    # "sidewalk"
-12: 49    # "other-ground"
-13: 50    # "building"
-14: 51    # "fence"
-15: 70    # "vegetation"
-16: 71    # "trunk"
-17: 72    # "terrain"
-18: 80    # "pole"
-19: 81    # "traffic-sign"
-1              # "dynamic-object"
-*************************************/
-extern map<int, string> LABEL;
-// LABEL[0] = "unlabeled";
-// LABEL[10] = "car";
-// LABEL[11] = "bicycle";
-// LABEL[15] = "motorcycle";
-// LABEL[18] = "truck";
-// LABEL[20] = "other-vehicle";
-// LABEL[30] = "person";
-// LABEL[31] = "bicyclist";
-// LABEL[32] = "motorcyclist";
-// LABEL[40] = "road";
-// LABEL[44] = "parking";
-// LABEL[48] = "sidewalk";
-// LABEL[49] = "other-ground";
-// LABEL[50] = "building";
-// LABEL[51] = "fence";
-// LABEL[70] = "vegetation";
-// LABEL[71] = "trunk";
-// LABEL[72] = "terrain";
-// LABEL[80] = "pole";
-// LABEL[81] = "traffic-sign";
-// LABEL[1] = "dynamic-object";
+
+
+typedef pcl::PointXYZI PointType;
 
 // Velodyne
 struct PointXYZIRT {
@@ -150,7 +111,145 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(
                                                                    label,
                                                                    label))
 
-typedef pcl::PointXYZI PointType;
+
+
+/*************************************
+  10: 10     # "car" There is a probability of dynamic objects
+  11: 10     # "bicycle" to "car"
+  15: 10     # "motorcycle" to "car"
+  18: 10     # "truck" to "car"
+  20: 10     # "other-vehicle" to "car"
+  30: 10     # "person" to "car"
+  31: 10     # "bicyclist" to "car"
+  32: 10     # "motorcyclist" to "car"
+  40: 40     # "road"
+  44: 40     # "parking"
+  48: 40     # "sidewalk"
+  49: 70     # "other-ground" to "vegetation"
+  50: 40     # "building"
+  51: 40     # "fence"
+  70: 70     # "vegetation" Not Used
+  71: 81     # "trunk"
+  72: 70     # "terrain" to "vegetation"
+  80: 81     # "pole"
+  81: 81     # "traffic-sign"
+
+  # 10 ---- dynamic
+
+  # Planar ---- 40
+  # 40 ---- road
+  # 44 ---- parking
+  # 48 ---- sideWalk
+  # 50 ---- building
+  # 51 ---- fence
+  
+  # edge ---- 81
+  # 71 ---- trunk
+  # 80 ---- pole
+  # 81 ---- traffic-sign
+
+  # 70 ---- Have outlier
+*************************************/
+
+class SemanticLabelParam {
+ public:
+  typedef std::tuple<u_char, u_char, u_char> color;
+
+  ros::NodeHandle nodeH;
+  std::string PROJECT_PATH;
+
+  YAML::Node label_yaml;
+  // problem properties
+  int32_t LearningSize;  // number of classes to differ from
+  int32_t UsingSize;
+
+  std::vector<int> LearningLableMap;
+  std::map<uint32_t, color> ColorMap;
+  std::map<uint32_t, color> Argmax2RGB;
+
+  std::map<uint32_t, uint32_t> UsingLableMap;
+  SemanticLabelParam() {
+    nodeH.param<std::string>("lis_slam/PROJECT_PATH", PROJECT_PATH,
+                          "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/");
+    // Try to get the config file as well 
+    ///home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/config/label.yaml
+    std::string yaml_path = PROJECT_PATH + "config/label.yaml";
+    try {
+      label_yaml = YAML::LoadFile(yaml_path);
+    } catch (YAML::Exception &ex) {
+      throw std::runtime_error("Can't open label.yaml from " + yaml_path);
+    }
+
+    // Get label dictionary from yaml cfg
+    YAML::Node color_map;
+    try {
+      color_map = label_yaml["color_map"];
+    } catch (YAML::Exception &ex) {
+      std::cerr << "Can't open one the label dictionary from cfg in " +
+                       yaml_path
+                << std::endl;
+      throw ex;
+    }
+
+    // Generate string map from xentropy indexes (that we'll get from argmax)
+    YAML::const_iterator it;
+
+    for (it = color_map.begin(); it != color_map.end(); ++it) {
+      // Get label and key
+      int key = it->first.as<int>();  // <- key
+      SemanticLabelParam::color color = std::make_tuple(
+          static_cast<u_char>(color_map[key][0].as<unsigned int>()),
+          static_cast<u_char>(color_map[key][1].as<unsigned int>()),
+          static_cast<u_char>(color_map[key][2].as<unsigned int>()));
+      ColorMap[key] = color;
+    }
+
+    // Get learning class labels from yaml cfg
+    YAML::Node learning_class;
+    try {
+      learning_class = label_yaml["learning_map_inv"];
+    } catch (YAML::Exception &ex) {
+      std::cerr << "Can't open one the label dictionary from cfg in " +
+                       yaml_path
+                << std::endl;
+      throw ex;
+    }
+
+    // get the number of classes
+    LearningSize = learning_class.size();
+
+    // remapping the colormap lookup table
+    LearningLableMap.resize(LearningSize);
+    for (it = learning_class.begin(); it != learning_class.end(); ++it) {
+      int key = it->first.as<int>();  // <- key
+      Argmax2RGB[key] = ColorMap[learning_class[key].as<unsigned int>()];
+      LearningLableMap[key] = learning_class[key].as<unsigned int>();
+    }
+
+
+    // Get learning class labels from yaml cfg
+    YAML::Node using_class;
+    try {
+      using_class = label_yaml["using_label"];
+    } catch (YAML::Exception &ex) {
+      std::cerr << "Can't open one the label dictionary from cfg in " +
+                       yaml_path
+                << std::endl;
+      throw ex;
+    }
+
+    // get the number of classes
+    UsingSize = using_class.size();
+
+    for (it = using_class.begin(); it != using_class.end(); ++it) {
+      int key = it->first.as<int>();  // <- key
+      UsingLableMap[key] = using_class[key].as<unsigned int>();
+    }
+  }
+};
+
+
+
 
 class ParamServer {
  public:
@@ -158,6 +257,7 @@ class ParamServer {
 
   bool useImu;
 
+  std::string PROJECT_PATH;
   std::string RESULT_PATH;
   std::string MODEL_PATH;
 
@@ -279,8 +379,11 @@ class ParamServer {
   ParamServer() {
     nh.param<bool>("lis_slam/useImu", useImu, true);
 
+    nh.param<std::string>("lis_slam/PROJECT_PATH", PROJECT_PATH,
+                          "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/");
+
     nh.param<std::string>("lis_slam/RESULT_PATH", RESULT_PATH,
-                          "../assets/trajectory/test_pred.txt");
+                          "./assets/trajectory/test_pred.txt");
     nh.param<std::string>("lis_slam/MODEL_PATH", MODEL_PATH, "./");
 
     nh.param<std::string>("lis_slam/pointCloudTopic", pointCloudTopic,
@@ -478,10 +581,9 @@ static sensor_msgs::PointCloud2 publishRawCloud(
   return tempCloud;
 }
 
-static sensor_msgs::PointCloud2 publishCloud(ros::Publisher *thisPub,
-                                      pcl::PointCloud<PointType>::Ptr thisCloud,
-                                      ros::Time thisStamp,
-                                      std::string thisFrame) {
+static sensor_msgs::PointCloud2 publishCloud(
+    ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud,
+    ros::Time thisStamp, std::string thisFrame) {
   sensor_msgs::PointCloud2 tempCloud;
   pcl::toROSMsg(*thisCloud, tempCloud);
   tempCloud.header.stamp = thisStamp;

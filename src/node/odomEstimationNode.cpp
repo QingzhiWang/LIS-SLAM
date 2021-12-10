@@ -199,57 +199,53 @@ class OdomEstimationNode : public ParamServer {
     // std::lock_guard<std::mutex> lock(mtx);
     // cloudInfoQueue.push_back(*msgIn);
 
-      std::chrono::time_point<std::chrono::system_clock> start, end;
-      start = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
 
+    cloudInfo = *msgIn;
 
-      cloudInfo = *msgIn;
+    // extract time stamp
+    timeLaserInfoStamp = cloudInfo.header.stamp;
+    timeLaserInfoCur = timeLaserInfoStamp.toSec();
 
-      // extract time stamp
-      timeLaserInfoStamp = cloudInfo.header.stamp;
-      timeLaserInfoCur = timeLaserInfoStamp.toSec();
+    pcl::fromROSMsg(cloudInfo.cloud_corner, *laserCloudCornerLast);
+    pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSurfLast);
 
-      pcl::fromROSMsg(cloudInfo.cloud_corner, *laserCloudCornerLast);
-      pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSurfLast);
+    // Downsample cloud from current scan
+    downsampleCurrentScan();
+    updateInitialGuess();
 
-      // Downsample cloud from current scan
-      downsampleCurrentScan();
-      updateInitialGuess();
+    if (FirstFlag) {
+      saveKeyFrames();
+      publishOdometry();
+      publishCloudInfo();
+      FirstFlag = false;
+      return;
+    }
 
+    extractSurroundingKeyFrames();
+    scan2SubMapOptimization();
 
-      if (FirstFlag) {
-        saveKeyFrames();
-        publishOdometry();
-        publishCloudInfo();
-        FirstFlag = false;
-        return;
-      }
+    calculateTranslation();
+    if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
+        abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
+        abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) {
+      saveKeyFrames();
+      publishOdometry();
+      publishCloudInfo();
+      publishCloud(&pubKeyFrameId, cloudKeyPoses3D, timeLaserInfoStamp,
+                   mapFrame);
+    }
 
-      extractSurroundingKeyFrames();
-      scan2SubMapOptimization();
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<float> elapsed_seconds = end - start;
+    total_frame++;
+    float time_temp = elapsed_seconds.count() * 1000;
+    total_time += time_temp;
 
-      calculateTranslation();
-      if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
-          abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
-          abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) {
-        saveKeyFrames();
-        publishOdometry();
-        publishCloudInfo();
-        publishCloud(&pubKeyFrameId, cloudKeyPoses3D, timeLaserInfoStamp,
-                     mapFrame);
-      }
-
-      end = std::chrono::system_clock::now();
-      std::chrono::duration<float> elapsed_seconds = end - start;
-      total_frame++;
-      float time_temp = elapsed_seconds.count() * 1000;
-      total_time += time_temp;
-      ROS_INFO("Average odom estimation time %f ms \n",
-               total_time / total_frame);
-
+    ROS_INFO("keyFrameId: %d,  TotalFrameId: %d.", keyFrameId, total_frame);
+    ROS_INFO("Average odom estimation time %f ms", total_time / total_frame);
   }
-
-
 
   void pointAssociateToMap(PointType const* const pi, PointType* const po) {
     po->x = transPointAssociateToMap(0, 0) * pi->x +
@@ -594,7 +590,7 @@ class OdomEstimationNode : public ParamServer {
     // position
     int numPoses = cloudKeyPoses3D->size();
     for (int i = numPoses - 1; i >= 0; --i) {
-      if (timeLaserInfoCur - cloudKeyPoses6D->points[i].time < 10.0)  // 10.0
+      if (timeLaserInfoCur - cloudKeyPoses6D->points[i].time < 6.0)  // 10.0
         surroundingKeyPosesDS->points.push_back(cloudKeyPoses3D->points[i]);
       else
         break;
@@ -644,7 +640,6 @@ class OdomEstimationNode : public ParamServer {
 
     // clear map cache if too large
     if (laserCloudMapContainer.size() > 1000) laserCloudMapContainer.clear();
-    
   }
 
   void scan2SubMapOptimization() {
@@ -1109,15 +1104,15 @@ class OdomEstimationNode : public ParamServer {
     pubLaserOdometryGlobal.publish(laserOdometryROS);
     // Publish TF
     static tf::TransformBroadcaster br;
-    tf::Transform t_odom_to_lidar =
-    tf::Transform(tf::createQuaternionFromRPY(transformTobeMapped[0],
-    transformTobeMapped[1], transformTobeMapped[2]),
-                                                  tf::Vector3(transformTobeMapped[3],
-                                                  transformTobeMapped[4],
-                                                  transformTobeMapped[5]));
-    tf::StampedTransform trans_odom_to_lidar =
-    tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame,
-    "lidar_link"); br.sendTransform(trans_odom_to_lidar);
+    tf::Transform t_odom_to_lidar = tf::Transform(
+        tf::createQuaternionFromRPY(transformTobeMapped[0],
+                                    transformTobeMapped[1],
+                                    transformTobeMapped[2]),
+        tf::Vector3(transformTobeMapped[3], transformTobeMapped[4],
+                    transformTobeMapped[5]));
+    tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(
+        t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, "lidar_link");
+    br.sendTransform(trans_odom_to_lidar);
 
     // Publish odometry for ROS (incremental)
     static bool lastIncreOdomPubFlag = false;

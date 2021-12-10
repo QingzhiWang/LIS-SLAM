@@ -195,14 +195,14 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
+            Max Value: 60.541263580322266
+            Min Value: -64.62408447265625
             Value: true
-          Axis: Z
-          Channel Name: ring
+          Axis: X
+          Channel Name: label
           Class: rviz/PointCloud2
           Color: 255; 255; 255
-          Color Transformer: Intensity
+          Color Transformer: RGB8
           Decay Time: 0
           Enabled: true
           Invert Rainbow: false
@@ -215,7 +215,7 @@ Visualization Manager:
           Size (Pixels): 2
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /lis_slam/points_pretreatmented
+          Topic: /lis_slam/semantic_fusion/semantic_cloud
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -264,7 +264,7 @@ Visualization Manager:
           Color: 0; 255; 0
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -275,11 +275,11 @@ Visualization Manager:
           Size (Pixels): 5
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /lis_slam/feature/cloud_corner
+          Topic: /lis_slam/laser_process/cloud_corner
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -292,7 +292,7 @@ Visualization Manager:
           Color: 255; 85; 255
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -303,12 +303,12 @@ Visualization Manager:
           Size (Pixels): 3
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /lis_slam/feature/cloud_surface
+          Topic: /lis_slam/laser_process/cloud_surface
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
-      Enabled: true
+          Value: true
+      Enabled: false
       Name: Feature Cloud
     - Class: rviz/Group
       Displays:
@@ -689,25 +689,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 185.89358520507812
+      Distance: 56.84037780761719
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -23.64484977722168
-        Y: -34.652896881103516
-        Z: -21.534334182739258
+        X: -11.14849853515625
+        Y: 6.566257476806641
+        Z: -7.071162700653076
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.4897964000701904
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 2.622924327850342
+      Yaw: 1.1547757387161255
     Saved: ~
 Window Geometry:
   Displays:

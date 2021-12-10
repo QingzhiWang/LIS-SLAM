@@ -293,8 +293,8 @@ std::vector<std::vector<float>> NetTensorRT::doProjection(const std::vector<floa
     range_image[int(sorted_proj_ys[i] * _img_w + sorted_proj_xs[i])] = inputs[i];
   }
 
-  std::cout<<"当前图像点数："<<range_image.size()<<std::endl;
-  std::cout<<"当前图像点数："<<range_image[0].size()<<std::endl;
+  // std::cout<<"当前图像点数："<<range_image.size()<<std::endl;
+  // std::cout<<"当前图像点数："<<range_image[0].size()<<std::endl;
 
   return range_image;
 }
