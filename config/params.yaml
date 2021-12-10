@@ -131,8 +131,8 @@ lis_slam:
 
 
   #新增 make Submap
-  keyFrameMiniDistance: 0.6  #0.2
-  keyFrameMiniYaw : 0.4  # 0.2-indoor    0.4-outdoor
+  keyFrameMiniDistance: 1.2  #0.2 kitti 1.2
+  keyFrameMiniYaw : 0.4  # 0.2-indoor    0.4-kitti
 
   subMapYawMax: 0.9  # 0.6-indoor    0.9outdoor
   subMapFramesSize: 20  #10

@@ -1111,7 +1111,7 @@ class OdomEstimationNode : public ParamServer {
         tf::Vector3(transformTobeMapped[3], transformTobeMapped[4],
                     transformTobeMapped[5]));
     tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(
-        t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, "lidar_link");
+        t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, lidarFrame);
     br.sendTransform(trans_odom_to_lidar);
 
     // Publish odometry for ROS (incremental)
