@@ -206,7 +206,22 @@ class SubMapOptmizationNode : public ParamServer, SemanticLabelParam {
   }
 
   void loopClosureThread(){
+    int processID = 0;
+    EPSCGeneration epscGen;
 
+    while(ros::ok()){
+      if(processID<=keyFrameID){
+        keyframe_Ptr curKeyFramePtr;
+        if(keyFrameInfo.find(processID) != keyFrameInfo.end())
+          curKeyFramePtr = keyFrameInfo[processID];
+        
+        epscGen.loopDetection(curKeyFramePtr->cloud_corner, curKeyFramePtr->cloud_surface, 
+        curKeyFramePtr->cloud_semantic,curKeyFramePtr->cloud_static,
+        curKeyFramePtr->init_pose);
+
+        
+      }
+    }
   }
 
   void subMapOptmizationThread(){
@@ -310,7 +325,7 @@ int main(int argc, char **argv) {
   std::thread submap_optmization_process(
       &SubMapOptmizationNode::subMapOptmizationThread, &SON);
 
-  ROS_INFO("\033[1;32m----> Laser Processing Node Started.\033[0m");
+  ROS_INFO("\033[1;32m----> SubMap Optmization Node Started.\033[0m");
 
   //   ros::MultiThreadedSpinner spinner(3);
   //   spinner.spin();
