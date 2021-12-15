@@ -4,7 +4,6 @@
 #ifndef RANGENETAPI_H_
 #define RANGENETAPI_H_
 
-#include <opencv2/opencv.hpp>
 #include <tuple>
 
 #include "utility.h"

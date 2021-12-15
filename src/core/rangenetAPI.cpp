@@ -60,7 +60,8 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
     labels_prob[i] = 0;
     for (int32_t j = 0; j < LearningSize; ++j) {
       if (labels_prob[i] <= semantic_scan[i][j]) {
-        labels[i] = label_map[j];
+        // labels[i] = label_map[j];
+        labels[i] = j;
         colors[i] = cv::Vec3b(std::get<0>(Argmax2RGB[j]),
                               std::get<1>(Argmax2RGB[j]),
                               std::get<2>(Argmax2RGB[j]));
@@ -96,24 +97,24 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
     // p.r = colors[i][2];
     // semanticRGBCloud->points.push_back(p);
 
-    // PointXYZIL point;
+    PointXYZIL point;
 
-    // point.x = currentCloudIn.points[i].x;
-    // point.y = currentCloudIn.points[i].y;
-    // point.z = currentCloudIn.points[i].z;
-    // point.intensity = currentCloudIn.points[i].intensity;
-    // point.label = labels[i];
-    // semanticLabelCloud->points.push_back(point);
-
-    pcl::PointXYZRGBL point;
     point.x = currentCloudIn.points[i].x;
     point.y = currentCloudIn.points[i].y;
     point.z = currentCloudIn.points[i].z;
-    point.b = colors[i][0];
-    point.g = colors[i][1];
-    point.r = colors[i][2];
+    point.intensity = currentCloudIn.points[i].intensity;
     point.label = labels[i];
-    semanticCloud->points.push_back(point);
+    semanticLabelCloud->points.push_back(point);
+
+    pcl::PointXYZRGBL pointRGBL;
+    pointRGBL.x = currentCloudIn.points[i].x;
+    pointRGBL.y = currentCloudIn.points[i].y;
+    pointRGBL.z = currentCloudIn.points[i].z;
+    pointRGBL.b = colors[i][0];
+    pointRGBL.g = colors[i][1];
+    pointRGBL.r = colors[i][2];
+    pointRGBL.label = labels[i];
+    semanticCloud->points.push_back(pointRGBL);
   }
 
   end = std::chrono::system_clock::now();

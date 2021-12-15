@@ -29,6 +29,7 @@
 #include <pcl/range_image/range_image.h>
 #include <pcl/registration/icp.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/visualization/cloud_viewer.h>
 #include <pcl_ros/transforms.h>
 #include <tf/LinearMath/Quaternion.h>
 #include <tf/transform_broadcaster.h>
@@ -56,6 +57,14 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include <random>
+
+#include <sensor_msgs/Image.h>
+#include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
+#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 // yamlcpp
 #include "yaml-cpp/yaml.h"

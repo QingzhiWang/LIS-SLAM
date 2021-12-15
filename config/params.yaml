@@ -9,11 +9,11 @@ lis_slam:
   loopClosureEnableFlag: true
   
   PROJECT_PATH: "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/"
-  RESULT_PATH: "./assets/trajectory/00_pred_loop.txt"
+  RESULT_PATH: "../assets/trajectory/00_pred_loop.txt"
   MODEL_PATH: "/home/wqz/AWorkSpace/darknet53"
   # Export settings
   savePCD: false                              # https://github.com/TixiaoShan/LIO-SAM/issues/3
-  savePCDDirectory: "./assets/MyNoLoop/kitti_00/"        # in your home folder, starts and ends with "/". Warning: the code deletes "LOAM" folder then recreates it. See "mapOptimization" for implementation
+  savePCDDirectory: "../assets/MyNoLoop/kitti_00/"        # in your home folder, starts and ends with "/". Warning: the code deletes "LOAM" folder then recreates it. See "mapOptimization" for implementation
 
 
   useOdometryPitchPrediction: true   #  在结构性较强时可使用前端里程计pitch预测值

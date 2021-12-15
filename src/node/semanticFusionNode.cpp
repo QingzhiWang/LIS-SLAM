@@ -38,10 +38,10 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
 
   pcl::VoxelGrid<PointType> downSizeFilter;
 
-  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr semanticCloudOut;
-  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr dynamicCloudOut;
-  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr staticCloudOut;
-  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr outlierCloudOut;
+  pcl::PointCloud<PointXYZIL>::Ptr semanticCloudOut;
+  pcl::PointCloud<PointXYZIL>::Ptr dynamicCloudOut;
+  pcl::PointCloud<PointXYZIL>::Ptr staticCloudOut;
+  pcl::PointCloud<PointXYZIL>::Ptr outlierCloudOut;
 
   lis_slam::semantic_info semanticInfo;
 
@@ -81,10 +81,10 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     // currentCloudSurfIn.reset(new pcl::PointCloud<PointType>());
     // currentCloudSurfInDS.reset(new pcl::PointCloud<PointType>());
 
-    semanticCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
-    dynamicCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
-    staticCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
-    outlierCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
+    semanticCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
+    dynamicCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
+    staticCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
+    outlierCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
   }
 
   void resetParameters() {
@@ -111,7 +111,7 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     pcl::fromROSMsg(currentCloudMsg, *currentCloudIn);
 
     range_net.infer(*currentCloudIn);
-    semanticCloudOut = range_net.getSemanticCloud();
+    semanticCloudOut = range_net.getLabelPointCloud();
 
     publishCloudInfo();
 
@@ -142,7 +142,7 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     // pcl::fromROSMsg(currentCloudSurfMsg, *currentCloudSurfIn);
 
     range_net.infer(*currentCloudIn);
-    semanticCloudOut = range_net.getSemanticCloud();
+    semanticCloudOut = range_net.getLabelPointCloud();
 
     categoryMapping();
 
