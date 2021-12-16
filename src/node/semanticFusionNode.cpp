@@ -217,6 +217,8 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     tempCloud.header.frame_id = lidarFrame;
     semanticInfo.cloud_outlier = tempCloud;
 
+    pubSemanticInfo.publish(semanticInfo);
+
   }
 };
 

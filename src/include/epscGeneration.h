@@ -19,6 +19,7 @@
 #define DISTANCE_THRESHOLD 0.7900  
 #define LABEL_THRESHOLD 0.7900  
 
+
 class EPSCGeneration : public SemanticLabelParam {
  private:
   std::vector<int> order_vec = {0,  0,  0,  0,  0,  0,  0,  0, 0,  10,
@@ -26,15 +27,15 @@ class EPSCGeneration : public SemanticLabelParam {
   bool UsingISCFlag = false;
   bool UsingSCFlag = false;
   bool UsingPoseFlag = false;
-  bool UsingSEPSCFlag = true;
+  bool UsingSEPSCFlag = false;
   bool UsingEPSCFlag = true;
-  bool UsingSSCFlag = false;
+  bool UsingSSCFlag = true;
 
   double max_dis = 60;
   double min_dis = 5;
 
   int rings = 20;
-  int sectors = 180;
+  int sectors = 90; //180
   double ring_step = max_dis / rings;
   double sector_step = 2 * M_PI / sectors;
 
@@ -64,15 +65,18 @@ class EPSCGeneration : public SemanticLabelParam {
   bool show = false;
   std::shared_ptr<pcl::visualization::CloudViewer> viewer;
 
-  int fastAtan2(float y, float x);
   void init_color(void);
   void print_param(void);
   void init_param();
 
-  template <typename PointT>
-  void groundFilter(const pcl::PointCloud<PointT>::Ptr& pc_in,
-                    pcl::PointCloud<PointT>::Ptr& pc_out);
-  
+//   template <typename PointT>
+//   void groundFilter(const pcl::PointCloud<PointT>::Ptr& pc_in,
+//                     pcl::PointCloud<PointT>::Ptr& pc_out);
+  void groundFilter(const pcl::PointCloud<PointXYZIL>::Ptr& pc_in,
+                    pcl::PointCloud<PointXYZIL>::Ptr& pc_out);
+  void groundFilter(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in,
+                    pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out);
+
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr getColorCloud(
       pcl::PointCloud<PointXYZIL>::Ptr& cloud_in);
   cv::Mat getColorImage(cv::Mat& desc);
@@ -98,7 +102,7 @@ class EPSCGeneration : public SemanticLabelParam {
 
   double calculateLabelSim(cv::Mat& desc1, cv::Mat& desc2);
   double calculateDistance(const cv::Mat& desc1, const cv::Mat& desc2,
-                                 int& angle);
+                                 double& angle);
 
 
   double getScore(pcl::PointCloud<PointXYZIL>::Ptr cloud1,
@@ -122,7 +126,7 @@ class EPSCGeneration : public SemanticLabelParam {
  public:
   int current_frame_id;
   std::vector<int> matched_frame_id;
-  std::vector<Eigen::Matrix4f> matched_frame_transform;
+  std::vector<Eigen::Affine3f> matched_frame_transform;
 
   EPSCGeneration() { init_param(); };
 
@@ -153,7 +157,7 @@ class EPSCGeneration : public SemanticLabelParam {
                      const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc,
                      const pcl::PointCloud<PointXYZIL>::Ptr& semantic_pc,
                      const pcl::PointCloud<PointXYZIL>::Ptr& static_pc,
-                     Eigen::Isometry3d& odom);
+                     Eigen::Affine3f& odom);
 };
 
 #endif  // _ISC_GENERATION_H_

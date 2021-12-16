@@ -64,7 +64,9 @@
         "*.ipp": "cpp",
         "unordered_set": "cpp",
         "hash_map": "cpp",
-        "hash_set": "cpp"
+        "hash_set": "cpp",
+        "core": "cpp",
+        "numericaldiff": "cpp"
     },
     "python.autoComplete.extraPaths": [
         "/home/wqz/AWorkSpace/LIS-SLAM/devel/lib/python2.7/dist-packages",

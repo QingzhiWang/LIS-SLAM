@@ -9,15 +9,6 @@ void EPSCGeneration::init_param() {
   print_param();
   init_color();
 
-  cornerPointCloud = pcl::PointCloud<pcl::PointXYZI>::Ptr(
-      new pcl::PointCloud<pcl::PointXYZI>());
-  surfPointCloud = pcl::PointCloud<pcl::PointXYZI>::Ptr(
-      new pcl::PointCloud<pcl::PointXYZI>());
-  semanticPointCloud =
-      pcl::PointCloud<PointXYZIL>::Ptr(new pcl::PointCloud<PointXYZIL>());
-  staticPointCloud =
-      pcl::PointCloud<PointXYZIL>::Ptr(new pcl::PointCloud<PointXYZIL>());
-
   if (show) {
     viewer.reset(new pcl::visualization::CloudViewer("viewer"));
   }
@@ -57,10 +48,26 @@ void EPSCGeneration::print_param() {
   std::cout << "maximum distance:\t" << max_dis << std::endl;
 }
 
-template <typename PointT>
-void EPSCGeneration::grounFilter(const pcl::PointCloud<PointT>::Ptr &pc_in,
-                                 pcl::PointCloud<PointT>::Ptr &pc_out) {
-  pcl::PassThrough<PointT> pass;
+// template <typename PointT>
+// void EPSCGeneration::groundFilter(const pcl::PointCloud<PointT>::Ptr &pc_in,
+//                                  pcl::PointCloud<PointT>::Ptr &pc_out) {
+//   pcl::PassThrough<PointT> pass;
+//   pass.setInputCloud(pc_in);
+//   pass.setFilterFieldName("z");
+//   pass.setFilterLimits(-2.0, 30.0);
+//   pass.filter(*pc_out);
+// }
+void groundFilter(const pcl::PointCloud<PointXYZIL>::Ptr &pc_in,
+                  pcl::PointCloud<PointXYZIL>::Ptr &pc_out) {
+  pcl::PassThrough<PointXYZIL> pass;
+  pass.setInputCloud(pc_in);
+  pass.setFilterFieldName("z");
+  pass.setFilterLimits(-2.0, 30.0);
+  pass.filter(*pc_out);
+}
+void groundFilter(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in,
+                  pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out) {
+  pcl::PassThrough<pcl::PointXYZI> pass;
   pass.setInputCloud(pc_in);
   pass.setFilterFieldName("z");
   pass.setFilterLimits(-2.0, 30.0);
@@ -218,11 +225,11 @@ void EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2,
           p.y = temp_dis2.at<cv::Vec4f>(0, j)[2];
           p.z = 0;
           p.r = std::get<0>(
-              _argmax_to_rgb[(int)temp_dis2.at<cv::Vec4f>(0, j)[3]]);
+              Argmax2RGB[(int)temp_dis2.at<cv::Vec4f>(0, j)[3]]);
           p.g = std::get<1>(
-              _argmax_to_rgb[(int)temp_dis2.at<cv::Vec4f>(0, j)[3]]);
+              Argmax2RGB[(int)temp_dis2.at<cv::Vec4f>(0, j)[3]]);
           p.b = std::get<2>(
-              _argmax_to_rgb[(int)temp_dis2.at<cv::Vec4f>(0, j)[3]]);
+              Argmax2RGB[(int)temp_dis2.at<cv::Vec4f>(0, j)[3]]);
           temp_cloud->points.emplace_back(p);
         }
       }
@@ -233,11 +240,11 @@ void EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2,
         p.y = temp_dis1.at<cv::Vec4f>(0, j)[2];
         p.z = 0;
         p.r =
-            std::get<0>(_argmax_to_rgb[(int)temp_dis1.at<cv::Vec4f>(0, j)[3]]);
+            std::get<0>(Argmax2RGB[(int)temp_dis1.at<cv::Vec4f>(0, j)[3]]);
         p.g =
-            std::get<1>(_argmax_to_rgb[(int)temp_dis1.at<cv::Vec4f>(0, j)[3]]);
+            std::get<1>(Argmax2RGB[(int)temp_dis1.at<cv::Vec4f>(0, j)[3]]);
         p.b =
-            std::get<2>(_argmax_to_rgb[(int)temp_dis1.at<cv::Vec4f>(0, j)[3]]);
+            std::get<2>(Argmax2RGB[(int)temp_dis1.at<cv::Vec4f>(0, j)[3]]);
         temp_cloud->points.emplace_back(p);
       }
     }
@@ -376,11 +383,11 @@ cv::Mat EPSCGeneration::calculateEPSC(
 
   for (int i = 0; i < (int)filtered_corner_pointcloud->points.size(); i++) {
     double distance = std::sqrt(
-        filtered_pointcloud->points[i].x * filtered_pointcloud->points[i].x +
-        filtered_pointcloud->points[i].y * filtered_pointcloud->points[i].y);
+        filtered_corner_pointcloud->points[i].x * filtered_corner_pointcloud->points[i].x +
+        filtered_corner_pointcloud->points[i].y * filtered_corner_pointcloud->points[i].y);
     if (distance >= max_dis || distance < min_dis) continue;
-    int sector_id = std::floor(cv::fastAtan2(filtered_pointcloud->points[i].y,
-                                             filtered_pointcloud->points[i].x) /
+    int sector_id = std::floor(cv::fastAtan2(filtered_corner_pointcloud->points[i].y,
+                                             filtered_corner_pointcloud->points[i].x) /
                                sector_step);
     int ring_id = std::floor((distance - min_dis) / ring_step);
     if (ring_id >= rings || ring_id < 0) continue;
@@ -390,11 +397,11 @@ cv::Mat EPSCGeneration::calculateEPSC(
 
   for (int i = 0; i < (int)filtered_surf_pointcloud->points.size(); i++) {
     double distance = std::sqrt(
-        filtered_pointcloud->points[i].x * filtered_pointcloud->points[i].x +
-        filtered_pointcloud->points[i].y * filtered_pointcloud->points[i].y);
+        filtered_surf_pointcloud->points[i].x * filtered_surf_pointcloud->points[i].x +
+        filtered_surf_pointcloud->points[i].y * filtered_surf_pointcloud->points[i].y);
     if (distance >= max_dis || distance < min_dis) continue;
-    int sector_id = std::floor(cv::fastAtan2(filtered_pointcloud->points[i].y,
-                                             filtered_pointcloud->points[i].x) /
+    int sector_id = std::floor(cv::fastAtan2(filtered_surf_pointcloud->points[i].y,
+                                             filtered_surf_pointcloud->points[i].x) /
                                sector_step);
     int ring_id = std::floor((distance - min_dis) / ring_step);
     if (ring_id >= rings || ring_id < 0) continue;
@@ -417,6 +424,7 @@ cv::Mat EPSCGeneration::calculateSEPSC(
   cv::Mat esc = cv::Mat::zeros(cv::Size(sectors, rings), CV_8U);
   cv::Mat epsc = cv::Mat::zeros(cv::Size(sectors, rings), CV_8U);
 
+    
   for (int i = 0; i < (int)filtered_pointcloud->points.size(); i++) {
     auto label = filtered_pointcloud->points[i].label;
     double distance = std::sqrt(
@@ -430,17 +438,24 @@ cv::Mat EPSCGeneration::calculateSEPSC(
     if (ring_id >= rings || ring_id < 0) continue;
     if (sector_id >= sectors || sector_id < 0) continue;
     if (UsingLableMap[label] == 40) {
-      psc.at<unsigned char>(ring_id, sector_id) = label;
+      psc.at<unsigned char>(ring_id, sector_id)++;
     } else if (UsingLableMap[label] == 81) {
-      esc.at<unsigned char>(ring_id, sector_id) = label;
+      esc.at<unsigned char>(ring_id, sector_id)++;
     }
   }
+
+  std::cout << "--- calculateSEPSC ---" << std::endl;
 
   for (int i = 0; i < epsc.rows; i++) {
     for (int j = 0; j < epsc.cols; j++) {
       epsc.at<unsigned char>(i, j) =
-          100 * psc.at<unsigned char>(i, j) / (1 + esc.at<unsigned char>(i, j));
+          100 * esc.at<unsigned char>(i, j) / (1 + psc.at<unsigned char>(i, j));
+    
+    //   std::cout << "(" << i << ", " << j << ")-> psc: " << psc.at<unsigned char>(i, j) << " esc: " << esc.at<unsigned char>(i, j) << "\t";
+
+      std::cout << "epsc.at(" << i << ", " << j << "): " << epsc.at<unsigned char>(i, j) << "\t";
     }
+    std::cout << std::endl;
   }
   return epsc;
 }
@@ -495,7 +510,7 @@ double EPSCGeneration::calculateLabelSim(cv::Mat &desc1, cv::Mat &desc2) {
 }
 
 double EPSCGeneration::calculateDistance(const cv::Mat &desc1,
-                                         const cv::Mat &desc2, int &angle) {
+                                         const cv::Mat &desc2, double &angle) {
   double difference = 1.0;
   double angle_temp = angle;
   for (int i = angle_temp - 10; i < angle_temp + 10; i++) {
@@ -520,27 +535,12 @@ double EPSCGeneration::calculateDistance(const cv::Mat &desc1,
   return 1 - difference;
 }
 
-bool EPSCGeneration::is_loop_pair(cv::Mat &desc1, cv::Mat &desc2,
-                                  double &geo_score, double &diatance_score) {
-  Eigen::Matrix4f transform;
-  geo_score = calculate_geometry_dis(desc1, desc2, angle);
-  std::cout << "geo_score: " << geo_score << std::endl;
-  if (geo_score > GEOMETRY_THRESHOLD) {
-    inten_score = calculate_intensity_dis(desc1, desc2, angle);
-    std::cout << "inten_score: " << inten_score << std::endl;
-    if (inten_score > INTENSITY_THRESHOLD) {
-      return true;
-    }
-  }
-  return false;
-}
 
 void EPSCGeneration::loopDetection(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &corner_pc,
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &surf_pc,
     const pcl::PointCloud<PointXYZIL>::Ptr &semantic_pc,
-    const pcl::PointCloud<PointXYZIL>::Ptr &static_pc,
-    Eigen::Isometry3d &odom) {
+    const pcl::PointCloud<PointXYZIL>::Ptr &static_pc, Eigen::Affine3f &odom) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered_corner(
       new pcl::PointCloud<pcl::PointXYZI>());
   pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered_surf(
@@ -550,12 +550,24 @@ void EPSCGeneration::loopDetection(
   pcl::PointCloud<PointXYZIL>::Ptr pc_filtered_static(
       new pcl::PointCloud<PointXYZIL>());
 
-  groundFilter(corner_pc, pc_filtered_corner);
-  groundFilter(surf_pc, pc_filtered_surf);
-  groundFilter(semantic_pc, pc_filtered_semantic);
-  groundFilter(static_pc, pc_filtered_static);
+    // groundFilter(corner_pc, pc_filtered_corner);
+    // groundFilter(surf_pc, pc_filtered_surf);
+    // groundFilter(semantic_pc, pc_filtered_semantic);
+    // groundFilter(static_pc, pc_filtered_static);
+  pc_filtered_corner = corner_pc;
+  pc_filtered_surf = surf_pc;
+  pc_filtered_semantic = semantic_pc;
+  pc_filtered_static = static_pc;
 
-  Eigen::Vector3d current_t = odom.translation();
+  std::cout << "--- EPSCGeneration ---" << std::endl;
+  std::cout << "pc_filtered_corner size : " << pc_filtered_corner->size() << std::endl;
+  std::cout << "pc_filtered_surf size : " << pc_filtered_surf->size() << std::endl;
+  std::cout << "pc_filtered_semantic size : " << pc_filtered_semantic->size() << std::endl;
+  std::cout << "pc_filtered_static size : " << pc_filtered_static->size() << std::endl;
+
+    
+
+  Eigen::Vector3d current_t(odom(0, 3), odom(1, 3),odom(2, 3));
 
   // dont change push_back sequence
   if (travelDistanceArr.size() == 0) {
@@ -563,7 +575,7 @@ void EPSCGeneration::loopDetection(
   } else {
     double dis_temp =
         travelDistanceArr.back() +
-        std::sqrt((pos_arr.back() - current_t).array().square().sum());
+        std::sqrt((posArr.back() - current_t).array().square().sum());
     travelDistanceArr.push_back(dis_temp);
   }
 
@@ -572,48 +584,48 @@ void EPSCGeneration::loopDetection(
 
   int best_matched_id_isc = -1;
   double best_score_isc = 0.0;
-  Eigen::Matrix4f best_score_isc_transform;
+  Eigen::Affine3f best_score_isc_transform;
 
   int best_matched_id_sc = -1;
   double best_score_sc = 0.0;
-  Eigen::Matrix4f best_score_sc_transform;
+  Eigen::Affine3f best_score_sc_transform;
 
   int best_matched_id_epsc = -1;
   double best_score_epsc = 0.0;
-  Eigen::Matrix4f best_score_epsc_transform;
+  Eigen::Affine3f best_score_epsc_transform;
 
   int best_matched_id_sepsc = -1;
   double best_score_sepsc = 0.0;
-  Eigen::Matrix4f best_score_sepsc_transform;
+  Eigen::Affine3f best_score_sepsc_transform;
 
   int best_matched_id_ssc = -1;
   double best_score_ssc = 0.0;
-  Eigen::Matrix4f best_score_ssc_transform;
+  Eigen::Affine3f best_score_ssc_transform;
 
   double min_ditance = 1000000;
   int best_matched_id_pose = -1;
-  Eigen::Matrix4f best_score_pose_transform;
+  Eigen::Affine3f best_score_pose_transform;
 
   cv::Mat ISC_cur, SC_cur, EPSC_cur, SEPSC_cur, SSC_cur;
 
   if (UsingISCFlag) {
-    auto ISC_cur = calculateISC(trans_cloud);
+    auto ISC_cur = calculateISC(pc_filtered_semantic);
   }
 
   if (UsingSCFlag) {
-    auto SC_cur = calculateSC(trans_cloud);
+    auto SC_cur = calculateSC(pc_filtered_semantic);
   }
 
   if (UsingEPSCFlag) {
-    auto EPSC_cur = calculateEPSC(trans_cloud);
+    auto EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
   }
 
   if (UsingSEPSCFlag) {
-    auto SEPSC_cur = calculateSEPSCArr(trans_cloud);
+    auto SEPSC_cur = calculateSEPSC(pc_filtered_static);
   }
 
   if (UsingSSCFlag) {
-    auto SSC_cur = calculateSSC(trans_cloud);
+    auto SSC_cur = calculateSSC(pc_filtered_static);
   }
 
   cv::Mat cur_dis = project(pc_filtered_static);
@@ -627,9 +639,9 @@ void EPSCGeneration::loopDetection(
       ROS_INFO("Matched_id: %d, delta_travel_distance: %f, pos_distance : %f",
                i, delta_travel_distance, pos_distance);
 
-      angle = 0;
-      diff_x = 0;
-      diff_y = 0;
+      double angle = 0;
+      float diff_x = 0;
+      float diff_y = 0;
       cv::Mat before_dis = project(staticPointCloud[i]);
       // cv::Mat cur_dis = project(pc_filtered_static);
       globalICP(before_dis, cur_dis, angle, diff_x, diff_y);
@@ -693,7 +705,7 @@ void EPSCGeneration::loopDetection(
 
       if (UsingSSCFlag) {
         auto desc1 = SSCArr[i];
-        auto score = calculateLabelSim(desc1, SSC_cur, angle);
+        auto score = calculateLabelSim(desc1, SSC_cur);
         std::cout << "SSC_score: " << score << std::endl;
         if (score > LABEL_THRESHOLD && score > best_score_ssc) {
           best_score_ssc = score;
@@ -789,69 +801,64 @@ void EPSCGeneration::loopDetection(
   }
 }
 
-
-
-
-
 cv::Mat EPSCGeneration::getLastEPSCRGB() {
-  if (UsingEPSCFlag){
+  if (UsingEPSCFlag) {
     cv::Mat epsc_color = cv::Mat::zeros(cv::Size(sectors, rings), CV_8UC3);
     for (int i = 0; i < EPSCArr.back().rows; i++) {
-        for (int j = 0; j < EPSCArr.back().cols; j++) {
+      for (int j = 0; j < EPSCArr.back().cols; j++) {
         epsc_color.at<cv::Vec3b>(i, j) =
             color_projection[EPSCArr.back().at<unsigned char>(i, j)];
-        }
+      }
     }
     return epsc_color;
   }
 }
 
 cv::Mat EPSCGeneration::getLastSCRGB() {
-  if (UsingSCFlag){
+  if (UsingSCFlag) {
     cv::Mat sc_color = cv::Mat::zeros(cv::Size(sectors, rings), CV_8UC3);
     for (int i = 0; i < SCArr.back().rows; i++) {
-        for (int j = 0; j < SCArr.back().cols; j++) {
+      for (int j = 0; j < SCArr.back().cols; j++) {
         sc_color.at<cv::Vec3b>(i, j) =
             color_projection[SCArr.back().at<unsigned char>(i, j)];
-        }
+      }
     }
     return sc_color;
   }
 }
 
 cv::Mat EPSCGeneration::getLastISCRGB() {
-  if (UsingISCFlag){
+  if (UsingISCFlag) {
     cv::Mat isc_color = cv::Mat::zeros(cv::Size(sectors, rings), CV_8UC3);
     for (int i = 0; i < ISCArr.back().rows; i++) {
-        for (int j = 0; j < ISCArr.back().cols; j++) {
+      for (int j = 0; j < ISCArr.back().cols; j++) {
         isc_color.at<cv::Vec3b>(i, j) =
             color_projection[ISCArr.back().at<unsigned char>(i, j)];
-        }
+      }
     }
     return isc_color;
   }
 }
 
 cv::Mat EPSCGeneration::getLastSEPSCRGB() {
-  if (UsingSEPSCFlag){
+  if (UsingSEPSCFlag) {
     cv::Mat sepsc_color = cv::Mat::zeros(cv::Size(sectors, rings), CV_8UC3);
     for (int i = 0; i < SEPSCArr.back().rows; i++) {
-        for (int j = 0; j < SEPSCArr.back().cols; j++) {
-        isc_color.at<cv::Vec3b>(i, j) =
+      for (int j = 0; j < SEPSCArr.back().cols; j++) {
+        sepsc_color.at<cv::Vec3b>(i, j) =
             color_projection[SEPSCArr.back().at<unsigned char>(i, j)];
-        }
+      }
     }
-    return sepisc_color;
+    return sepsc_color;
   }
 }
 
 cv::Mat EPSCGeneration::getLastSSCRGB() {
-  if (UsingSSCFlag){
+  if (UsingSSCFlag) {
     auto color_image = getColorImage(SSCArr.back());
     return color_image;
   }
 }
-
 
 /***********************************
     if(UsingISCFlag){
@@ -879,8 +886,8 @@ cv::Mat EPSCGeneration::getLastSSCRGB() {
     }
 ***********************************/
 
-double EPSCGeneration::getScore(pcl::PointCloud<pcl::PointXYZL>::Ptr cloud1,
-                                pcl::PointCloud<pcl::PointXYZL>::Ptr cloud2,
+double EPSCGeneration::getScore(pcl::PointCloud<PointXYZIL>::Ptr cloud1,
+                                pcl::PointCloud<PointXYZIL>::Ptr cloud2,
                                 double &angle, float &diff_x, float &diff_y) {
   angle = 0;
   diff_x = 0;
@@ -895,12 +902,12 @@ double EPSCGeneration::getScore(pcl::PointCloud<pcl::PointXYZL>::Ptr cloud1,
   Eigen::Affine3f transform = Eigen::Affine3f::Identity();
   transform.translation() << diff_x, diff_y, 0;
   transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ()));
-  pcl::PointCloud<pcl::PointXYZL>::Ptr trans_cloud(
-      new pcl::PointCloud<pcl::PointXYZL>);
+  pcl::PointCloud<PointXYZIL>::Ptr trans_cloud(
+      new pcl::PointCloud<PointXYZIL>);
   transformPointCloud(*cloud2, *trans_cloud, transform);
   auto desc1 = calculateSSC(cloud1);
   auto desc2 = calculateSSC(trans_cloud);
-  auto score = calculateSim(desc1, desc2);
+  auto score = calculateLabelSim(desc1, desc2);
   if (show) {
     transform.translation() << diff_x, diff_y, 0;
     transformPointCloud(*cloud2, *trans_cloud, transform);
@@ -918,18 +925,18 @@ double EPSCGeneration::getScore(pcl::PointCloud<pcl::PointXYZL>::Ptr cloud1,
   return score;
 }
 
-double EPSCGeneration::getScore(pcl::PointCloud<pcl::PointXYZL>::Ptr cloud1,
-                                pcl::PointCloud<pcl::PointXYZL>::Ptr cloud2,
+double EPSCGeneration::getScore(pcl::PointCloud<PointXYZIL>::Ptr cloud1,
+                                pcl::PointCloud<PointXYZIL>::Ptr cloud2,
                                 Eigen::Matrix4f &transform) {
   cv::Mat ssc_dis1 = project(cloud1);
   cv::Mat ssc_dis2 = project(cloud2);
   transform = globalICP(ssc_dis1, ssc_dis2);
-  pcl::PointCloud<pcl::PointXYZL>::Ptr trans_cloud(
-      new pcl::PointCloud<pcl::PointXYZL>);
+  pcl::PointCloud<PointXYZIL>::Ptr trans_cloud(
+      new pcl::PointCloud<PointXYZIL>);
   transformPointCloud(*cloud2, *trans_cloud, transform);
   auto desc1 = calculateSSC(cloud1);
   auto desc2 = calculateSSC(trans_cloud);
-  auto score = calculateSim(desc1, desc2);
+  auto score = calculateLabelSim(desc1, desc2);
   if (show) {
     transform(2, 3) = 0.;
     transformPointCloud(*cloud2, *trans_cloud, transform);

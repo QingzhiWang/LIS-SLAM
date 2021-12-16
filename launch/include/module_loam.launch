@@ -7,6 +7,7 @@
     <node pkg="$(arg project)" type="$(arg project)_laserProcessing"     name="$(arg project)_laserProcessing"      output="screen"     respawn="true"/>
     <node pkg="$(arg project)" type="$(arg project)_odomEstimation"   name="$(arg project)_odomEstimation"    output="screen"     respawn="true"/>
     <node pkg="$(arg project)" type="$(arg project)_semanticFusion"      name="$(arg project)_semanticFusion"       output="screen"     respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_subMapOptmization"      name="$(arg project)_subMapOptmization"       output="screen"     respawn="true"/>
     <!-- <node pkg="$(arg project)" type="$(arg project)_loopClosure"      name="$(arg project)_loopClosure"       output="screen"     respawn="true"/> -->
     <!-- <node pkg="$(arg project)" type="$(arg project)_makeSubMap"      name="$(arg project)_makeSubMap"       output="screen"     respawn="true"/> -->
     <!-- <node pkg="$(arg project)" type="$(arg project)_transformFusion"      name="$(arg project)_transformFusion"       output="screen"     respawn="true"/>  -->

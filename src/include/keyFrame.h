@@ -6,9 +6,6 @@
 
 #include "utility.h"
 
-
-typedef boost::shared_ptr<keyframe_t> keyframe_Ptr;
-
 struct keyframe_t {
   ros::Time timeInfoStamp;
   int keyframe_id;
@@ -47,7 +44,7 @@ struct keyframe_t {
     gt_pose.setIdentity();
     relative_pose.setIdentity();
   }
-  cloudblock_t(const keyframe_t &in_keyframe, bool clone_cloud = false) {
+  keyframe_t(const keyframe_t &in_keyframe, bool clone_cloud = false) {
     init();
     clone_metadata(in_keyframe);
 
@@ -123,35 +120,33 @@ struct keyframe_t {
                          bool transform_down = true,
                          bool transform_undown = true) {
     if (transform_undown) {
-      pcl::transformPointCloudWithNormals(*cloud_semantic, *cloud_semantic,
-                                          trans_mat);
-      pcl::transformPointCloudWithNormals(*cloud_dynamic, *cloud_dynamic,
-                                          trans_mat);
-      pcl::transformPointCloudWithNormals(*cloud_static, *cloud_static,
-                                          trans_mat);
-      pcl::transformPointCloudWithNormals(*cloud_outlier, *cloud_outlier,
-                                          trans_mat);
-      // pcl::transformPointCloudWithNormals(*cloud_corner, *cloud_corner,
-      // trans_mat); pcl::transformPointCloudWithNormals(*cloud_surface,
+      pcl::transformPointCloud(*cloud_semantic, *cloud_semantic, trans_mat);
+      pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, trans_mat);
+      pcl::transformPointCloud(*cloud_static, *cloud_static, trans_mat);
+      pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, trans_mat);
+      // pcl::transformPointCloud(*cloud_corner, *cloud_corner,
+      // trans_mat); pcl::transformPointCloud(*cloud_surface,
       // *cloud_surface, trans_mat);
     }
     if (transform_down) {
-      pcl::transformPointCloudWithNormals(*cloud_semantic_down,
-                                          *cloud_semantic_down, trans_mat);
-      pcl::transformPointCloudWithNormals(*cloud_dynamic_down,
-                                          *cloud_dynamic_down, trans_mat);
-      pcl::transformPointCloudWithNormals(*cloud_static_down,
-                                          *cloud_static_down, trans_mat);
-      pcl::transformPointCloudWithNormals(*cloud_outlier_down,
-                                          *cloud_outlier_down, trans_mat);
-      // pcl::transformPointCloudWithNormals(*cloud_corner_down,
+      pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down,
+                               trans_mat);
+      pcl::transformPointCloud(*cloud_dynamic_down, *cloud_dynamic_down,
+                               trans_mat);
+      pcl::transformPointCloud(*cloud_static_down, *cloud_static_down,
+                               trans_mat);
+      pcl::transformPointCloud(*cloud_outlier_down, *cloud_outlier_down,
+                               trans_mat);
+      // pcl::transformPointCloud(*cloud_corner_down,
       // *cloud_corner_down, trans_mat);
-      // pcl::transformPointCloudWithNormals(*cloud_surface_down,
+      // pcl::transformPointCloud(*cloud_surface_down,
       // *cloud_surface_down, trans_mat);
     }
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+typedef boost::shared_ptr<keyframe_t> keyframe_Ptr;
 
 #endif  // _KEY_FRAME_H_

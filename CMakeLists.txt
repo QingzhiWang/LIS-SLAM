@@ -211,22 +211,12 @@ add_dependencies(${PROJECT_NAME}_semanticFusion ${catkin_EXPORTED_TARGETS} ${PRO
 target_compile_options(${PROJECT_NAME}_semanticFusion PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME}_semanticFusion ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} semantic_lib)
 
-# Make SubMap
-# add_executable(${PROJECT_NAME}_makeSubMap src/makeSubMap.cpp)
-# add_dependencies(${PROJECT_NAME}_makeSubMap ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-# target_compile_options(${PROJECT_NAME}_makeSubMap PRIVATE ${OpenMP_CXX_FLAGS})
-# target_link_libraries(${PROJECT_NAME}_makeSubMap ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS} gtsam)
+# Loop Closure / Make SubMap / Mapping Optimization
+add_executable(${PROJECT_NAME}_subMapOptmization  src/node/subMapOptmizationNode.cpp src/core/epscGeneration.cpp)
+add_dependencies(${PROJECT_NAME}_subMapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+target_compile_options(${PROJECT_NAME}_subMapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
+target_link_libraries(${PROJECT_NAME}_subMapOptmization ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES} gtsam)
 
-# Mapping Optimization
-# add_executable(${PROJECT_NAME}_mapOptmization src/mapOptmization.cpp)
-# add_dependencies(${PROJECT_NAME}_mapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-# target_compile_options(${PROJECT_NAME}_mapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
-# target_link_libraries(${PROJECT_NAME}_mapOptmization ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam)
-
-# Loop Closure
-# add_executable(${PROJECT_NAME}_loopClosure  src/loopClosure.cpp src/Scancontext.cpp  src/epscGenerationClass.cpp)
-# add_dependencies(${PROJECT_NAME}_loopClosure ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-# target_link_libraries(${PROJECT_NAME}_loopClosure ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} )
 
 # IMU Preintegration
 # add_executable(${PROJECT_NAME}_imuPreintegration src/imuPreintegration.cpp)
