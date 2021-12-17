@@ -128,25 +128,26 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(
 
 
 /*************************************
-  10: 10     # "car" There is a probability of dynamic objects
-  11: 10     # "bicycle" to "car"
-  15: 10     # "motorcycle" to "car"
-  18: 10     # "truck" to "car"
-  20: 10     # "other-vehicle" to "car"
-  30: 10     # "person" to "car"
-  31: 10     # "bicyclist" to "car"
-  32: 10     # "motorcyclist" to "car"
-  40: 40     # "road"
-  44: 40     # "parking"
-  48: 40     # "sidewalk"
-  49: 70     # "other-ground" to "vegetation"
-  50: 40     # "building"
-  51: 40     # "fence"
-  70: 70     # "vegetation" Not Used
-  71: 81     # "trunk"
-  72: 70     # "terrain" to "vegetation"
-  80: 81     # "pole"
-  81: 81     # "traffic-sign"
+  1: 10     # "car" There is a probability of dynamic objects
+  2: 10     # "bicycle" to "car"
+  3: 10     # "motorcycle" to "car"
+  4: 10     # "truck" to "car"
+  5: 10     # "other-vehicle" to "car"
+  6: 10     # "person" to "car"
+  7: 10     # "bicyclist" to "car"
+  8: 10     # "motorcyclist" to "car"
+  9: 40     # "road"
+  10: 40     # "parking"
+  11: 40     # "sidewalk"
+  12: 70     # "other-ground" to "vegetation"
+  13: 40     # "building"
+  14: 40     # "fence"
+  15: 70     # "vegetation" Not Used
+  16: 81     # "trunk"
+  17: 70     # "terrain" to "vegetation"
+  18: 81     # "pole"
+  19: 81     # "traffic-sign"
+
 
   # 10 ---- dynamic
 

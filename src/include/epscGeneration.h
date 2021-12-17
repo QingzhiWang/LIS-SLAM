@@ -19,24 +19,26 @@
 #define DISTANCE_THRESHOLD 0.7900  
 #define LABEL_THRESHOLD 0.7900  
 
+#define LIDAR_HEIGHT 5.0
+
 
 class EPSCGeneration : public SemanticLabelParam {
  private:
   std::vector<int> order_vec = {0,  0,  0,  0,  0,  0,  0,  0, 0,  10,
                                 11, 12, 13, 15, 16, 14, 17, 9, 18, 19};
-  bool UsingISCFlag = false;
-  bool UsingSCFlag = false;
+  bool UsingISCFlag = true;
+  bool UsingSCFlag = true;
   bool UsingPoseFlag = false;
-  bool UsingSEPSCFlag = false;
+  bool UsingSEPSCFlag = true;
   bool UsingEPSCFlag = true;
   bool UsingSSCFlag = true;
 
-  double max_dis = 60;
-  double min_dis = 5;
+  double max_dis = 70;
+  double min_dis = 3;
 
   int rings = 20;
   int sectors = 90; //180
-  double ring_step = max_dis / rings;
+  double ring_step = (max_dis - min_dis) / rings;
   double sector_step = 2 * M_PI / sectors;
 
   int sectors_range = 360;

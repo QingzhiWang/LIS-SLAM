@@ -76,6 +76,9 @@ class SubMapOptmizationNode : public ParamServer, SemanticLabelParam {
   ros::Publisher pubLoopConstraintEdge;
   ros::Publisher pubSCDe;
   ros::Publisher pubEPSC;
+  ros::Publisher pubSC;
+  ros::Publisher pubISC;
+  ros::Publisher pubSSC;
 
   map<int, int> loopIndexContainer;  // from new to old
   vector<pair<int, int>> loopIndexQueue;
@@ -116,6 +119,9 @@ class SubMapOptmizationNode : public ParamServer, SemanticLabelParam {
         "lis_slam/mapping/loop_closure_constraints", 1);
     pubSCDe = nh.advertise<sensor_msgs::Image>("global_descriptor", 100);
     pubEPSC = nh.advertise<sensor_msgs::Image>("global_descriptor_epsc", 100);
+    pubSC = nh.advertise<sensor_msgs::Image>("global_descriptor_sc", 100);
+    pubISC = nh.advertise<sensor_msgs::Image>("global_descriptor_isc", 100);
+    pubSSC = nh.advertise<sensor_msgs::Image>("global_descriptor_ssc", 100);
 
     allocateMemory();
   }
@@ -226,14 +232,12 @@ class SubMapOptmizationNode : public ParamServer, SemanticLabelParam {
     EPSCGeneration epscGen;
 
     while (ros::ok()) {
-    //   std::cout << "processID : " << processID << std::endl;
-
       if (loopClosureEnableFlag == false) {
         ros::spinOnce();
         continue;
       }
 
-    //   rate.sleep();
+      // rate.sleep();
       ros::spinOnce();
 
       if (processID <= keyFrameID) {
@@ -270,8 +274,20 @@ class SubMapOptmizationNode : public ParamServer, SemanticLabelParam {
         out_msg.image = epscGen.getLastEPSCRGB();
         pubEPSC.publish(out_msg.toImageMsg());
 
+        out_msg.image = epscGen.getLastSCRGB();
+        pubSC.publish(out_msg.toImageMsg()); 
+
+        out_msg.image = epscGen.getLastISCRGB();
+        pubISC.publish(out_msg.toImageMsg());   
+
+        out_msg.image = epscGen.getLastSSCRGB();
+        pubSSC.publish(out_msg.toImageMsg());
+
         curKeyFramePtr->global_descriptor = epscGen.getLastSEPSCMONO();
-    
+            
+        ros::Time t2 = ros::Time::now();
+        ROS_WARN("Detect Loop Closure Time: %.3f", (t2 - t1).toSec());
+        
         std::cout << std::endl;
         std::cout << "--- loop detection ---" << std::endl;
         std::cout << "processID : " << processID << std::endl;
@@ -286,10 +302,7 @@ class SubMapOptmizationNode : public ParamServer, SemanticLabelParam {
           std::cout << "loopKeyPre [" << i << "]:" << loopKeyPre[i]
                     << std::endl;
         }
-        ros::Time t2 = ros::Time::now();
-        ROS_WARN("Detect Loop Closure Time: %.3f", (t2 - t1).toSec());
-
-
+        
         int bestMatched = -1;
         if (detectLoopClosure(loopKeyCur, loopKeyPre, matched_init_transform,
                               bestMatched) == false)

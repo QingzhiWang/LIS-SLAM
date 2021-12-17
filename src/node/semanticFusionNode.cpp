@@ -39,6 +39,8 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
   pcl::VoxelGrid<PointType> downSizeFilter;
 
   pcl::PointCloud<PointXYZIL>::Ptr semanticCloudOut;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr semanticRGBCloudOut;
+
   pcl::PointCloud<PointXYZIL>::Ptr dynamicCloudOut;
   pcl::PointCloud<PointXYZIL>::Ptr staticCloudOut;
   pcl::PointCloud<PointXYZIL>::Ptr outlierCloudOut;
@@ -82,6 +84,8 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     // currentCloudSurfInDS.reset(new pcl::PointCloud<PointType>());
 
     semanticCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
+    semanticRGBCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+    
     dynamicCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
     staticCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
     outlierCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
@@ -96,6 +100,8 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     // currentCloudSurfInDS->clear();
 
     semanticCloudOut->clear();
+    semanticRGBCloudOut->clear();
+    
     dynamicCloudOut->clear();
     staticCloudOut->clear();
     outlierCloudOut->clear();
@@ -112,9 +118,10 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
 
     range_net.infer(*currentCloudIn);
     semanticCloudOut = range_net.getLabelPointCloud();
-
+    semanticRGBCloudOut = range_net.getRGBPointCloud();
+    
+    categoryMapping();
     publishCloudInfo();
-
     resetParameters();
 
     end = std::chrono::system_clock::now();
@@ -143,11 +150,10 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
 
     range_net.infer(*currentCloudIn);
     semanticCloudOut = range_net.getLabelPointCloud();
+    semanticRGBCloudOut = range_net.getRGBPointCloud();
 
     categoryMapping();
-
     publishCloudInfo();
-
     resetParameters();
 
     end = std::chrono::system_clock::now();
@@ -195,6 +201,10 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
 
 
     sensor_msgs::PointCloud2 tempCloud;
+    pcl::toROSMsg(*semanticRGBCloudOut, tempCloud);
+    tempCloud.header.stamp = cloudHeader.stamp;
+    tempCloud.header.frame_id = lidarFrame;
+    pubSemanticRGBCloud.publish(tempCloud);
 
     pcl::toROSMsg(*semanticCloudOut, tempCloud);
     tempCloud.header.stamp = cloudHeader.stamp;
@@ -218,7 +228,6 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     semanticInfo.cloud_outlier = tempCloud;
 
     pubSemanticInfo.publish(semanticInfo);
-
   }
 };
 

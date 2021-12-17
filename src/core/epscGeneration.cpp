@@ -319,25 +319,43 @@ Eigen::Matrix4f EPSCGeneration::globalICP(cv::Mat &ssc_dis1,
 
 cv::Mat EPSCGeneration::calculateSC(
     const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud) {
-  cv::Mat sc = cv::Mat::zeros(cv::Size(sectors, rings), CV_8U);
+  const char NO_POINT = -100;
+  cv::Mat sc = cv::Mat::zeros(cv::Size(sectors, rings), CV_16S);
+//   cv::Mat sc(sectors, rings, CV_8U, cv::Scalar(NO_POINT));
+
+  for ( int row_idx = 0; row_idx < sc.rows; row_idx++ )
+    for ( int col_idx = 0; col_idx < sc.cols; col_idx++ )
+        sc.at<char>(row_idx, col_idx) = NO_POINT;
 
   for (int i = 0; i < (int)filtered_pointcloud->points.size(); i++) {
     double distance = std::sqrt(
         filtered_pointcloud->points[i].x * filtered_pointcloud->points[i].x +
         filtered_pointcloud->points[i].y * filtered_pointcloud->points[i].y);
     if (distance >= max_dis || distance < min_dis) continue;
-    int sector_id = std::floor(cv::fastAtan2(filtered_pointcloud->points[i].y,
-                                             filtered_pointcloud->points[i].x) /
-                               sector_step);
     int ring_id = std::floor((distance - min_dis) / ring_step);
+    double angle = M_PI + std::atan2(filtered_pointcloud->points[i].y,filtered_pointcloud->points[i].x);
+    int sector_id = std::floor(angle / sector_step);
     if (ring_id >= rings || ring_id < 0) continue;
     if (sector_id >= sectors || sector_id < 0) continue;
 
     int z_temp = (int)(filtered_pointcloud->points[i].z);
+    z_temp += LIDAR_HEIGHT;
+    z_temp *= 10;
+    if(z_temp > 255) z_temp = 255;
+    if(z_temp < 0) z_temp = 0;
 
-    if (sc.at<unsigned char>(ring_id, sector_id) < z_temp)
-      sc.at<unsigned char>(ring_id, sector_id) = z_temp;
+    if (sc.at<char>(ring_id, sector_id) < z_temp){
+      sc.at<char>(ring_id, sector_id) = z_temp;
+    //   std::cout << "z_temp.at(" << ring_id << ", " << sector_id << "): " << z_temp << "\t";
+    //   std::cout << "sc.at(" << ring_id << ", " << sector_id << "): " << (int)sc.at<unsigned char>(ring_id, sector_id) << "---";
+    }
   }
+
+  // reset no points to zero (for cosine dist later)
+  for ( int row_idx = 0; row_idx < sc.rows; row_idx++ )
+    for ( int col_idx = 0; col_idx < sc.cols; col_idx++ )
+        if( sc.at<char>(row_idx, col_idx) == NO_POINT )
+            sc.at<char>(row_idx, col_idx) = 0;
 
   return sc;
 }
@@ -356,10 +374,9 @@ cv::Mat EPSCGeneration::calculateISC(
         filtered_pointcloud->points[i].x * filtered_pointcloud->points[i].x +
         filtered_pointcloud->points[i].y * filtered_pointcloud->points[i].y);
     if (distance >= max_dis || distance < min_dis) continue;
-    int sector_id = std::floor(cv::fastAtan2(filtered_pointcloud->points[i].y,
-                                             filtered_pointcloud->points[i].x) /
-                               sector_step);
     int ring_id = std::floor((distance - min_dis) / ring_step);
+    double angle = M_PI + std::atan2(filtered_pointcloud->points[i].y,filtered_pointcloud->points[i].x);
+    int sector_id = std::floor(angle / sector_step);
     if (ring_id >= rings || ring_id < 0) continue;
     if (sector_id >= sectors || sector_id < 0) continue;
 #ifndef INTEGER_INTENSITY
@@ -386,10 +403,9 @@ cv::Mat EPSCGeneration::calculateEPSC(
         filtered_corner_pointcloud->points[i].x * filtered_corner_pointcloud->points[i].x +
         filtered_corner_pointcloud->points[i].y * filtered_corner_pointcloud->points[i].y);
     if (distance >= max_dis || distance < min_dis) continue;
-    int sector_id = std::floor(cv::fastAtan2(filtered_corner_pointcloud->points[i].y,
-                                             filtered_corner_pointcloud->points[i].x) /
-                               sector_step);
     int ring_id = std::floor((distance - min_dis) / ring_step);
+    double angle = M_PI + std::atan2(filtered_corner_pointcloud->points[i].y,filtered_corner_pointcloud->points[i].x);
+    int sector_id = std::floor(angle / sector_step);
     if (ring_id >= rings || ring_id < 0) continue;
     if (sector_id >= sectors || sector_id < 0) continue;
     esc.at<unsigned char>(ring_id, sector_id)++;
@@ -400,10 +416,9 @@ cv::Mat EPSCGeneration::calculateEPSC(
         filtered_surf_pointcloud->points[i].x * filtered_surf_pointcloud->points[i].x +
         filtered_surf_pointcloud->points[i].y * filtered_surf_pointcloud->points[i].y);
     if (distance >= max_dis || distance < min_dis) continue;
-    int sector_id = std::floor(cv::fastAtan2(filtered_surf_pointcloud->points[i].y,
-                                             filtered_surf_pointcloud->points[i].x) /
-                               sector_step);
     int ring_id = std::floor((distance - min_dis) / ring_step);
+    double angle = M_PI + std::atan2(filtered_surf_pointcloud->points[i].y,filtered_surf_pointcloud->points[i].x);
+    int sector_id = std::floor(angle / sector_step);
     if (ring_id >= rings || ring_id < 0) continue;
     if (sector_id >= sectors || sector_id < 0) continue;
     psc.at<unsigned char>(ring_id, sector_id)++;
@@ -424,38 +439,38 @@ cv::Mat EPSCGeneration::calculateSEPSC(
   cv::Mat esc = cv::Mat::zeros(cv::Size(sectors, rings), CV_8U);
   cv::Mat epsc = cv::Mat::zeros(cv::Size(sectors, rings), CV_8U);
 
-    
   for (int i = 0; i < (int)filtered_pointcloud->points.size(); i++) {
     auto label = filtered_pointcloud->points[i].label;
     double distance = std::sqrt(
         filtered_pointcloud->points[i].x * filtered_pointcloud->points[i].x +
         filtered_pointcloud->points[i].y * filtered_pointcloud->points[i].y);
     if (distance >= max_dis || distance < min_dis) continue;
-    int sector_id = std::floor(cv::fastAtan2(filtered_pointcloud->points[i].y,
-                                             filtered_pointcloud->points[i].x) /
-                               sector_step);
     int ring_id = std::floor((distance - min_dis) / ring_step);
+    double angle = M_PI + std::atan2(filtered_pointcloud->points[i].y,filtered_pointcloud->points[i].x);
+    int sector_id = std::floor(angle / sector_step);
+   
+    // std::cout << "Label: " << label << std::endl;
+    // std::cout << "Distance: " << distance << "\t";
+    // std::cout << "sector_id: " << sector_id <<  "  ring_id: " << ring_id << "\t";
+    
     if (ring_id >= rings || ring_id < 0) continue;
     if (sector_id >= sectors || sector_id < 0) continue;
     if (UsingLableMap[label] == 40) {
       psc.at<unsigned char>(ring_id, sector_id)++;
+    //   std::cout << "psc.at(" << ring_id << ", " << sector_id << "): " << (int)psc.at<unsigned char>(ring_id, sector_id) << "\t";
     } else if (UsingLableMap[label] == 81) {
       esc.at<unsigned char>(ring_id, sector_id)++;
+    //   std::cout << "esc.at(" << ring_id << ", " << sector_id << "): " << (int)esc.at<unsigned char>(ring_id, sector_id) << "\t";
     }
+    // std::cout << std::endl;
   }
-
-  std::cout << "--- calculateSEPSC ---" << std::endl;
 
   for (int i = 0; i < epsc.rows; i++) {
     for (int j = 0; j < epsc.cols; j++) {
       epsc.at<unsigned char>(i, j) =
-          100 * esc.at<unsigned char>(i, j) / (1 + psc.at<unsigned char>(i, j));
-    
-    //   std::cout << "(" << i << ", " << j << ")-> psc: " << psc.at<unsigned char>(i, j) << " esc: " << esc.at<unsigned char>(i, j) << "\t";
-
-      std::cout << "epsc.at(" << i << ", " << j << "): " << epsc.at<unsigned char>(i, j) << "\t";
+          100 * psc.at<unsigned char>(i, j) / (1 + esc.at<unsigned char>(i, j));
+    //   std::cout << "epsc.at(" << i << ", " << j << "): " << (int)epsc.at<unsigned char>(i, j) << "\t";
     }
-    std::cout << std::endl;
   }
   return epsc;
 }
@@ -471,11 +486,9 @@ cv::Mat EPSCGeneration::calculateSSC(
           filtered_pointcloud->points[i].x * filtered_pointcloud->points[i].x +
           filtered_pointcloud->points[i].y * filtered_pointcloud->points[i].y);
       if (distance >= max_dis || distance < min_dis) continue;
-      int sector_id =
-          std::floor(cv::fastAtan2(filtered_pointcloud->points[i].y,
-                                   filtered_pointcloud->points[i].x) /
-                     sector_step);
       int ring_id = std::floor((distance - min_dis) / ring_step);
+      double angle = M_PI + std::atan2(filtered_pointcloud->points[i].y,filtered_pointcloud->points[i].x);
+      int sector_id = std::floor(angle / sector_step);
       if (ring_id >= rings || ring_id < 0) continue;
       if (sector_id >= sectors || sector_id < 0) continue;
       if (order_vec[label] >
@@ -565,8 +578,6 @@ void EPSCGeneration::loopDetection(
   std::cout << "pc_filtered_semantic size : " << pc_filtered_semantic->size() << std::endl;
   std::cout << "pc_filtered_static size : " << pc_filtered_static->size() << std::endl;
 
-    
-
   Eigen::Vector3d current_t(odom(0, 3), odom(1, 3),odom(2, 3));
 
   // dont change push_back sequence
@@ -609,23 +620,23 @@ void EPSCGeneration::loopDetection(
   cv::Mat ISC_cur, SC_cur, EPSC_cur, SEPSC_cur, SSC_cur;
 
   if (UsingISCFlag) {
-    auto ISC_cur = calculateISC(pc_filtered_semantic);
+    ISC_cur = calculateISC(pc_filtered_semantic);
   }
 
   if (UsingSCFlag) {
-    auto SC_cur = calculateSC(pc_filtered_semantic);
+    SC_cur = calculateSC(pc_filtered_semantic);
   }
 
   if (UsingEPSCFlag) {
-    auto EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
+    EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
   }
 
   if (UsingSEPSCFlag) {
-    auto SEPSC_cur = calculateSEPSC(pc_filtered_static);
+    SEPSC_cur = calculateSEPSC(pc_filtered_static);
   }
 
   if (UsingSSCFlag) {
-    auto SSC_cur = calculateSSC(pc_filtered_static);
+    SSC_cur = calculateSSC(pc_filtered_static);
   }
 
   cv::Mat cur_dis = project(pc_filtered_static);
@@ -842,6 +853,10 @@ cv::Mat EPSCGeneration::getLastISCRGB() {
 
 cv::Mat EPSCGeneration::getLastSEPSCRGB() {
   if (UsingSEPSCFlag) {
+    // std::cout << "SEPSCArr.size(): " << SEPSCArr.size() << "\t";
+    // std::cout << "SEPSCArr.back().rows: " << SEPSCArr.back().rows << "\t";
+    // std::cout << "SEPSCArr.back().cols: " << SEPSCArr.back().cols << "\t";
+    // std::cout << std::endl;
     cv::Mat sepsc_color = cv::Mat::zeros(cv::Size(sectors, rings), CV_8UC3);
     for (int i = 0; i < SEPSCArr.back().rows; i++) {
       for (int j = 0; j < SEPSCArr.back().cols; j++) {

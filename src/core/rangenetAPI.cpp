@@ -16,8 +16,8 @@ RangenetAPI::RangenetAPI(const string& params) {
 }
 
 void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
-  std::chrono::time_point<std::chrono::system_clock> start, end;
-  start = std::chrono::system_clock::now();
+  // std::chrono::time_point<std::chrono::system_clock> start, end;
+  // start = std::chrono::system_clock::now();
 
   this->num_points = currentCloudIn.points.size();
 
@@ -30,21 +30,21 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
     values.push_back(currentCloudIn.points[i].intensity);
   }
 
-  end = std::chrono::system_clock::now();
-  std::chrono::duration<float> elapsed_seconds = end - start;
-  float time_temp = elapsed_seconds.count() * 1000;
-  ROS_INFO("Step 1 time %f ms", time_temp);
+  // end = std::chrono::system_clock::now();
+  // std::chrono::duration<float> elapsed_seconds = end - start;
+  // float time_temp = elapsed_seconds.count() * 1000;
+  // ROS_INFO("Step 1 time %f ms", time_temp);
 
   start = std::chrono::system_clock::now();
 
   this->semantic_scan = net->infer(values, num_points);
 
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end - start;
-  time_temp = elapsed_seconds.count() * 1000;
-  ROS_INFO("Step 2 time %f ms", time_temp);
+  // end = std::chrono::system_clock::now();
+  // elapsed_seconds = end - start;
+  // time_temp = elapsed_seconds.count() * 1000;
+  // ROS_INFO("Step 2 time %f ms", time_temp);
 
-  start = std::chrono::system_clock::now();
+  // start = std::chrono::system_clock::now();
 
   std::vector<int> label_map = net->getLabelMap();
 
@@ -70,32 +70,32 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
     }
   }
 
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end - start;
-  time_temp = elapsed_seconds.count() * 1000;
-  ROS_INFO("Step 3 time %f ms", time_temp);
+  // end = std::chrono::system_clock::now();
+  // elapsed_seconds = end - start;
+  // time_temp = elapsed_seconds.count() * 1000;
+  // ROS_INFO("Step 3 time %f ms", time_temp);
 
-  start = std::chrono::system_clock::now();
+  // start = std::chrono::system_clock::now();
 
   semanticRGBCloud->clear();
   semanticLabelCloud->clear();
   semanticCloud->clear();
 
   for (size_t i = 0; i < num_points; i++) {
-    // pcl::PointXYZRGB p;
+    pcl::PointXYZRGB p;
     
     // 剔除动态物体(假剔除，因为将静态的目标也剔除掉了) 目前仅剔除 car
     // if(color_mask[i][0] == 245 && color_mask[i][1] == 150 &&
     // color_mask[i][2] == 100)
     //     continue;
 
-    // p.x = currentCloudIn.points[i].x;
-    // p.y = currentCloudIn.points[i].y;
-    // p.z = currentCloudIn.points[i].z;
-    // p.b = colors[i][0];
-    // p.g = colors[i][1];
-    // p.r = colors[i][2];
-    // semanticRGBCloud->points.push_back(p);
+    p.x = currentCloudIn.points[i].x;
+    p.y = currentCloudIn.points[i].y;
+    p.z = currentCloudIn.points[i].z;
+    p.b = colors[i][0];
+    p.g = colors[i][1];
+    p.r = colors[i][2];
+    semanticRGBCloud->points.push_back(p);
 
     PointXYZIL point;
 
@@ -117,8 +117,8 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
     semanticCloud->points.push_back(pointRGBL);
   }
 
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end - start;
-  time_temp = elapsed_seconds.count() * 1000;
-  ROS_INFO("Step 4 time %f ms", time_temp);
+  // end = std::chrono::system_clock::now();
+  // elapsed_seconds = end - start;
+  // time_temp = elapsed_seconds.count() * 1000;
+  // ROS_INFO("Step 4 time %f ms", time_temp);
 }
