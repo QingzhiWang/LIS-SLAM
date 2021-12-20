@@ -91,9 +91,8 @@ struct PointXYZIRT {
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     PointXYZIRT,
-    (float, x, x)(float, y, y)(float, z, z)(float, intensity,
-                                            intensity)(uint16_t, ring,
-                                                       ring)(float, time, time))
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)
+    (uint16_t, ring, ring)(float, time, time))
 
 struct PointXYZIL {
   PCL_ADD_POINT4D
@@ -104,8 +103,8 @@ struct PointXYZIL {
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     PointXYZIL,
-    (float, x, x)(float, y, y)(float, z, z)(float, intensity,
-                                            intensity)(uint16_t, label, label))
+    (float, x, x)(float, y, y)(float, z, z)
+    (float, intensity, intensity)(uint16_t, label, label))
 
 struct PointXYZIRTL {
   PCL_ADD_POINT4D
@@ -118,13 +117,31 @@ struct PointXYZIRTL {
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     PointXYZIRTL,
-    (float, x, x)(float, y, y)(float, z, z)(float, intensity,
-                                            intensity)(uint16_t, ring,
-                                                       ring)(float, time,
-                                                             time)(uint16_t,
-                                                                   label,
-                                                                   label))
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)
+    (uint16_t, ring, ring)(float, time, time)(uint16_t, label, label))
 
+
+
+/*
+ * A point cloud type that has 6D pose info ([x,y,z,roll,pitch,yaw] intensity is
+ * time stamp)
+ */
+struct PointXYZIRPYT {
+  PCL_ADD_POINT4D
+  PCL_ADD_INTENSITY;  // preferred way of adding a XYZ+padding
+  float roll;
+  float pitch;
+  float yaw;
+  double time;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // make sure our new allocators are aligned
+} EIGEN_ALIGN16;  // enforce SSE padding for correct memory alignment
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+    PointXYZIRPYT,
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity,intensity)
+    (float, roll, roll)(float, pitch, pitch)(float, yaw, yaw)(double, time, time))
+
+typedef PointXYZIRPYT PointTypePose;
 
 
 /*************************************
