@@ -30,7 +30,7 @@ using symbol_shorthand::V;  // Vel   (xdot,ydot,zdot)
 using symbol_shorthand::X;  // Pose3 (x,y,z,r,p,y)
 
 
-class SubMapOptmizationNode : public ParamServer, SemanticLabelParam {
+class SubMapOptmizationNode : public SubMapManager {
  public:
   ros::Subscriber subCloud;
   ros::Subscriber subGPS;
