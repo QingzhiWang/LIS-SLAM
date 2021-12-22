@@ -25,6 +25,7 @@ sensor_msgs::PointCloud2 publishCloud(
   return tempCloud;
 }
 
+
 Eigen::Affine3f pclPointToAffine3f(PointTypePose thisPoint) {
   return pcl::getTransformation(thisPoint.x, thisPoint.y, thisPoint.z,
                                 thisPoint.roll, thisPoint.pitch,
@@ -36,7 +37,6 @@ Eigen::Affine3f trans2Affine3f(float transformIn[]) {
                                 transformIn[5], transformIn[0],
                                 transformIn[1], transformIn[2]);
 }
-
 
 PointTypePose trans2PointTypePose(float transformIn[]) {
     PointTypePose thisPose6D;

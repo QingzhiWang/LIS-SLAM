@@ -13,10 +13,10 @@ struct keyframe_t {
   int submap_id;
   int id_in_submap;
 
-  Eigen::Affine3f init_pose;
-  Eigen::Affine3f optimized_pose;
-  Eigen::Affine3f gt_pose;
-  Eigen::Affine3f relative_pose;
+  Eigen::Matrix4d init_pose;
+  Eigen::Matrix4d optimized_pose;
+  Eigen::Matrix4d gt_pose;
+  Eigen::Matrix4d relative_pose;
 
   cv::Mat global_descriptor;
   vector<int> loop_container;
@@ -125,23 +125,16 @@ struct keyframe_t {
       pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, trans_mat);
       pcl::transformPointCloud(*cloud_static, *cloud_static, trans_mat);
       pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, trans_mat);
-      // pcl::transformPointCloud(*cloud_corner, *cloud_corner,
-      // trans_mat); pcl::transformPointCloud(*cloud_surface,
-      // *cloud_surface, trans_mat);
+      pcl::transformPointCloud(*cloud_corner, *cloud_corner, trans_mat); 
+      pcl::transformPointCloud(*cloud_surface, *cloud_surface, trans_mat);
     }
     if (transform_down) {
-      pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down,
-                               trans_mat);
-      pcl::transformPointCloud(*cloud_dynamic_down, *cloud_dynamic_down,
-                               trans_mat);
-      pcl::transformPointCloud(*cloud_static_down, *cloud_static_down,
-                               trans_mat);
-      pcl::transformPointCloud(*cloud_outlier_down, *cloud_outlier_down,
-                               trans_mat);
-      // pcl::transformPointCloud(*cloud_corner_down,
-      // *cloud_corner_down, trans_mat);
-      // pcl::transformPointCloud(*cloud_surface_down,
-      // *cloud_surface_down, trans_mat);
+      pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down, trans_mat);
+      pcl::transformPointCloud(*cloud_dynamic_down, *cloud_dynamic_down, trans_mat);
+      pcl::transformPointCloud(*cloud_static_down, *cloud_static_down, trans_mat);
+      pcl::transformPointCloud(*cloud_outlier_down, *cloud_outlier_down, trans_mat);
+      pcl::transformPointCloud(*cloud_corner_down, *cloud_corner_down, trans_mat);
+      pcl::transformPointCloud(*cloud_surface_down, *cloud_surface_down, trans_mat);
     }
   }
 
