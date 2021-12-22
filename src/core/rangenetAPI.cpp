@@ -35,7 +35,7 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
   // float time_temp = elapsed_seconds.count() * 1000;
   // ROS_INFO("Step 1 time %f ms", time_temp);
 
-  start = std::chrono::system_clock::now();
+  // start = std::chrono::system_clock::now();
 
   this->semantic_scan = net->infer(values, num_points);
 

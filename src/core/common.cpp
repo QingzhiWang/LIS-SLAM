@@ -4,7 +4,7 @@
 #include "common.h"
 
 sensor_msgs::PointCloud2 publishRawCloud(
-    ros::Publisher *thisPub, pcl::PointCloud<PointXYZIRTL>::Ptr thisCloud,
+    ros::Publisher *thisPub, pcl::PointCloud<PointXYZIRT>::Ptr thisCloud,
     ros::Time thisStamp, std::string thisFrame) {
   sensor_msgs::PointCloud2 tempCloud;
   pcl::toROSMsg(*thisCloud, tempCloud);
@@ -14,7 +14,7 @@ sensor_msgs::PointCloud2 publishRawCloud(
   return tempCloud;
 }
 
-static sensor_msgs::PointCloud2 publishCloud(
+sensor_msgs::PointCloud2 publishCloud(
     ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud,
     ros::Time thisStamp, std::string thisFrame) {
   sensor_msgs::PointCloud2 tempCloud;

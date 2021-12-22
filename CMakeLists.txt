@@ -190,29 +190,29 @@ target_link_libraries(semantic_lib
 ###########
 
 # Laser Pretreatment  新增laser预处理
-add_executable(${PROJECT_NAME}_laserPretreatment src/node/laserPretreatmentNode.cpp)
+add_executable(${PROJECT_NAME}_laserPretreatment src/node/laserPretreatmentNode.cpp src/core/common.cpp)
 add_dependencies(${PROJECT_NAME}_laserPretreatment ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_laserPretreatment ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 
 # Laser Processing
-add_executable(${PROJECT_NAME}_laserProcessing src/node/laserProcessingNode.cpp src/core/laserProcessing.cpp)
+add_executable(${PROJECT_NAME}_laserProcessing src/node/laserProcessingNode.cpp src/core/laserProcessing.cpp src/core/common.cpp)
 add_dependencies(${PROJECT_NAME}_laserProcessing ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_laserProcessing ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 
 # Odom Estimation
-add_executable(${PROJECT_NAME}_odomEstimation src/node/odomEstimationNode.cpp)
+add_executable(${PROJECT_NAME}_odomEstimation src/node/odomEstimationNode.cpp src/core/common.cpp)
 add_dependencies(${PROJECT_NAME}_odomEstimation ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_compile_options(${PROJECT_NAME}_odomEstimation PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME}_odomEstimation ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS} gtsam)
 
 # Semantic Fusion
-add_executable(${PROJECT_NAME}_semanticFusion src/node/semanticFusionNode.cpp src/core/rangenetAPI.cpp)
+add_executable(${PROJECT_NAME}_semanticFusion src/node/semanticFusionNode.cpp src/core/rangenetAPI.cpp src/core/common.cpp)
 add_dependencies(${PROJECT_NAME}_semanticFusion ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_compile_options(${PROJECT_NAME}_semanticFusion PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME}_semanticFusion ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} semantic_lib)
 
 # Loop Closure / Make SubMap / Mapping Optimization
-add_executable(${PROJECT_NAME}_subMapOptmization  src/node/subMapOptmizationNode.cpp src/core/epscGeneration.cpp)
+add_executable(${PROJECT_NAME}_subMapOptmization  src/node/subMapOptmizationNode.cpp src/core/epscGeneration.cpp src/core/common.cpp)
 add_dependencies(${PROJECT_NAME}_subMapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_compile_options(${PROJECT_NAME}_subMapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME}_subMapOptmization ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES} gtsam)

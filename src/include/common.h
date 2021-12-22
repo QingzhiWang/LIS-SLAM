@@ -127,7 +127,7 @@ sensor_msgs::PointCloud2 publishRawCloud(
     ros::Publisher *thisPub, pcl::PointCloud<PointXYZIRTL>::Ptr thisCloud,
     ros::Time thisStamp, std::string thisFrame);
 
-static sensor_msgs::PointCloud2 publishCloud(
+sensor_msgs::PointCloud2 publishCloud(
     ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud,
     ros::Time thisStamp, std::string thisFrame);
 

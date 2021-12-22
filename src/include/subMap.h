@@ -7,6 +7,8 @@
 #include "utility.h"
 #include "common.h"
 
+#include "keyFrame.h"
+
 struct submap_t {
   ros::Time timeInfoStamp;
 
