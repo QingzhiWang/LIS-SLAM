@@ -7,6 +7,7 @@
 
 #include "lis_slam/cloud_info.h"
 #include "utility.h"
+#include "common.h"
 
 extern std::mutex imuLock;
 extern std::mutex odoLock;

@@ -6,7 +6,7 @@
 #define _EPSC_GENERATION_H_
 
 #include "utility.h"
-
+#include "common.h"
 
 // IF TRAVELLED DISTANCE IS LESS THAN THIS VALUE, SKIP FOR PLACE RECOGNTION
 #define SKIP_NEIBOUR_DISTANCE 20.0  // 20.0

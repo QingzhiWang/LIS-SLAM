@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "utility.h"
+#include "common.h"
 
 using std::atan2;
 using std::cos;

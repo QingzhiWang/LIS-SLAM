@@ -6,6 +6,7 @@
 
 #include "lis_slam/cloud_info.h"
 #include "utility.h"
+#include "common.h"
 
 
 class OdomEstimationNode : public ParamServer {
@@ -227,6 +228,7 @@ class OdomEstimationNode : public ParamServer {
     ROS_INFO("Average odom estimation time %f ms", total_time / total_frame);
   }
 
+
   void pointAssociateToMap(PointType const* const pi, PointType* const po) {
     po->x = transPointAssociateToMap(0, 0) * pi->x +
             transPointAssociateToMap(0, 1) * pi->y +
@@ -243,74 +245,6 @@ class OdomEstimationNode : public ParamServer {
     po->intensity = pi->intensity;
   }
 
-  pcl::PointCloud<PointType>::Ptr transformPointCloud(
-      pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn) {
-    pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
-
-    PointType* pointFrom;
-
-    int cloudSize = cloudIn->size();
-    cloudOut->resize(cloudSize);
-
-    Eigen::Affine3f transCur = pcl::getTransformation(
-        transformIn->x, transformIn->y, transformIn->z, transformIn->roll,
-        transformIn->pitch, transformIn->yaw);
-
-#pragma omp parallel for num_threads(numberOfCores)
-    for (int i = 0; i < cloudSize; ++i) {
-      pointFrom = &cloudIn->points[i];
-      cloudOut->points[i].x = transCur(0, 0) * pointFrom->x +
-                              transCur(0, 1) * pointFrom->y +
-                              transCur(0, 2) * pointFrom->z + transCur(0, 3);
-      cloudOut->points[i].y = transCur(1, 0) * pointFrom->x +
-                              transCur(1, 1) * pointFrom->y +
-                              transCur(1, 2) * pointFrom->z + transCur(1, 3);
-      cloudOut->points[i].z = transCur(2, 0) * pointFrom->x +
-                              transCur(2, 1) * pointFrom->y +
-                              transCur(2, 2) * pointFrom->z + transCur(2, 3);
-      cloudOut->points[i].intensity = pointFrom->intensity;
-    }
-    return cloudOut;
-  }
-
-  pcl::PointCloud<PointType>::Ptr transformPointCloud(
-      pcl::PointCloud<PointType>::Ptr cloudIn, Eigen::Affine3f transformIn) {
-    pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
-
-    PointType* pointFrom;
-
-    int cloudSize = cloudIn->size();
-    cloudOut->resize(cloudSize);
-
-#pragma omp parallel for num_threads(numberOfCores)
-    // #pragma omp for
-    for (int i = 0; i < cloudSize; ++i) {
-      pointFrom = &cloudIn->points[i];
-      cloudOut->points[i].x =
-          transformIn(0, 0) * pointFrom->x + transformIn(0, 1) * pointFrom->y +
-          transformIn(0, 2) * pointFrom->z + transformIn(0, 3);
-      cloudOut->points[i].y =
-          transformIn(1, 0) * pointFrom->x + transformIn(1, 1) * pointFrom->y +
-          transformIn(1, 2) * pointFrom->z + transformIn(1, 3);
-      cloudOut->points[i].z =
-          transformIn(2, 0) * pointFrom->x + transformIn(2, 1) * pointFrom->y +
-          transformIn(2, 2) * pointFrom->z + transformIn(2, 3);
-      cloudOut->points[i].intensity = pointFrom->intensity;
-    }
-    return cloudOut;
-  }
-
-  Eigen::Affine3f pclPointToAffine3f(PointTypePose thisPoint) {
-    return pcl::getTransformation(thisPoint.x, thisPoint.y, thisPoint.z,
-                                  thisPoint.roll, thisPoint.pitch,
-                                  thisPoint.yaw);
-  }
-
-  Eigen::Affine3f trans2Affine3f(float transformIn[]) {
-    return pcl::getTransformation(transformIn[3], transformIn[4],
-                                  transformIn[5], transformIn[0],
-                                  transformIn[1], transformIn[2]);
-  }
 
   void downsampleCurrentScan() {
     // Downsample cloud from current scan

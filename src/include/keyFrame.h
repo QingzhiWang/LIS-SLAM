@@ -5,6 +5,7 @@
 #define _KEY_FRAME_H_
 
 #include "utility.h"
+#include "common.h"
 
 struct keyframe_t {
   ros::Time timeInfoStamp;

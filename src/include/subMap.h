@@ -5,6 +5,7 @@
 #define _SUBMAP_H_
 
 #include "utility.h"
+#include "common.h"
 
 struct submap_t {
   ros::Time timeInfoStamp;
@@ -15,7 +16,7 @@ struct submap_t {
   PointTypePose submap_pose_6D_init;
   PointTypePose submap_pose_6D_gt;
   PointTypePose submap_pose_6D_optimized;
-  PointType submap_pose_3D_optimized;  
+  PointType submap_pose_3D_optimized;
 
   vector<int> keyframe_id_in_submap;
   pcl::PointCloud<PointType>::Ptr keyframe_poses_3D;
