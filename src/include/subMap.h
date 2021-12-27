@@ -7,8 +7,6 @@
 #include "utility.h"
 #include "common.h"
 
-#include "keyFrame.h"
-
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 
@@ -182,9 +180,174 @@ class CloudUtility
 		}
 	}
 
+    void transform_bbx(bounds_t &bound, Eigen::Affine3f &transCur){
+        
+        bound.max_x = transCur(0, 0) * bound.max_x + transCur(0, 3);
+        bound.max_y = transCur(1, 1) * bound.max_y + transCur(1, 3);
+        bound.max_z = transCur(2, 2) * bound.max_z + transCur(2, 3);
+        bound.min_x = transCur(0, 0) * bound.min_x + transCur(0, 3);
+        bound.min_y = transCur(1, 1) * bound.min_y + transCur(1, 3);
+        bound.min_z = transCur(2, 2) * bound.min_z + transCur(2, 3);  
+    }
+
   protected:
   private:
 };
+
+
+
+
+struct keyframe_t {
+    ros::Time timeInfoStamp;
+    int keyframe_id;
+    int submap_id;
+    int id_in_submap;
+
+    PointTypePose init_pose;
+    PointTypePose optimized_pose;
+    PointTypePose gt_pose;
+    PointTypePose relative_pose;
+
+	bounds_t bound;				  //Bounding Box in geo-coordinate system
+	centerpoint_t cp;			  //Center Point in geo-coordinate system
+
+	bounds_t local_bound;				//Bounding Box in local coordinate system
+	centerpoint_t local_cp;				//Center Point in local coordinate system
+    
+    
+    cv::Mat global_descriptor;
+    vector<int> loop_container;
+
+    pcl::PointCloud<PointXYZIL>::Ptr cloud_semantic;
+    pcl::PointCloud<PointXYZIL>::Ptr cloud_dynamic;
+    pcl::PointCloud<PointXYZIL>::Ptr cloud_static;
+    pcl::PointCloud<PointXYZIL>::Ptr cloud_outlier;
+
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_corner;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_surface;
+
+    pcl::PointCloud<PointXYZIL>::Ptr cloud_semantic_down;
+    pcl::PointCloud<PointXYZIL>::Ptr cloud_dynamic_down;
+    pcl::PointCloud<PointXYZIL>::Ptr cloud_static_down;
+    pcl::PointCloud<PointXYZIL>::Ptr cloud_outlier_down;
+
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_corner_down;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_surface_down;
+
+    keyframe_t() {
+        keyframe_id = -1;
+        submap_id = -1;
+        id_in_submap = -1;
+
+        init();
+        // default value
+
+    }
+    keyframe_t(const keyframe_t &in_keyframe, bool clone_cloud = false) {
+        init();
+        clone_metadata(in_keyframe);
+
+        if (clone_cloud) {
+        // clone point cloud (instead of pointer)
+        *cloud_semantic = *(in_keyframe.cloud_semantic);
+        *cloud_dynamic = *(in_keyframe.cloud_dynamic);
+        *cloud_static = *(in_keyframe.cloud_static);
+        *cloud_outlier = *(in_keyframe.cloud_outlier);
+
+        *cloud_corner = *(in_keyframe.cloud_corner);
+        *cloud_surface = *(in_keyframe.cloud_surface);
+
+        *cloud_semantic_down = *(in_keyframe.cloud_semantic_down);
+        *cloud_dynamic_down = *(in_keyframe.cloud_dynamic_down);
+        *cloud_static_down = *(in_keyframe.cloud_static_down);
+        *cloud_outlier_down = *(in_keyframe.cloud_outlier_down);
+
+        *cloud_corner_down = *(in_keyframe.cloud_corner_down);
+        *cloud_surface_down = *(in_keyframe.cloud_surface_down);
+        }
+    }
+    void init() {
+        cloud_semantic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        cloud_dynamic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        cloud_static = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        cloud_outlier = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+
+        cloud_corner = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+        cloud_surface = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+
+        cloud_semantic_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        cloud_dynamic_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        cloud_static_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        cloud_outlier_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+
+        cloud_corner_down = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+        cloud_surface_down = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+    }
+
+    void clone_metadata(const keyframe_t &in_keyframe) {
+        timeInfoStamp = in_keyframe.timeInfoStamp;
+        keyframe_id = in_keyframe.keyframe_id;
+        submap_id = in_keyframe.submap_id;
+        id_in_submap = in_keyframe.id_in_submap;
+
+        init_pose = in_keyframe.init_pose;
+        optimized_pose = in_keyframe.optimized_pose;
+        gt_pose = in_keyframe.gt_pose;
+        relative_pose = in_keyframe.relative_pose;
+
+        bound = in_keyframe.bound;
+        cp = in_keyframe.bound;	
+        local_bound = in_keyframe.bound;
+        local_cp = in_keyframe.bound;
+
+        global_descriptor = in_keyframe.global_descriptor;
+        loop_container = in_keyframe.loop_container;
+    }
+
+    void free_all() {
+        cloud_semantic.reset(new pcl::PointCloud<PointXYZIL>());
+        cloud_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
+        cloud_static.reset(new pcl::PointCloud<PointXYZIL>());
+        cloud_outlier.reset(new pcl::PointCloud<PointXYZIL>());
+
+        cloud_corner.reset(new pcl::PointCloud<pcl::PointXYZI>());
+        cloud_surface.reset(new pcl::PointCloud<pcl::PointXYZI>());
+
+        cloud_semantic_down.reset(new pcl::PointCloud<PointXYZIL>());
+        cloud_dynamic_down.reset(new pcl::PointCloud<PointXYZIL>());
+        cloud_static_down.reset(new pcl::PointCloud<PointXYZIL>());
+        cloud_outlier_down.reset(new pcl::PointCloud<PointXYZIL>());
+
+        cloud_corner_down.reset(new pcl::PointCloud<pcl::PointXYZI>());
+        cloud_surface_down.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    }
+
+    void transform_feature(const Eigen::Affine3f &trans_mat,
+                            bool transform_down = true,
+                            bool transform_undown = true) {
+        if (transform_undown) {
+        pcl::transformPointCloud(*cloud_semantic, *cloud_semantic, trans_mat);
+        pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, trans_mat);
+        pcl::transformPointCloud(*cloud_static, *cloud_static, trans_mat);
+        pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, trans_mat);
+        pcl::transformPointCloud(*cloud_corner, *cloud_corner, trans_mat); 
+        pcl::transformPointCloud(*cloud_surface, *cloud_surface, trans_mat);
+        }
+        if (transform_down) {
+        pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down, trans_mat);
+        pcl::transformPointCloud(*cloud_dynamic_down, *cloud_dynamic_down, trans_mat);
+        pcl::transformPointCloud(*cloud_static_down, *cloud_static_down, trans_mat);
+        pcl::transformPointCloud(*cloud_outlier_down, *cloud_outlier_down, trans_mat);
+        pcl::transformPointCloud(*cloud_corner_down, *cloud_corner_down, trans_mat);
+        pcl::transformPointCloud(*cloud_surface_down, *cloud_surface_down, trans_mat);
+        }
+    }
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+typedef boost::shared_ptr<keyframe_t> keyframe_Ptr;
+
 
 
 
@@ -281,6 +444,11 @@ struct submap_t {
         submap_id = in_submap.submap_id;
         submap_size = in_submap.submap_size;
 
+        bound = in_submap.bound;
+        cp = in_submap.bound;	
+        local_bound = in_submap.bound;
+        local_cp = in_submap.bound;
+
         submap_pose_6D_init = in_submap.submap_pose_6D_init;
         submap_pose_6D_gt = in_submap.submap_pose_6D_gt;
         submap_pose_6D_optimized = in_submap.submap_pose_6D_optimized;
@@ -310,13 +478,16 @@ struct submap_t {
 
         keyframe_poses_3D.reset(new pcl::PointCloud<PointType>());
         keyframe_poses_6D.reset(new pcl::PointCloud<PointTypePose>());
+        
+        free_tree();
+	}
 
+	void free_tree()
+	{
         tree_dynamic.reset(new pcl::search::KdTree<PointXYZIL>());
 		tree_static.reset(new pcl::search::KdTree<PointXYZIL>());
 		tree_outlier.reset(new pcl::search::KdTree<PointXYZIL>>());
 	}
-
-
 
 
     void append_feature(const keyframe_t &in_keyframe) 
@@ -333,7 +504,7 @@ struct submap_t {
         pc_out->points.insert(pc_out->points.end(), submap_outlier->points.begin(), submap_outlier->points.end());
     }
 
-    void transform_feature(const Eigen::Matrix4d &trans_mat) 
+    void transform_feature(const Eigen::Affine3f &trans_mat) 
     {
         pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, trans_mat);
         pcl::transformPointCloud(*cloud_static, *cloud_static, trans_mat);
@@ -350,8 +521,10 @@ typedef boost::shared_ptr<submap_t> submap_Ptr;
 template <typename PointT>
 class SubMapManager : public ParamServer, SemanticLabelParam, CloudUtility<PointT>{
 public:
-    bool update_local_map(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
-                    float local_map_radius = 80, int max_num_pts = 20000, int kept_vertex_num = 800,
+    bool update_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
+                    float local_map_radius = 80, 
+                    int max_num_pts = 20000, 
+                    int kept_vertex_num = 800,
                     float last_frame_reliable_radius = 60,
                     bool map_based_dynamic_removal_on = false,
                     float dynamic_removal_center_radius = 30.0,
@@ -361,29 +534,35 @@ public:
                     bool recalculate_feature_on = false);
 
     bool map_based_dynamic_close_removal(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
-                                    float center_radius, float dynamic_dist_thre_min, float dynamic_dist_thre_max, float near_dist_thre);
+                                        float center_radius, float dynamic_dist_thre_min, 
+                                        float dynamic_dist_thre_max, float near_dist_thre);
 
     //keep the points meet dist ~ (near_dist_thre, dynamic_dist_thre_min) U (dynamic_dist_thre_max, +inf)
     //filter the points meet dist ~ (0, near_dist_thre] U [dynamic_dist_thre_min, dynamic_dist_thre_max]
-    bool map_scan_feature_pts_distance_removal(pcl::PointCloud<PointT>::Ptr feature_pts, const pcl::search::KdTree<PointT>::Ptr map_kdtree, float center_radius,
-                                            float dynamic_dist_thre_min = FLT_MAX, float dynamic_dist_thre_max = FLT_MAX, float near_dist_thre = 0.0);
+    bool map_scan_feature_pts_distance_removal(pcl::PointCloud<PointT>::Ptr feature_pts, 
+                                            const pcl::search::KdTree<PointT>::Ptr map_kdtree, 
+                                            float center_radius, float dynamic_dist_thre_min = FLT_MAX, 
+                                            float dynamic_dist_thre_max = FLT_MAX, float near_dist_thre = 0.0);
 
-    bool update_cloud_vectors(pcl::PointCloud<PointT>::Ptr feature_pts, const pcl::search::KdTree<PointT>::Ptr map_kdtree,
-                        float pca_radius = 1.5, int pca_k = 20,
-                        int k_min = 8, float sin_low = 0.5, float sin_high = 0.5, float min_linearity = 0.0);
 
     bool judge_new_submap(float &accu_tran, float &accu_rot, int &accu_frame,
-                    float max_accu_tran = 30.0, float max_accu_rot = 90.0, int max_accu_frame = 150);
+                        float max_accu_tran = 30.0, float max_accu_rot = 90.0, 
+                        int max_accu_frame = 150);
 
 
 
+	bool bbx_filter(const typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, bounds_t &bbx, bool delete_box = false);
+    bool random_downsample(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, int downsample_ratio);
+    bool random_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, int keep_number);
+    bool voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, float leaf_size);
+    bool voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in, typename pcl::PointCloud<PointT>::Ptr &cloud_out, float leaf_size);
 
     //Bridef: Used for the preprocessing of fine registration
     //Use the intersection bounding box to filter the outlier points (--> to speed up)
     bool get_cloud_pair_intersection(bounds_t &intersection_bbx,
-                                        typename pcl::PointCloud<PointT>::Ptr &pc_dynamic_tc,
-                                        typename pcl::PointCloud<PointT>::Ptr &pc_static_tc,
-                                        typename pcl::PointCloud<PointT>::Ptr &pc_outlier_tc)
+                                    typename pcl::PointCloud<PointT>::Ptr &pc_dynamic_tc,
+                                    typename pcl::PointCloud<PointT>::Ptr &pc_static_tc,
+                                    typename pcl::PointCloud<PointT>::Ptr &pc_outlier_tc)
     {
         bbx_filter(pc_dynamic_tc, intersection_bbx);
         bbx_filter(pc_static_tc, intersection_bbx);
@@ -393,51 +572,7 @@ public:
         return 1;
     }
 
-	bool bbx_filter(const typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, bounds_t &bbx, bool delete_box = false)
-	{
-		std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
-		typename pcl::PointCloud<PointT>::Ptr cloud_temp(new pcl::PointCloud<PointT>);
-		int original_pts_num = cloud_in_out->points.size();
-		for (int i = 0; i < cloud_in_out->points.size(); i++)
-		{
-			//In the bounding box
-			if (cloud_in_out->points[i].x > bbx.min_x && cloud_in_out->points[i].x < bbx.max_x &&
-				cloud_in_out->points[i].y > bbx.min_y && cloud_in_out->points[i].y < bbx.max_y &&
-				cloud_in_out->points[i].z > bbx.min_z && cloud_in_out->points[i].z < bbx.max_z)
-			{
-				if (!delete_box)
-					cloud_temp->points.push_back(cloud_in_out->points[i]);
-			}
-			else
-			{
-				if (delete_box)
-					cloud_temp->points.push_back(cloud_in_out->points[i]);
-			}
-		}
-		cloud_temp->points.swap(cloud_in_out->points);
-
-		std::chrono::steady_clock::time_point toc = std::chrono::steady_clock::now();
-		std::chrono::duration<double> time_used = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic);
-
-		// LOG(INFO) << "Box filter [ " << original_pts_num << " --> "
-		// 		  << cloud_in_out->points.size() << " ] done in [" << time_used.count() << "] s";
-
-		return 1;
-	}
-
-    void label2RGBCloud(pcl::PointCloud<PointXYZIL>::Ptr in_cloud, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out_cloud){
-        out_cloud->points.resize(in_cloud->points.size());
-        for (size_t i = 0; i < out_cloud->points.size(); i++) {
-            out_cloud->points[i].x = in_cloud->points[i].x;
-            out_cloud->points[i].y = in_cloud->points[i].y;
-            out_cloud->points[i].z = in_cloud->points[i].z;
-            out_cloud->points[i].r = std::get<0>(Argmax2RGB[in_cloud->points[i].label]);
-            out_cloud->points[i].g = std::get<1>(Argmax2RGB[in_cloud->points[i].label]);
-            out_cloud->points[i].b = std::get<2>(Argmax2RGB[in_cloud->points[i].label]);
-        }
-        out_cloud->height = 1;
-        out_cloud->width = out_cloud->points.size();
-    } 
+    void label2RGBCloud(pcl::PointCloud<PointXYZIL>::Ptr in_cloud, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out_cloud);
 };
 
 

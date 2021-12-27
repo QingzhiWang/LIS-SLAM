@@ -3,10 +3,9 @@
 
 #define PCL_NO_PRECOMPILE
 
+#include "common.h"
 #include "lis_slam/cloud_info.h"
 #include "utility.h"
-#include "common.h"
-
 
 class OdomEstimationNode : public ParamServer {
  public:
@@ -175,7 +174,7 @@ class OdomEstimationNode : public ParamServer {
     kdtreeSurroundingKeyPoses.reset(new pcl::KdTreeFLANN<PointType>());
   }
 
-  void laserCloudInfoHandler(const lis_slam::cloud_infoConstPtr& msgIn) {
+  void laserCloudInfoHandler(const lis_slam::cloud_infoConstPtr &msgIn) {
     // std::lock_guard<std::mutex> lock(mtx);
     // cloudInfoQueue.push_back(*msgIn);
 
@@ -227,8 +226,7 @@ class OdomEstimationNode : public ParamServer {
     ROS_INFO("Average odom estimation time %f ms", total_time / total_frame);
   }
 
-
-  void pointAssociateToMap(PointType const* const pi, PointType* const po) {
+  void pointAssociateToMap(PointType const *const pi, PointType *const po) {
     po->x = transPointAssociateToMap(0, 0) * pi->x +
             transPointAssociateToMap(0, 1) * pi->y +
             transPointAssociateToMap(0, 2) * pi->z +
@@ -243,7 +241,6 @@ class OdomEstimationNode : public ParamServer {
             transPointAssociateToMap(2, 3);
     po->intensity = pi->intensity;
   }
-
 
   void downsampleCurrentScan() {
     // Downsample cloud from current scan
@@ -1058,7 +1055,7 @@ class OdomEstimationNode : public ParamServer {
   }
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   ros::init(argc, argv, "lis_slam");
 
   OdomEstimationNode ODN;
