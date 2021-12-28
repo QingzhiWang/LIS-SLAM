@@ -91,6 +91,8 @@ bool SubMapManager::update_submap(submap_Ptr local_map, keyframe_Ptr last_target
                   << last_target_cblock->cloud_dynamic_down->points.size() << "]." << std::endl;
     }  
     local_map->append_feature(*last_target_cblock);
+
+    last_target_cblock->transform_feature(tran_target_map, true, false);
     
     local_map->submap_size++;
     local_map->keyframe_id_in_submap.push_back(last_target_cblock->keyframe_id);

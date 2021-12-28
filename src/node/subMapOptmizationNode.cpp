@@ -520,7 +520,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>{
                                                               transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
 
 
-
                 // transPredictionMapped=trans2Affine3f(transformTobeSubMapped);
                 for(int i=0;i<6;++i){
                     transPredictionMapped[i]=transformTobeSubMapped[i];
@@ -535,7 +534,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>{
         // use imu incremental estimation for pose guess (only rotation)
         if (cloudInfo.imuAvailable == true)
         {
-
             // ROS_WARN("MakeSubmap: cloudInfo.imuAvailable == true!");
             Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);
            
@@ -547,7 +545,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>{
             pcl::getTranslationAndEulerAngles(transFinal, transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5], 
                                                           transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
             
-
             // transPredictionMapped=trans2Affine3f(transformTobeSubMapped);
             for(int i=0;i<6;++i){
                 transPredictionMapped[i]=transformTobeSubMapped[i];
@@ -591,7 +588,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>{
             pcl::getTranslationAndEulerAngles(transFinal, transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5], 
                                                         transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]);
             
-
             // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[0] : %f",transformTobeSubMapped[0]);
             // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[1] : %f",transformTobeSubMapped[1]);
             // ROS_WARN("cloudInfo.odomAvailable == true : transformTobeSubMapped[2] : %f",transformTobeSubMapped[2]);
@@ -611,7 +607,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>{
 
         pcl::getTranslationAndEulerAngles(transIncre, transformCurFrame2Submap[3], transformCurFrame2Submap[4], transformCurFrame2Submap[5], 
                                                       transformCurFrame2Submap[0], transformCurFrame2Submap[1], transformCurFrame2Submap[2]);
-
     }
 
 

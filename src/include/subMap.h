@@ -326,20 +326,20 @@ struct keyframe_t {
                             bool transform_down = true,
                             bool transform_undown = true) {
         if (transform_undown) {
-        pcl::transformPointCloud(*cloud_semantic, *cloud_semantic, trans_mat);
+        // pcl::transformPointCloud(*cloud_semantic, *cloud_semantic, trans_mat);
         pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, trans_mat);
         pcl::transformPointCloud(*cloud_static, *cloud_static, trans_mat);
         pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, trans_mat);
-        pcl::transformPointCloud(*cloud_corner, *cloud_corner, trans_mat); 
-        pcl::transformPointCloud(*cloud_surface, *cloud_surface, trans_mat);
+        // pcl::transformPointCloud(*cloud_corner, *cloud_corner, trans_mat); 
+        // pcl::transformPointCloud(*cloud_surface, *cloud_surface, trans_mat);
         }
         if (transform_down) {
-        pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down, trans_mat);
+        // pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down, trans_mat);
         pcl::transformPointCloud(*cloud_dynamic_down, *cloud_dynamic_down, trans_mat);
         pcl::transformPointCloud(*cloud_static_down, *cloud_static_down, trans_mat);
         pcl::transformPointCloud(*cloud_outlier_down, *cloud_outlier_down, trans_mat);
-        pcl::transformPointCloud(*cloud_corner_down, *cloud_corner_down, trans_mat);
-        pcl::transformPointCloud(*cloud_surface_down, *cloud_surface_down, trans_mat);
+        // pcl::transformPointCloud(*cloud_corner_down, *cloud_corner_down, trans_mat);
+        // pcl::transformPointCloud(*cloud_surface_down, *cloud_surface_down, trans_mat);
         }
     }
 
