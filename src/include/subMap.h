@@ -521,6 +521,8 @@ typedef boost::shared_ptr<submap_t> submap_Ptr;
 template <typename PointT>
 class SubMapManager : public ParamServer, SemanticLabelParam, CloudUtility<PointT>{
 public:
+    bool fisrt_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock);
+
     bool update_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
                     float local_map_radius = 80, 
                     int max_num_pts = 20000, 
@@ -530,8 +532,7 @@ public:
                     float dynamic_removal_center_radius = 30.0,
                     float dynamic_dist_thre_min = 0.3,
                     float dynamic_dist_thre_max = 3.0,
-                    float near_dist_thre = 0.03,
-                    bool recalculate_feature_on = false);
+                    float near_dist_thre = 0.03);
 
     bool map_based_dynamic_close_removal(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
                                         float center_radius, float dynamic_dist_thre_min, 

@@ -50,7 +50,7 @@ lis_slam:
   mapFrame: "map"
 
   # GPS Settings
-  # useImuHeadingInitialization: true           # if using GPS data, set to "true"
+  useImuHeadingInitialization: false           # if using GPS data, set to "true"
   useGpsElevation: false                      # if GPS elevation is bad, set to "false"
   gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data
   poseCovThreshold: 25.0                      # m^2, threshold for using GPS data
@@ -137,6 +137,7 @@ lis_slam:
   subMapYawMax: 0.9  # 0.6-indoor    0.9outdoor
   subMapFramesSize: 20  #10
   subMapMaxTime: 3.0  #3.0
+  subMapTraMax: 50.0
 
   subMapOptmizationDistanceThresh: 1.2   #1.5   1.3       
   subMapOptmizationYawThresh: 0.20  #  radians  0.4-indoor    0.25-outdoor

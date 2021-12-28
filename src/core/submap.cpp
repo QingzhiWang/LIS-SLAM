@@ -2,6 +2,52 @@
 // Email wangqingzhi27@outlook.com
 
 #include "subMap.h"
+bool SubMapManager::fisrt_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock)
+{
+    local_map->free();
+    
+    local_map->timeInfoStamp = last_target_cblock->timeInfoStamp;    
+    local_map->submap_id = last_target_cblock->submap_id;    
+    local_map->submap_size = 1;    
+    
+    local_map->submap_pose_6D_init = last_target_cblock->optimized_pose;    
+    local_map->submap_pose_6D_optimized = last_target_cblock->optimized_pose;    
+    
+    PointType thisPose3D;
+    thisPose3D.x = last_target_cblock->optimized_pose.x;
+    thisPose3D.y = last_target_cblock->optimized_pose.y;
+    thisPose3D.z = last_target_cblock->optimized_pose.z;
+    thisPose3D.intensity = last_target_cblock->submap_id;
+
+    local_map->submap_pose_3D_optimized = thisPose3D;   
+    
+    local_map->keyframe_id_in_submap.push_back(last_target_cblock->keyframe_id);
+    local_map->keyframe_poses_6D.push_back(last_target_cblock->optimized_pose);
+    local_map->keyframe_poses_3D.push_back(thisPose3D);
+    
+    local_map->keyframe_poses_3D_map.insert(std::make_pair(last_target_cblock->keyframe_id, thisPose3D));
+    local_map->keyframe_poses_6D_map.insert(std::make_pair(last_target_cblock->keyframe_id, last_target_cblock->optimized_pose));
+
+    local_map->append_feature(*last_target_cblock);  
+
+    local_map->feature_point_num = local_map->submap_dynamic->points.size() + 
+                                   local_map->submap_static->points.size() + 
+                                   local_map->submap_outlier->points.size();
+
+    typename pcl::PointCloud<PointT>::Ptr cloud_raw(new pcl::PointCloud<PointT>);
+    
+    //calculate bbx (local)
+    local_map->merge_feature_points(cloud_raw);
+    get_cloud_bbx(cloud_raw, local_map->local_bound);
+
+    //calculate bbx (global)
+    Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
+    transform_bbx(local_map->bound, tran_map);
+
+    local_map->free_tree();
+
+}
+
 
 bool SubMapManager::update_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
                 float local_map_radius = 80, 
@@ -12,8 +58,7 @@ bool SubMapManager::update_submap(submap_Ptr local_map, keyframe_Ptr last_target
                 float dynamic_removal_center_radius = 30.0,
                 float dynamic_dist_thre_min = 0.3,
                 float dynamic_dist_thre_max = 3.0,
-                float near_dist_thre = 0.03,
-                bool recalculate_feature_on = false){
+                float near_dist_thre = 0.03){
 
     std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
 
@@ -21,6 +66,17 @@ bool SubMapManager::update_submap(submap_Ptr local_map, keyframe_Ptr last_target
     tran_target_map = pclPointToAffine3f(last_target_cblock->optimized_pose).inverse() * pclPointToAffine3f(local_map->submap_pose_6D_optimized);
     
     last_target_cblock->transform_feature(tran_target_map.inverse(), true, false);
+    // typename pcl::PointCloud<PointT>::Ptr cloud_dynamic(new pcl::PointCloud<PointT>);
+    // typename pcl::PointCloud<PointT>::Ptr cloud_static(new pcl::PointCloud<PointT>);
+    // typename pcl::PointCloud<PointT>::Ptr cloud_outlier(new pcl::PointCloud<PointT>);
+    // pcl::copyPointCloud(*last_target_cblock->cloud_dynamic, *cloud_dynamic);
+    // pcl::copyPointCloud(*last_target_cblock->cloud_static, *cloud_static);
+    // pcl::copyPointCloud(*last_target_cblock->cloud_outlier, *cloud_outlier);
+
+    // Eigen::Affine3f tran_target_map_inv = tran_target_map.inverse();
+    // pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, tran_target_map_inv);
+    // pcl::transformPointCloud(*cloud_static, *cloud_static, tran_target_map_inv);
+    // pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, tran_target_map_inv);
     
     dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, dynamic_dist_thre_min + 0.1);
     std::cout << "Map based filtering range(m): (0, " << near_dist_thre << "] U [" << dynamic_dist_thre_min << "," << dynamic_dist_thre_max << "]" << std::endl;
@@ -48,8 +104,8 @@ bool SubMapManager::update_submap(submap_Ptr local_map, keyframe_Ptr last_target
 
     local_map->keyframe_poses_6D.push_back(last_target_cblock->optimized_pose);
 
-    local_map->keyframe_poses_3D_map.insert(std::make_pair(last_target_cblock->optimized_pose, thisPose3D));
-    local_map->keyframe_poses_6D_map.insert(std::make_pair(last_target_cblock->optimized_pose, last_target_cblock->optimized_pose));
+    local_map->keyframe_poses_3D_map.insert(std::make_pair(last_target_cblock->keyframe_id, thisPose3D));
+    local_map->keyframe_poses_6D_map.insert(std::make_pair(last_target_cblock->keyframe_id, last_target_cblock->optimized_pose));
 
     local_map->feature_point_num = local_map->submap_dynamic->points.size() + 
                                    local_map->submap_static->points.size() + 
