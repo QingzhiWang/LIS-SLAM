@@ -5,7 +5,7 @@
 #include "lis_slam/semantic_info.h"
 #include "rangenetAPI.h"
 
-class SemanticFusionNode : public ParamServer, SemanticLabelParam 
+class SemanticFusionNode : public ParamServer, public SemanticLabelParam 
 {
 private:
   double total_time = 0;

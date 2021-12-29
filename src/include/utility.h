@@ -37,6 +37,7 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/search/impl/search.hpp>
+#include <pcl/filters/random_sample.h>
 
 #include <tf/LinearMath/Quaternion.h>
 #include <tf/transform_broadcaster.h>

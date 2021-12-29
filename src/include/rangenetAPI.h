@@ -15,7 +15,7 @@
 namespace cl = rangenet::segmentation;
 
 
-class RangenetAPI : public ParamServer, SemanticLabelParam 
+class RangenetAPI : public ParamServer, public SemanticLabelParam 
 {
 public:
   typedef std::tuple<u_char, u_char, u_char> semantic_color;

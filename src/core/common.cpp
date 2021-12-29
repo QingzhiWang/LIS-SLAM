@@ -33,6 +33,20 @@ sensor_msgs::PointCloud2 publishCloud(
   return tempCloud;
 }
 
+sensor_msgs::PointCloud2 publishLabelCloud(
+    ros::Publisher *thisPub, pcl::PointCloud<PointXYZIL>::Ptr thisCloud,
+    ros::Time thisStamp, std::string thisFrame)
+{
+  sensor_msgs::PointCloud2 tempCloud;
+  pcl::toROSMsg(*thisCloud, tempCloud);
+  tempCloud.header.stamp = thisStamp;
+  tempCloud.header.frame_id = thisFrame;
+  
+  if (thisPub->getNumSubscribers() != 0) 
+    thisPub->publish(tempCloud);
+  
+  return tempCloud;
+}
 
 Eigen::Affine3f pclPointToAffine3f(PointTypePose thisPoint) 
 {
@@ -82,7 +96,7 @@ PointType trans2PointType(float transformIn[])
   point3d.y = transformIn[4];
   point3d.z = transformIn[5];
 
-  return poind3d;
+  return point3d;
 }
 
 PointType trans2PointType(float transformIn[], int id)
@@ -93,7 +107,7 @@ PointType trans2PointType(float transformIn[], int id)
   point3d.z = transformIn[5];
   point3d.intensity = id;
 
-  return poind3d;
+  return point3d;
 }
 
 

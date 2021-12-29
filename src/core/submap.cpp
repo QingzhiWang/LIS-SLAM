@@ -2,7 +2,8 @@
 // Email wangqingzhi27@outlook.com
 
 #include "subMap.h"
-bool SubMapManager::fisrt_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock)
+
+bool SubMapManager<PointT>::fisrt_submap(submap_Ptr &local_map, keyframe_Ptr &last_target_cblock)
 {
     local_map->free();
     
@@ -22,8 +23,8 @@ bool SubMapManager::fisrt_submap(submap_Ptr local_map, keyframe_Ptr last_target_
     local_map->submap_pose_3D_optimized = thisPose3D;   
     
     local_map->keyframe_id_in_submap.push_back(last_target_cblock->keyframe_id);
-    local_map->keyframe_poses_6D.push_back(last_target_cblock->optimized_pose);
-    local_map->keyframe_poses_3D.push_back(thisPose3D);
+    local_map->keyframe_poses_6D->points.push_back(last_target_cblock->optimized_pose);
+    local_map->keyframe_poses_3D->points.push_back(thisPose3D);
     
     local_map->keyframe_poses_3D_map.insert(std::make_pair(last_target_cblock->keyframe_id, thisPose3D));
     local_map->keyframe_poses_6D_map.insert(std::make_pair(last_target_cblock->keyframe_id, last_target_cblock->optimized_pose));
@@ -38,19 +39,19 @@ bool SubMapManager::fisrt_submap(submap_Ptr local_map, keyframe_Ptr last_target_
     
     //calculate bbx (local)
     local_map->merge_feature_points(cloud_raw);
-    get_cloud_bbx(cloud_raw, local_map->local_bound);
+    this->get_cloud_bbx(cloud_raw, local_map->local_bound);
 
     //calculate bbx (global)
     Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
-    transform_bbx(local_map->local_bound, local_map->bound, tran_map);
+    this->transform_bbx(local_map->local_bound, local_map->bound, tran_map);
 
     local_map->free_tree();
 
 }
 
 
-bool SubMapManager::update_submap(
-        submap_Ptr local_map, keyframe_Ptr last_target_cblock,
+bool SubMapManager<PointT>::update_submap(
+        submap_Ptr &local_map, keyframe_Ptr &last_target_cblock,
         float local_map_radius = 80, 
         int max_num_pts = 80000, 
         int kept_vertex_num = 800,
@@ -80,12 +81,12 @@ bool SubMapManager::update_submap(
     // pcl::transformPointCloud(*cloud_static, *cloud_static, tran_target_map_inv);
     // pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, tran_target_map_inv);
     
-    dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, dynamic_dist_thre_min + 0.1);
+    dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, (float)dynamic_dist_thre_min + 0.1);
     std::cout << "Map based filtering range(m): (0, " << near_dist_thre << "] U [" << dynamic_dist_thre_min << "," << dynamic_dist_thre_max << "]" << std::endl;
 
     if (map_based_dynamic_removal_on && local_map->feature_point_num > max_num_pts / 5)
     {
-        map_based_dynamic_close_removal(local_map, last_target_cblock, used_feature_type, dynamic_removal_center_radius,
+        map_based_dynamic_close_removal(local_map, last_target_cblock, dynamic_removal_center_radius,
                                         dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
 
         std::cout << "Feature point number of last frame after dynamic removal: Dynamic: [" 
@@ -104,9 +105,9 @@ bool SubMapManager::update_submap(
     thisPose3D.y = last_target_cblock->optimized_pose.y;
     thisPose3D.z = last_target_cblock->optimized_pose.z;
     thisPose3D.intensity = last_target_cblock->keyframe_id;
-    local_map->points.push_back(thisPose3D);
+    local_map->keyframe_poses_3D->points.push_back(thisPose3D);
 
-    local_map->keyframe_poses_6D.push_back(last_target_cblock->optimized_pose);
+    local_map->keyframe_poses_6D->points.push_back(last_target_cblock->optimized_pose);
 
     local_map->keyframe_poses_3D_map.insert(std::make_pair(last_target_cblock->keyframe_id, thisPose3D));
     local_map->keyframe_poses_6D_map.insert(std::make_pair(last_target_cblock->keyframe_id, last_target_cblock->optimized_pose));
@@ -119,12 +120,12 @@ bool SubMapManager::update_submap(
     
     //calculate bbx (local)
     local_map->merge_feature_points(cloud_raw);
-    get_cloud_bbx(cloud_raw, local_map->local_bound);
+    this->get_cloud_bbx(cloud_raw, local_map->local_bound);
 
     //calculate bbx (global)
     Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
     // transform_bbx(local_map->bound, tran_map);
-    transform_bbx(local_map->local_bound, local_map->bound, tran_map);
+    this->transform_bbx(local_map->local_bound, local_map->bound, tran_map);
 
     local_map->free_tree();
     
@@ -134,8 +135,8 @@ bool SubMapManager::update_submap(
     return true;
 }
 
-bool SubMapManager::map_based_dynamic_close_removal(
-        submap_Ptr local_map, keyframe_Ptr last_target_cblock,
+bool SubMapManager<PointT>::map_based_dynamic_close_removal(
+        submap_Ptr &local_map, keyframe_Ptr &last_target_cblock,
         float center_radius, float dynamic_dist_thre_min, 
         float dynamic_dist_thre_max, float near_dist_thre)
 {
@@ -160,9 +161,9 @@ bool SubMapManager::map_based_dynamic_close_removal(
 
 //keep the points meet dist ~ (near_dist_thre, dynamic_dist_thre_min) U (dynamic_dist_thre_max, +inf)
 //filter the points meet dist ~ (0, near_dist_thre] U [dynamic_dist_thre_min, dynamic_dist_thre_max]
-bool SubMapManager::map_scan_feature_pts_distance_removal(
-        pcl::PointCloud<PointT>::Ptr feature_pts, 
-        const pcl::search::KdTree<PointT>::Ptr map_kdtree, 
+bool SubMapManager<PointT>::map_scan_feature_pts_distance_removal(
+        typename pcl::PointCloud<PointT>::Ptr feature_pts, 
+        const typename pcl::search::KdTree<PointT>::Ptr map_kdtree, 
         float center_radius, float dynamic_dist_thre_min = FLT_MAX, 
         float dynamic_dist_thre_max = FLT_MAX, float near_dist_thre = 0.0)
 {
@@ -198,7 +199,7 @@ bool SubMapManager::map_scan_feature_pts_distance_removal(
 }
 
 
-bool SubMapManager::judge_new_submap(
+bool SubMapManager<PointT>::judge_new_submap(
         float &accu_tran, float &accu_rot, int &accu_frame,
         float max_accu_tran = 30.0, float max_accu_rot = 90.0, 
         int max_accu_frame = 150)
@@ -224,7 +225,7 @@ bool SubMapManager::judge_new_submap(
 
 
 
-bool SubMapManager::bbx_filter(const typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, bounds_t &bbx, bool delete_box = false)
+bool SubMapManager<PointT>::bbx_filter(const typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, bounds_t &bbx, bool delete_box = false)
 {
     std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
     typename pcl::PointCloud<PointT>::Ptr cloud_temp(new pcl::PointCloud<PointT>);
@@ -256,7 +257,7 @@ bool SubMapManager::bbx_filter(const typename pcl::PointCloud<PointT>::Ptr &clou
     return 1;
 }
 
-bool SubMapManager::random_downsample(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, int downsample_ratio)
+bool SubMapManager<PointT>::random_downsample(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, int downsample_ratio)
 {
     typename pcl::PointCloud<PointT>::Ptr cloud_temp(new pcl::PointCloud<PointT>);
 
@@ -277,7 +278,7 @@ bool SubMapManager::random_downsample(typename pcl::PointCloud<PointT>::Ptr &clo
 
 //fixed number random downsampling
 //when keep_number == 0, the output point cloud would be empty (in other words, the input point cloud would be cleared)
-bool SubMapManager::random_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, int keep_number)
+bool SubMapManager<PointT>::random_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, int keep_number)
 {
     if (cloud_in_out->points.size() <= keep_number)
         return false;
@@ -302,7 +303,7 @@ bool SubMapManager::random_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr 
 }
 
 
-bool SubMapManager::voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, float leaf_size)
+bool SubMapManager<PointT>::voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, float leaf_size)
 {
     if (cloud_in_out->points.size() <= 0)
         return false;
@@ -320,7 +321,7 @@ bool SubMapManager::voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &
 
 
 
-bool SubMapManager::voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in, typename pcl::PointCloud<PointT>::Ptr &cloud_out, float leaf_size);
+bool SubMapManager<PointT>::voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &cloud_in, typename pcl::PointCloud<PointT>::Ptr &cloud_out, float leaf_size);
 {
     if (cloud_in->points.size() <= 0)
         return false;
@@ -335,7 +336,7 @@ bool SubMapManager::voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &
 
 
 
-void SubMapManager::label2RGBCloud(pcl::PointCloud<PointXYZIL>::Ptr in_cloud, 
+void SubMapManager<PointT>::label2RGBCloud(pcl::PointCloud<PointXYZIL>::Ptr in_cloud, 
                                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out_cloud)
 {
     out_cloud->points.resize(in_cloud->points.size());

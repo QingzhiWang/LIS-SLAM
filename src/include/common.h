@@ -134,6 +134,9 @@ sensor_msgs::PointCloud2 publishCloud(
     ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud,
     ros::Time thisStamp, std::string thisFrame);
 
+sensor_msgs::PointCloud2 publishLabelCloud(
+    ros::Publisher *thisPub, pcl::PointCloud<PointXYZIL>::Ptr thisCloud,
+    ros::Time thisStamp, std::string thisFrame);
 
 Eigen::Affine3f pclPointToAffine3f(PointTypePose thisPoint);
 
