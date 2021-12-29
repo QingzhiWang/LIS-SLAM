@@ -5,8 +5,9 @@
 #include "lis_slam/semantic_info.h"
 #include "rangenetAPI.h"
 
-class SemanticFusionNode : public ParamServer, SemanticLabelParam {
- private:
+class SemanticFusionNode : public ParamServer, SemanticLabelParam 
+{
+private:
   double total_time = 0;
   int total_frame = 0;
 
@@ -50,32 +51,26 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
   // RangenetAPI range_net;
   RangenetAPI range_net = RangenetAPI(MODEL_PATH);
 
- public:
-  SemanticFusionNode() {
-    // subCloudRaw = nh.subscribe<sensor_msgs::PointCloud2>(
-    //     pointCloudTopic, 10,
-    //     &SemanticFusionNode::laserCloudRawHandler, this);
+public:
+  SemanticFusionNode() 
+  {
+    // subCloudRaw = nh.subscribe<sensor_msgs::PointCloud2>( pointCloudTopic, 10, &SemanticFusionNode::laserCloudRawHandler, this);
 
-    subCloudInfo = nh.subscribe<lis_slam::cloud_info>(
-        "lis_slam/odom_estimation/cloud_info", 10,
-        &SemanticFusionNode::laserCloudInfoHandler, this);
+    subCloudInfo = nh.subscribe<lis_slam::cloud_info>("lis_slam/odom_estimation/cloud_info", 10, &SemanticFusionNode::laserCloudInfoHandler, this);
 
-    pubSemanticInfo = nh.advertise<lis_slam::semantic_info>(
-        "lis_slam/semantic_fusion/semantic_info", 10);
+    pubSemanticInfo = nh.advertise<lis_slam::semantic_info>("lis_slam/semantic_fusion/semantic_info", 10);
 
-    pubSemanticRGBCloud = nh.advertise<sensor_msgs::PointCloud2>(
-        "lis_slam/semantic_fusion/semantic_cloud_rgb", 10);
+    pubSemanticRGBCloud = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/semantic_fusion/semantic_cloud_rgb", 10);
 
-    pubSemanticCloud = nh.advertise<sensor_msgs::PointCloud2>(
-        "lis_slam/semantic_fusion/semantic_cloud", 10);
+    pubSemanticCloud = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/semantic_fusion/semantic_cloud", 10);
 
-    downSizeFilter.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize,
-                               mappingCornerLeafSize);
+    downSizeFilter.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
 
     allocateMemory();
   }
 
-  void allocateMemory() {
+  void allocateMemory() 
+  {
     currentCloudIn.reset(new pcl::PointCloud<PointType>());
     currentCloudInDS.reset(new pcl::PointCloud<PointType>());
     // currentCloudCornerIn.reset(new pcl::PointCloud<PointType>());
@@ -91,7 +86,8 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     outlierCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
   }
 
-  void resetParameters() {
+  void resetParameters() 
+  {
     currentCloudIn->clear();
     currentCloudInDS->clear();
     // currentCloudCornerIn->clear();
@@ -107,7 +103,8 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     outlierCloudOut->clear();
   }
 
-  void laserCloudRawHandler(const sensor_msgs::PointCloud2ConstPtr& msgIn) {
+  void laserCloudRawHandler(const sensor_msgs::PointCloud2ConstPtr& msgIn) 
+  {
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
 
@@ -129,10 +126,12 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     total_frame++;
     float time_temp = elapsed_seconds.count() * 1000;
     total_time += time_temp;
+    
     ROS_INFO("Average semantic fusion time %f ms \n", total_time / total_frame);
   }
 
-  void laserCloudInfoHandler(const lis_slam::cloud_infoConstPtr& msgIn) {
+  void laserCloudInfoHandler(const lis_slam::cloud_infoConstPtr& msgIn) 
+  {
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
 
@@ -161,15 +160,15 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     total_frame++;
     float time_temp = elapsed_seconds.count() * 1000;
     total_time += time_temp;
-    ROS_INFO("Average semantic fusion time %f ms \n \n",
-             total_time / total_frame);
+    ROS_INFO("Average semantic fusion time %f ms \n \n", total_time / total_frame);
   }
 
 
   void categoryMapping() {
     uint32_t num_points = semanticCloudOut->size();
 
-    for (int i = 0; i < num_points; ++i) {
+    for (int i = 0; i < num_points; ++i) 
+    {
       if (UsingLableMap[semanticCloudOut->points[i].label] == 10)
         dynamicCloudOut->points.push_back(semanticCloudOut->points[i]);
       else if (UsingLableMap[semanticCloudOut->points[i].label] == 40 ||
@@ -180,7 +179,8 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
     }
   }
 
-  void publishCloudInfo() {
+  void publishCloudInfo() 
+  {
     semanticInfo.header = cloudHeader;
     semanticInfo.imuAvailable = cloudInfo.imuAvailable;
     semanticInfo.odomAvailable = cloudInfo.odomAvailable;
@@ -231,7 +231,8 @@ class SemanticFusionNode : public ParamServer, SemanticLabelParam {
   }
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
   ros::init(argc, argv, "lis_slam");
 
   SemanticFusionNode SFN;

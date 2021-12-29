@@ -3,7 +3,8 @@
 
 #include "rangenetAPI.h"
 
-RangenetAPI::RangenetAPI(const string& params) {
+RangenetAPI::RangenetAPI(const string& params) 
+{
   std::string model_path = params;
   std::string backend = "tensorrt";
 
@@ -15,7 +16,8 @@ RangenetAPI::RangenetAPI(const string& params) {
   semanticCloud.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
 }
 
-void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
+void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) 
+{
   // std::chrono::time_point<std::chrono::system_clock> start, end;
   // start = std::chrono::system_clock::now();
 
@@ -23,7 +25,8 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
 
   std::vector<float> values;
 
-  for (size_t i = 0; i < num_points; i++) {
+  for (size_t i = 0; i < num_points; i++) 
+  {
     values.push_back(currentCloudIn.points[i].x);
     values.push_back(currentCloudIn.points[i].y);
     values.push_back(currentCloudIn.points[i].z);
@@ -56,7 +59,8 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
   std::vector<float> labels_prob;
   labels_prob.resize(num_points);
 
-  for (uint32_t i = 0; i < num_points; ++i) {
+  for (uint32_t i = 0; i < num_points; ++i) 
+  {
     labels_prob[i] = 0;
     for (int32_t j = 0; j < LearningSize; ++j) {
       if (labels_prob[i] <= semantic_scan[i][j]) {
@@ -81,7 +85,8 @@ void RangenetAPI::infer(pcl::PointCloud<PointType>& currentCloudIn) {
   semanticLabelCloud->clear();
   semanticCloud->clear();
 
-  for (size_t i = 0; i < num_points; i++) {
+  for (size_t i = 0; i < num_points; i++) 
+  {
     pcl::PointXYZRGB p;
     
     // 剔除动态物体(假剔除，因为将静态的目标也剔除掉了) 目前仅剔除 car

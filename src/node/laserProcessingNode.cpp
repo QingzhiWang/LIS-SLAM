@@ -14,7 +14,8 @@ extern std::deque<sensor_msgs::PointCloud2> cloudQueue;
 
 extern const int queueLength;
 
-class LaserProcessingNode : public ParamServer {
+class LaserProcessingNode : public ParamServer 
+{
  private:
   LaserProcessing lpro;
 
@@ -32,45 +33,29 @@ class LaserProcessingNode : public ParamServer {
   int total_frame = 0;
 
  public:
-  LaserProcessingNode() {
+  LaserProcessingNode() 
+  {
     if (useImu == true) {
-      subImu = nh.subscribe<sensor_msgs::Imu>(
-          imuTopic, 2000, &LaserProcessingNode::imuHandler, this,
-          ros::TransportHints().tcpNoDelay());
-      // subOdom = nh.subscribe<nav_msgs::Odometry>(
-      //     odomTopic + "_incremental", 2000,
-      //     &LaserProcessingNode::odometryHandler, this,
-      //     ros::TransportHints().tcpNoDelay());
-      subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(
-          "lis_slam/points_pretreatmented", 5,
-          &LaserProcessingNode::cloudHandler, this,
-          ros::TransportHints().tcpNoDelay());
+      subImu = nh.subscribe<sensor_msgs::Imu>( imuTopic, 2000, &LaserProcessingNode::imuHandler, this, ros::TransportHints().tcpNoDelay());
+      // subOdom = nh.subscribe<nav_msgs::Odometry>( odomTopic + "_incremental", 2000, &LaserProcessingNode::odometryHandler, this, ros::TransportHints().tcpNoDelay());
+      subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>( "lis_slam/points_pretreatmented", 5, &LaserProcessingNode::cloudHandler, this, ros::TransportHints().tcpNoDelay());
       ROS_WARN("useImu==true!");
     } else {
-      subOdom = nh.subscribe<nav_msgs::Odometry>(
-          "odometry/fusion_incremental", 2000,
-          &LaserProcessingNode::odometryHandler, this,
-          ros::TransportHints().tcpNoDelay());
-      subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(
-          "lis_slam/points_pretreatmented", 5,
-          &LaserProcessingNode::cloudHandler, this,
-          ros::TransportHints().tcpNoDelay());
+      subOdom = nh.subscribe<nav_msgs::Odometry>( "odometry/fusion_incremental", 2000, &LaserProcessingNode::odometryHandler, this, ros::TransportHints().tcpNoDelay());
+      subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>( "lis_slam/points_pretreatmented", 5, &LaserProcessingNode::cloudHandler, this, ros::TransportHints().tcpNoDelay());
       ROS_WARN("useImu==false!");
     }
 
-    pubCloudInfo = nh.advertise<lis_slam::cloud_info>(
-        "lis_slam/laser_process/cloud_info", 10);
-    pubRawPoints = nh.advertise<sensor_msgs::PointCloud2>(
-        "lis_slam/laser_process/cloud_deskewed", 10);
-    pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2>(
-        "lis_slam/laser_process/cloud_corner", 10);
-    pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>(
-        "lis_slam/laser_process/cloud_surface", 10);
+    pubCloudInfo = nh.advertise<lis_slam::cloud_info>( "lis_slam/laser_process/cloud_info", 10);
+    pubRawPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_deskewed", 10);
+    pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_corner", 10);
+    pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_surface", 10);
   }
 
   ~LaserProcessingNode() {}
 
-  void imuHandler(const sensor_msgs::Imu::ConstPtr& imuMsg) {
+  void imuHandler(const sensor_msgs::Imu::ConstPtr& imuMsg) 
+  {
     sensor_msgs::Imu thisImu = imuConverter(*imuMsg);
 
     std::lock_guard<std::mutex> lock1(imuLock);
@@ -95,26 +80,31 @@ class LaserProcessingNode : public ParamServer {
     // imuYaw << endl << endl;
   }
 
-  void odometryHandler(const nav_msgs::Odometry::ConstPtr& odometryMsg) {
+  void odometryHandler(const nav_msgs::Odometry::ConstPtr& odometryMsg) 
+  {
     std::lock_guard<std::mutex> lock2(odoLock);
     odomQueue.push_back(*odometryMsg);
   }
 
-  void cloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg) {
+  void cloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg) 
+  {
     std::lock_guard<std::mutex> lock3(cloLock);
     cloudQueue.push_back(*laserCloudMsg);
   }
 
-  void laserProcessing() {
-    while (ros::ok()) {
-      if (!cloudQueue.empty()) {
+  void laserProcessing() 
+  {
+    while (ros::ok()) 
+    {
+      if (!cloudQueue.empty()) 
+      {
         std::chrono::time_point<std::chrono::system_clock> start, end;
         start = std::chrono::system_clock::now();
 
         //激光运动畸变去除
-        if (lpro.distortionRemoval() == false) {
+        if (lpro.distortionRemoval() == false) 
           continue;
-        }
+
         // ROS_WARN("Laser Distortion Removal end!");
 
         //线面特征提取
@@ -131,8 +121,7 @@ class LaserProcessingNode : public ParamServer {
         total_frame++;
         float time_temp = elapsed_seconds.count() * 1000;
         total_time += time_temp;
-        ROS_INFO("Average laser processing time %f ms",
-                 total_time / total_frame);
+        ROS_INFO("Average laser processing time %f ms", total_time / total_frame);
 
         //发布coudInfo
         pubCloudInfo.publish(cloudInfoOut);
@@ -148,13 +137,13 @@ class LaserProcessingNode : public ParamServer {
   }
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
   ros::init(argc, argv, "lis_slam");
 
   LaserProcessingNode LPN;
 
-  std::thread laser_processing_process(&LaserProcessingNode::laserProcessing,
-                                       &LPN);
+  std::thread laser_processing_process(&LaserProcessingNode::laserProcessing, &LPN);
 
   ROS_INFO("\033[1;32m----> Laser Processing Node Started.\033[0m");
 

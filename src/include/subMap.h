@@ -180,7 +180,8 @@ class CloudUtility
 		}
 	}
 
-    void transform_bbx(bounds_t &bound, Eigen::Affine3f &transCur){
+    void transform_bbx(bounds_t &bound, Eigen::Affine3f &transCur)
+    {
         
         bound.max_x = transCur(0, 0) * bound.max_x + transCur(0, 3);
         bound.max_y = transCur(1, 1) * bound.max_y + transCur(1, 3);
@@ -190,6 +191,17 @@ class CloudUtility
         bound.min_z = transCur(2, 2) * bound.min_z + transCur(2, 3);  
     }
 
+    void transform_bbx(bounds_t &bound_in, bounds_t &bound_out, Eigen::Affine3f &transCur)
+    {
+        
+        bound_out.max_x = transCur(0, 0) * bound_in.max_x + transCur(0, 3);
+        bound_out.max_y = transCur(1, 1) * bound_in.max_y + transCur(1, 3);
+        bound_out.max_z = transCur(2, 2) * bound_in.max_z + transCur(2, 3);
+        bound_out.min_x = transCur(0, 0) * bound_in.min_x + transCur(0, 3);
+        bound_out.min_y = transCur(1, 1) * bound_in.min_y + transCur(1, 3);
+        bound_out.min_z = transCur(2, 2) * bound_in.min_z + transCur(2, 3);  
+    }
+
   protected:
   private:
 };
@@ -197,7 +209,8 @@ class CloudUtility
 
 
 
-struct keyframe_t {
+struct keyframe_t 
+{
     ros::Time timeInfoStamp;
     int keyframe_id;
     int submap_id;
@@ -234,7 +247,8 @@ struct keyframe_t {
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_corner_down;
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_surface_down;
 
-    keyframe_t() {
+    keyframe_t() 
+    {
         keyframe_id = -1;
         submap_id = -1;
         id_in_submap = -1;
@@ -243,7 +257,9 @@ struct keyframe_t {
         // default value
 
     }
-    keyframe_t(const keyframe_t &in_keyframe, bool clone_cloud = false) {
+
+    keyframe_t(const keyframe_t &in_keyframe, bool clone_cloud = false) 
+    {
         init();
         clone_metadata(in_keyframe);
 
@@ -266,7 +282,9 @@ struct keyframe_t {
         *cloud_surface_down = *(in_keyframe.cloud_surface_down);
         }
     }
-    void init() {
+
+    void init() 
+    {
         cloud_semantic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
         cloud_dynamic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
         cloud_static = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
@@ -284,7 +302,8 @@ struct keyframe_t {
         cloud_surface_down = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
     }
 
-    void clone_metadata(const keyframe_t &in_keyframe) {
+    void clone_metadata(const keyframe_t &in_keyframe) 
+    {
         timeInfoStamp = in_keyframe.timeInfoStamp;
         keyframe_id = in_keyframe.keyframe_id;
         submap_id = in_keyframe.submap_id;
@@ -304,7 +323,8 @@ struct keyframe_t {
         loop_container = in_keyframe.loop_container;
     }
 
-    void free_all() {
+    void free_all() 
+    {
         cloud_semantic.reset(new pcl::PointCloud<PointXYZIL>());
         cloud_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
         cloud_static.reset(new pcl::PointCloud<PointXYZIL>());
@@ -324,22 +344,24 @@ struct keyframe_t {
 
     void transform_feature(const Eigen::Affine3f &trans_mat,
                             bool transform_down = true,
-                            bool transform_undown = true) {
+                            bool transform_undown = true) 
+    {
         if (transform_undown) {
-        // pcl::transformPointCloud(*cloud_semantic, *cloud_semantic, trans_mat);
-        pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, trans_mat);
-        pcl::transformPointCloud(*cloud_static, *cloud_static, trans_mat);
-        pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, trans_mat);
-        // pcl::transformPointCloud(*cloud_corner, *cloud_corner, trans_mat); 
-        // pcl::transformPointCloud(*cloud_surface, *cloud_surface, trans_mat);
+            // pcl::transformPointCloud(*cloud_semantic, *cloud_semantic, trans_mat);
+            pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, trans_mat);
+            pcl::transformPointCloud(*cloud_static, *cloud_static, trans_mat);
+            pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, trans_mat);
+            // pcl::transformPointCloud(*cloud_corner, *cloud_corner, trans_mat); 
+            // pcl::transformPointCloud(*cloud_surface, *cloud_surface, trans_mat);
         }
-        if (transform_down) {
-        // pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down, trans_mat);
-        pcl::transformPointCloud(*cloud_dynamic_down, *cloud_dynamic_down, trans_mat);
-        pcl::transformPointCloud(*cloud_static_down, *cloud_static_down, trans_mat);
-        pcl::transformPointCloud(*cloud_outlier_down, *cloud_outlier_down, trans_mat);
-        // pcl::transformPointCloud(*cloud_corner_down, *cloud_corner_down, trans_mat);
-        // pcl::transformPointCloud(*cloud_surface_down, *cloud_surface_down, trans_mat);
+        if (transform_down) 
+        {
+            // pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down, trans_mat);
+            pcl::transformPointCloud(*cloud_dynamic_down, *cloud_dynamic_down, trans_mat);
+            pcl::transformPointCloud(*cloud_static_down, *cloud_static_down, trans_mat);
+            pcl::transformPointCloud(*cloud_outlier_down, *cloud_outlier_down, trans_mat);
+            // pcl::transformPointCloud(*cloud_corner_down, *cloud_corner_down, trans_mat);
+            // pcl::transformPointCloud(*cloud_surface_down, *cloud_surface_down, trans_mat);
         }
     }
 
@@ -351,7 +373,8 @@ typedef boost::shared_ptr<keyframe_t> keyframe_Ptr;
 
 
 
-struct submap_t {
+struct submap_t 
+{
     ros::Time timeInfoStamp;
 
     int submap_id;
@@ -519,36 +542,41 @@ typedef boost::shared_ptr<submap_t> submap_Ptr;
 
 
 template <typename PointT>
-class SubMapManager : public ParamServer, SemanticLabelParam, CloudUtility<PointT>{
+class SubMapManager : public ParamServer, SemanticLabelParam, CloudUtility<PointT>
+{
 public:
     bool fisrt_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock);
 
-    bool update_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
-                    float local_map_radius = 80, 
-                    int max_num_pts = 20000, 
-                    int kept_vertex_num = 800,
-                    float last_frame_reliable_radius = 60,
-                    bool map_based_dynamic_removal_on = false,
-                    float dynamic_removal_center_radius = 30.0,
-                    float dynamic_dist_thre_min = 0.3,
-                    float dynamic_dist_thre_max = 3.0,
-                    float near_dist_thre = 0.03);
+    bool update_submap(
+            submap_Ptr local_map, keyframe_Ptr last_target_cblock,
+            float local_map_radius = 80, 
+            int max_num_pts = 20000, 
+            int kept_vertex_num = 800,
+            float last_frame_reliable_radius = 60,
+            bool map_based_dynamic_removal_on = false,
+            float dynamic_removal_center_radius = 30.0,
+            float dynamic_dist_thre_min = 0.3,
+            float dynamic_dist_thre_max = 3.0,
+            float near_dist_thre = 0.03);
 
-    bool map_based_dynamic_close_removal(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
-                                        float center_radius, float dynamic_dist_thre_min, 
-                                        float dynamic_dist_thre_max, float near_dist_thre);
+    bool map_based_dynamic_close_removal(
+            submap_Ptr local_map, keyframe_Ptr last_target_cblock,
+            float center_radius, float dynamic_dist_thre_min, 
+            float dynamic_dist_thre_max, float near_dist_thre);
 
     //keep the points meet dist ~ (near_dist_thre, dynamic_dist_thre_min) U (dynamic_dist_thre_max, +inf)
     //filter the points meet dist ~ (0, near_dist_thre] U [dynamic_dist_thre_min, dynamic_dist_thre_max]
-    bool map_scan_feature_pts_distance_removal(pcl::PointCloud<PointT>::Ptr feature_pts, 
-                                            const pcl::search::KdTree<PointT>::Ptr map_kdtree, 
-                                            float center_radius, float dynamic_dist_thre_min = FLT_MAX, 
-                                            float dynamic_dist_thre_max = FLT_MAX, float near_dist_thre = 0.0);
+    bool map_scan_feature_pts_distance_removal(
+            pcl::PointCloud<PointT>::Ptr feature_pts, 
+            const pcl::search::KdTree<PointT>::Ptr map_kdtree, 
+            float center_radius, float dynamic_dist_thre_min = FLT_MAX, 
+            float dynamic_dist_thre_max = FLT_MAX, float near_dist_thre = 0.0);
 
 
-    bool judge_new_submap(float &accu_tran, float &accu_rot, int &accu_frame,
-                        float max_accu_tran = 30.0, float max_accu_rot = 90.0, 
-                        int max_accu_frame = 150);
+    bool judge_new_submap(
+            float &accu_tran, float &accu_rot, int &accu_frame,
+            float max_accu_tran = 30.0, float max_accu_rot = 90.0, 
+            int max_accu_frame = 150);
 
 
 
@@ -560,10 +588,11 @@ public:
 
     //Bridef: Used for the preprocessing of fine registration
     //Use the intersection bounding box to filter the outlier points (--> to speed up)
-    bool get_cloud_pair_intersection(bounds_t &intersection_bbx,
-                                    typename pcl::PointCloud<PointT>::Ptr &pc_dynamic_tc,
-                                    typename pcl::PointCloud<PointT>::Ptr &pc_static_tc,
-                                    typename pcl::PointCloud<PointT>::Ptr &pc_outlier_tc)
+    bool get_cloud_pair_intersection(
+            bounds_t &intersection_bbx,
+            typename pcl::PointCloud<PointT>::Ptr &pc_dynamic_tc,
+            typename pcl::PointCloud<PointT>::Ptr &pc_static_tc,
+            typename pcl::PointCloud<PointT>::Ptr &pc_outlier_tc)
     {
         bbx_filter(pc_dynamic_tc, intersection_bbx);
         bbx_filter(pc_static_tc, intersection_bbx);
@@ -573,7 +602,8 @@ public:
         return 1;
     }
 
-    void label2RGBCloud(pcl::PointCloud<PointXYZIL>::Ptr in_cloud, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out_cloud);
+    void label2RGBCloud(pcl::PointCloud<PointXYZIL>::Ptr in_cloud, 
+                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out_cloud);
 };
 
 

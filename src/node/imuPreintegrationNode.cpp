@@ -26,7 +26,7 @@ using gtsam::symbol_shorthand::V;  // Vel   (xdot,ydot,zdot)
 using gtsam::symbol_shorthand::X;  // Pose3 (x,y,z,r,p,y)
 
 class TransformFusion : public ParamServer {
- public:
+public:
   std::mutex mtx;
 
   ros::Subscriber subImuOdometry;

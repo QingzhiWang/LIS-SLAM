@@ -17,7 +17,8 @@ const int queueLength = 2000;
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::allocateMemory() {
+void LaserProcessing ::allocateMemory() 
+{
   laserCloudIn.reset(new pcl::PointCloud<PointXYZIRT>());
 
   fullCloud.reset(new pcl::PointCloud<PointXYZIRT>());
@@ -39,14 +40,14 @@ void LaserProcessing ::allocateMemory() {
   cloudNeighborPicked = new int[N_SCAN * Horizon_SCAN];
   cloudLabel = new int[N_SCAN * Horizon_SCAN];
 
-  // downSizeFilter.setLeafSize(odometrySurfLeafSize, odometrySurfLeafSize,
-  // odometrySurfLeafSize);
+  // downSizeFilter.setLeafSize(odometrySurfLeafSize, odometrySurfLeafSize, odometrySurfLeafSize);
 }
 
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::resetParameters() {
+void LaserProcessing ::resetParameters() 
+{
   laserCloudIn->clear();
   fullCloud->clear();
   extractedCloud->clear();
@@ -60,7 +61,8 @@ void LaserProcessing ::resetParameters() {
   firstPointFlag = true;
   odomDeskewFlag = false;
 
-  for (int i = 0; i < queueLength; ++i) {
+  for (int i = 0; i < queueLength; ++i) 
+  {
     imuTime[i] = 0;
     imuRotX[i] = 0;
     imuRotY[i] = 0;
@@ -74,7 +76,8 @@ void LaserProcessing ::resetParameters() {
     endRingIndex[i] = 0;
   }
 
-  for (int i = 0; i < N_SCAN * Horizon_SCAN; ++i) {
+  for (int i = 0; i < N_SCAN * Horizon_SCAN; ++i) 
+  {
     pointColInd[i] = 0;
     pointRange[i] = 0;
     cloudCurvature[i] = 0;
@@ -86,7 +89,8 @@ void LaserProcessing ::resetParameters() {
 /****************************************
  *
  *****************************************/
-bool LaserProcessing ::distortionRemoval() {
+bool LaserProcessing ::distortionRemoval() 
+{
 
   if (!cachePointCloud()) return false;
 
@@ -102,7 +106,8 @@ bool LaserProcessing ::distortionRemoval() {
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::featureExtraction() {
+void LaserProcessing ::featureExtraction() 
+{
   calculateSmoothness();
 
   markOccludedPoints();
@@ -113,7 +118,8 @@ void LaserProcessing ::featureExtraction() {
 /****************************************
  *
  *****************************************/
-bool LaserProcessing ::cachePointCloud() {
+bool LaserProcessing ::cachePointCloud() 
+{
   // cache point cloud
   if (cloudQueue.size() <= 2) return false;
 
@@ -127,31 +133,31 @@ bool LaserProcessing ::cachePointCloud() {
 
   // check dense flag
   if (laserCloudIn->is_dense == false) {
-    ROS_ERROR(
-        "Point cloud is not in dense format, please remove NaN points first!");
+    ROS_ERROR("Point cloud is not in dense format, please remove NaN points first!");
     ros::shutdown();
   }
 
   // check ring channel
   static int ringFlag = 0;
-  if (ringFlag == 0) {
+  if (ringFlag == 0) 
+  {
     ringFlag = -1;
-    for (int i = 0; i < (int)currentCloudMsg.fields.size(); ++i) {
+    for (int i = 0; i < (int)currentCloudMsg.fields.size(); ++i) 
+    {
       if (currentCloudMsg.fields[i].name == "ring") {
         ringFlag = 1;
         break;
       }
     }
     if (ringFlag == -1) {
-      ROS_ERROR(
-          "Point cloud ring channel not available, please configure your point "
-          "cloud data!");
+      ROS_ERROR("Point cloud ring channel not available, please configure your point cloud data!");
       ros::shutdown();
     }
   }
 
   // check point time
-  if (deskewFlag == 0) {
+  if (deskewFlag == 0) 
+  {
     deskewFlag = -1;
     for (int i = 0; i < (int)currentCloudMsg.fields.size(); ++i) {
       if (currentCloudMsg.fields[i].name == "time") {
@@ -160,9 +166,7 @@ bool LaserProcessing ::cachePointCloud() {
       }
     }
     if (deskewFlag == -1)
-      ROS_WARN(
-          "Point cloud timestamp not available, deskew function disabled, "
-          "system will drift significantly!");
+      ROS_WARN("Point cloud timestamp not available, deskew function disabled, system will drift significantly!");
   }
 
   // get timestamp
@@ -176,15 +180,17 @@ bool LaserProcessing ::cachePointCloud() {
 /****************************************
  *
  *****************************************/
-bool LaserProcessing ::deskewInfo() {
+bool LaserProcessing ::deskewInfo() 
+{
   std::lock_guard<std::mutex> lock1(imuLock);
   std::lock_guard<std::mutex> lock2(odoLock);
 
   if (useImu == true) {
     // make sure IMU data available for the scan
-    if (imuQueue.empty() ||
+    if (imuQueue.empty() || 
         imuQueue.front().header.stamp.toSec() > timeScanCur ||
-        imuQueue.back().header.stamp.toSec() < timeScanEnd) {
+        imuQueue.back().header.stamp.toSec() < timeScanEnd) 
+    {
       ROS_DEBUG("Waiting for IMU data ...");
       return false;
     }
@@ -202,10 +208,12 @@ bool LaserProcessing ::deskewInfo() {
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::imuDeskewInfo() {
+void LaserProcessing ::imuDeskewInfo() 
+{
   cloudInfo.imuAvailable = false;
 
-  while (!imuQueue.empty()) {
+  while (!imuQueue.empty()) 
+  {
     if (imuQueue.front().header.stamp.toSec() < timeScanCur - 0.01)
       imuQueue.pop_front();
     else
@@ -216,18 +224,19 @@ void LaserProcessing ::imuDeskewInfo() {
 
   imuPointerCur = 0;
 
-  for (int i = 0; i < (int)imuQueue.size(); ++i) {
+  for (int i = 0; i < (int)imuQueue.size(); ++i) 
+  {
     sensor_msgs::Imu thisImuMsg = imuQueue[i];
     double currentImuTime = thisImuMsg.header.stamp.toSec();
 
     // get roll, pitch, and yaw estimation for this scan
     if (currentImuTime <= timeScanCur)
-      imuRPY2rosRPY(&thisImuMsg, &cloudInfo.imuRollInit,
-                    &cloudInfo.imuPitchInit, &cloudInfo.imuYawInit);
+      imuRPY2rosRPY(&thisImuMsg, &cloudInfo.imuRollInit, &cloudInfo.imuPitchInit, &cloudInfo.imuYawInit);
 
     if (currentImuTime > timeScanEnd + 0.01) break;
 
-    if (imuPointerCur == 0) {
+    if (imuPointerCur == 0) 
+    {
       imuRotX[0] = 0;
       imuRotY[0] = 0;
       imuRotZ[0] = 0;
@@ -259,12 +268,14 @@ void LaserProcessing ::imuDeskewInfo() {
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::odomDeskewInfo() {
+void LaserProcessing ::odomDeskewInfo() 
+{
   // ROS_WARN("odomDeskewInfo start!");
   // std::cout<<"odomQueueSize: "<<odomQueue.size()<<std::endl;
   cloudInfo.odomAvailable = false;
 
-  while (!odomQueue.empty()) {
+  while (!odomQueue.empty()) 
+  {
     if (odomQueue.front().header.stamp.toSec() < timeScanCur - 0.01)
       odomQueue.pop_front();
     else
@@ -285,7 +296,8 @@ void LaserProcessing ::odomDeskewInfo() {
   // get start odometry at the beinning of the scan
   nav_msgs::Odometry startOdomMsg;
 
-  for (int i = 0; i < (int)odomQueue.size(); ++i) {
+  for (int i = 0; i < (int)odomQueue.size(); ++i) 
+  {
     startOdomMsg = odomQueue[i];
 
     if (ROS_TIME(&startOdomMsg) < timeScanCur)
@@ -319,7 +331,8 @@ void LaserProcessing ::odomDeskewInfo() {
 
   nav_msgs::Odometry endOdomMsg;
 
-  for (int i = 0; i < (int)odomQueue.size(); ++i) {
+  for (int i = 0; i < (int)odomQueue.size(); ++i) 
+  {
     endOdomMsg = odomQueue[i];
 
     if (ROS_TIME(&endOdomMsg) < timeScanEnd)
@@ -328,8 +341,7 @@ void LaserProcessing ::odomDeskewInfo() {
       break;
   }
 
-  if (int(round(startOdomMsg.pose.covariance[0])) !=
-      int(round(endOdomMsg.pose.covariance[0])))
+  if (int(round(startOdomMsg.pose.covariance[0])) != int(round(endOdomMsg.pose.covariance[0])))
     return;
 
   Eigen::Affine3f transBegin = pcl::getTransformation(
@@ -345,8 +357,7 @@ void LaserProcessing ::odomDeskewInfo() {
   Eigen::Affine3f transBt = transBegin.inverse() * transEnd;
 
   float rollIncre, pitchIncre, yawIncre;
-  pcl::getTranslationAndEulerAngles(transBt, odomIncreX, odomIncreY, odomIncreZ,
-                                    rollIncre, pitchIncre, yawIncre);
+  pcl::getTranslationAndEulerAngles(transBt, odomIncreX, odomIncreY, odomIncreZ, rollIncre, pitchIncre, yawIncre);
 
   odomDeskewFlag = true;
 }
@@ -355,22 +366,27 @@ void LaserProcessing ::odomDeskewInfo() {
  *
  *****************************************/
 void LaserProcessing ::findRotation(double pointTime, float *rotXCur,
-                                    float *rotYCur, float *rotZCur) {
+                                    float *rotYCur, float *rotZCur) 
+{
   *rotXCur = 0;
   *rotYCur = 0;
   *rotZCur = 0;
 
   int imuPointerFront = 0;
-  while (imuPointerFront < imuPointerCur) {
+  while (imuPointerFront < imuPointerCur) 
+  {
     if (pointTime < imuTime[imuPointerFront]) break;
     ++imuPointerFront;
   }
 
-  if (pointTime > imuTime[imuPointerFront] || imuPointerFront == 0) {
+  if (pointTime > imuTime[imuPointerFront] || imuPointerFront == 0) 
+  {
     *rotXCur = imuRotX[imuPointerFront];
     *rotYCur = imuRotY[imuPointerFront];
     *rotZCur = imuRotZ[imuPointerFront];
-  } else {
+  } 
+  else 
+  {
     int imuPointerBack = imuPointerFront - 1;
     double ratioFront = (pointTime - imuTime[imuPointerBack]) /
                         (imuTime[imuPointerFront] - imuTime[imuPointerBack]);
@@ -388,8 +404,8 @@ void LaserProcessing ::findRotation(double pointTime, float *rotXCur,
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::findPosition(double relTime, float *posXCur,
-                                    float *posYCur, float *posZCur) {
+void LaserProcessing ::findPosition(double relTime, float *posXCur, float *posYCur, float *posZCur) 
+{
   *posXCur = 0;
   *posYCur = 0;
   *posZCur = 0;
@@ -410,8 +426,8 @@ void LaserProcessing ::findPosition(double relTime, float *posXCur,
 /****************************************
  *
  *****************************************/
-PointXYZIRT LaserProcessing ::deskewPoint(PointXYZIRT *point,
-                                           double relTime) {
+PointXYZIRT LaserProcessing ::deskewPoint(PointXYZIRT *point, double relTime) 
+{
   if (deskewFlag == -1 || cloudInfo.imuAvailable == false) return *point;
 
   double pointTime = timeScanCur + relTime;
@@ -424,14 +440,12 @@ PointXYZIRT LaserProcessing ::deskewPoint(PointXYZIRT *point,
 
   if (firstPointFlag == true) {
     transStartInverse = (pcl::getTransformation(posXCur, posYCur, posZCur,
-                                                rotXCur, rotYCur, rotZCur))
-                            .inverse();
+                                                rotXCur, rotYCur, rotZCur)).inverse();
     firstPointFlag = false;
   }
 
   // transform points to start
-  Eigen::Affine3f transFinal = pcl::getTransformation(
-      posXCur, posYCur, posZCur, rotXCur, rotYCur, rotZCur);
+  Eigen::Affine3f transFinal = pcl::getTransformation(posXCur, posYCur, posZCur, rotXCur, rotYCur, rotZCur);
   Eigen::Affine3f transBt = transStartInverse * transFinal;
 
   PointXYZIRT newPoint;
@@ -452,10 +466,12 @@ PointXYZIRT LaserProcessing ::deskewPoint(PointXYZIRT *point,
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::projectPointCloud() {
+void LaserProcessing ::projectPointCloud() 
+{
   int cloudSize = laserCloudIn->points.size();
   // range image projection
-  for (int i = 0; i < cloudSize; ++i) {
+  for (int i = 0; i < cloudSize; ++i) 
+  {
     // PointType thisPoint;
     PointXYZIRT thisPoint;
     thisPoint.x = laserCloudIn->points[i].x;
@@ -500,14 +516,18 @@ void LaserProcessing ::projectPointCloud() {
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::cloudExtraction() {
+void LaserProcessing ::cloudExtraction() 
+{
   int count = 0;
   // extract segmented cloud for lidar odometry
-  for (int i = 0; i < N_SCAN; ++i) {
+  for (int i = 0; i < N_SCAN; ++i) 
+  {
     startRingIndex[i] = count - 1 + 5;
 
-    for (int j = 0; j < Horizon_SCAN; ++j) {
-      if (rangeMat.at<float>(i, j) != FLT_MAX) {
+    for (int j = 0; j < Horizon_SCAN; ++j) 
+    {
+      if (rangeMat.at<float>(i, j) != FLT_MAX) 
+      {
         // mark the points' column index for marking occlusion later
         pointColInd[count] = j;
         // save range info
@@ -525,18 +545,18 @@ void LaserProcessing ::cloudExtraction() {
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::calculateSmoothness() {
+void LaserProcessing ::calculateSmoothness() 
+{
   int cloudSize = extractedCloud->points.size();
-  for (int i = 5; i < cloudSize - 5; i++) {
+  for (int i = 5; i < cloudSize - 5; i++) 
+  {
     float diffRange = pointRange[i - 5] + pointRange[i - 4] +
                       pointRange[i - 3] + pointRange[i - 2] +
                       pointRange[i - 1] - pointRange[i] * 10 +
                       pointRange[i + 1] + pointRange[i + 2] +
                       pointRange[i + 3] + pointRange[i + 4] + pointRange[i + 5];
 
-    cloudCurvature[i] =
-        diffRange *
-        diffRange;  // diffX * diffX + diffY * diffY + diffZ * diffZ;
+    cloudCurvature[i] = diffRange * diffRange;  // diffX * diffX + diffY * diffY + diffZ * diffZ;
 
     cloudNeighborPicked[i] = 0;
     cloudLabel[i] = 0;
@@ -549,16 +569,19 @@ void LaserProcessing ::calculateSmoothness() {
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::markOccludedPoints() {
+void LaserProcessing ::markOccludedPoints() 
+{
   int cloudSize = extractedCloud->points.size();
   // mark occluded points and parallel beam points
-  for (int i = 5; i < cloudSize - 6; ++i) {
+  for (int i = 5; i < cloudSize - 6; ++i) 
+  {
     // occluded points
     float depth1 = pointRange[i];
     float depth2 = pointRange[i + 1];
     int columnDiff = std::abs(int(pointColInd[i + 1] - pointColInd[i]));
 
-    if (columnDiff < 10) {
+    if (columnDiff < 10) 
+    {
       // 10 pixel diff in range image
       if (depth1 - depth2 > 0.3) {
         cloudNeighborPicked[i - 5] = 1;
@@ -588,33 +611,32 @@ void LaserProcessing ::markOccludedPoints() {
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::extractFeatures() {
+void LaserProcessing ::extractFeatures() 
+{
   cornerCloud->clear();
   surfaceCloud->clear();
 
-  pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloudScan(
-      new pcl::PointCloud<PointXYZIRT>());
-  pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloudScanDS(
-      new pcl::PointCloud<PointXYZIRT>());
+  pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloudScan(new pcl::PointCloud<PointXYZIRT>());
+  pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloudScanDS(new pcl::PointCloud<PointXYZIRT>());
 
-  for (int i = 0; i < N_SCAN; i++) {
+  for (int i = 0; i < N_SCAN; i++) 
+  {
     surfaceCloudScan->clear();
 
     for (int j = 0; j < 6; j++) {
       int sp = (startRingIndex[i] * (6 - j) + endRingIndex[i] * j) / 6;
-      int ep =
-          (startRingIndex[i] * (5 - j) + endRingIndex[i] * (j + 1)) / 6 - 1;
+      int ep = (startRingIndex[i] * (5 - j) + endRingIndex[i] * (j + 1)) / 6 - 1;
 
       if (sp >= ep) continue;
 
-      std::sort(cloudSmoothness.begin() + sp, cloudSmoothness.begin() + ep,
-                by_value());
+      std::sort(cloudSmoothness.begin() + sp, cloudSmoothness.begin() + ep, by_value());
 
       int largestPickedNum = 0;
-      for (int k = ep; k >= sp; k--) {
+      for (int k = ep; k >= sp; k--) 
+      {
         int ind = cloudSmoothness[k].ind;
-        if (cloudNeighborPicked[ind] == 0 &&
-            cloudCurvature[ind] > edgeThreshold) {
+        if (cloudNeighborPicked[ind] == 0 && cloudCurvature[ind] > edgeThreshold) 
+        {
           largestPickedNum++;
           if (largestPickedNum <= 20) {
             cloudLabel[ind] = 1;
@@ -624,38 +646,40 @@ void LaserProcessing ::extractFeatures() {
           }
 
           cloudNeighborPicked[ind] = 1;
-          for (int l = 1; l <= 5; l++) {
-            int columnDiff =
-                std::abs(int(pointColInd[ind + l] - pointColInd[ind + l - 1]));
+          for (int l = 1; l <= 5; l++) 
+          {
+            int columnDiff = std::abs(int(pointColInd[ind + l] - pointColInd[ind + l - 1]));
             if (columnDiff > 10) break;
             cloudNeighborPicked[ind + l] = 1;
           }
-          for (int l = -1; l >= -5; l--) {
-            int columnDiff =
-                std::abs(int(pointColInd[ind + l] - pointColInd[ind + l + 1]));
+          
+          for (int l = -1; l >= -5; l--) 
+          {
+            int columnDiff = std::abs(int(pointColInd[ind + l] - pointColInd[ind + l + 1]));
             if (columnDiff > 10) break;
             cloudNeighborPicked[ind + l] = 1;
           }
         }
       }
 
-      for (int k = sp; k <= ep; k++) {
+      for (int k = sp; k <= ep; k++) 
+      {
         int ind = cloudSmoothness[k].ind;
-        if (cloudNeighborPicked[ind] == 0 &&
-            cloudCurvature[ind] < surfThreshold) {
+        if (cloudNeighborPicked[ind] == 0 && cloudCurvature[ind] < surfThreshold) 
+        {
           cloudLabel[ind] = -1;
           cloudNeighborPicked[ind] = 1;
 
-          for (int l = 1; l <= 5; l++) {
-            int columnDiff =
-                std::abs(int(pointColInd[ind + l] - pointColInd[ind + l - 1]));
+          for (int l = 1; l <= 5; l++) 
+          {
+            int columnDiff = std::abs(int(pointColInd[ind + l] - pointColInd[ind + l - 1]));
             if (columnDiff > 10) break;
 
             cloudNeighborPicked[ind + l] = 1;
           }
-          for (int l = -1; l >= -5; l--) {
-            int columnDiff =
-                std::abs(int(pointColInd[ind + l] - pointColInd[ind + l + 1]));
+          for (int l = -1; l >= -5; l--) 
+          {
+            int columnDiff = std::abs(int(pointColInd[ind + l] - pointColInd[ind + l + 1]));
             if (columnDiff > 10) break;
 
             cloudNeighborPicked[ind + l] = 1;
@@ -663,8 +687,10 @@ void LaserProcessing ::extractFeatures() {
         }
       }
 
-      for (int k = sp; k <= ep; k++) {
-        if (cloudLabel[k] <= 0) {
+      for (int k = sp; k <= ep; k++) 
+      {
+        if (cloudLabel[k] <= 0) 
+        {
           surfaceCloudScan->push_back(extractedCloud->points[k]);
         }
       }
@@ -683,7 +709,8 @@ void LaserProcessing ::extractFeatures() {
 /****************************************
  *
  *****************************************/
-void LaserProcessing ::assignCouldInfo() {
+void LaserProcessing ::assignCouldInfo() 
+{
   cloudInfo.header = cloudHeader;
 
   sensor_msgs::PointCloud2 tempCloud;

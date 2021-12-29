@@ -23,7 +23,7 @@
 
 
 class EPSCGeneration : public SemanticLabelParam {
- private:
+private:  
   std::vector<int> order_vec = {0,  0,  0,  0,  0,  0,  0,  0, 0,  10,
                                 11, 12, 13, 15, 16, 14, 17, 9, 18, 19};
   bool UsingISCFlag = true;
@@ -79,32 +79,23 @@ class EPSCGeneration : public SemanticLabelParam {
   void groundFilter(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in,
                     pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out);
 
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr getColorCloud(
-      pcl::PointCloud<PointXYZIL>::Ptr& cloud_in);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr getColorCloud(pcl::PointCloud<PointXYZIL>::Ptr& cloud_in);
   cv::Mat getColorImage(cv::Mat& desc);
 
-  cv::Mat project(
-      const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
+  cv::Mat project(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 
-  void globalICP(cv::Mat& isc_dis1, cv::Mat& isc_dis2, double& angle,
-                 float& diff_x, float& diff_y);
+  void globalICP(cv::Mat& isc_dis1, cv::Mat& isc_dis2, double& angle,float& diff_x, float& diff_y);
   Eigen::Matrix4f globalICP(cv::Mat& ssc_dis1, cv::Mat& ssc_dis2);
 
-  cv::Mat calculateSC(
-      const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
-  cv::Mat calculateISC(
-      const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
-  cv::Mat calculateEPSC(
-      const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_corner_pointcloud,
-      const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_surf_pointcloud);
-  cv::Mat calculateSEPSC(
-      const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
-  cv::Mat calculateSSC(
-      const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
+  cv::Mat calculateSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
+  cv::Mat calculateISC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
+  cv::Mat calculateEPSC(const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_corner_pointcloud,
+                        const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_surf_pointcloud);
+  cv::Mat calculateSEPSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
+  cv::Mat calculateSSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 
   double calculateLabelSim(cv::Mat& desc1, cv::Mat& desc2);
-  double calculateDistance(const cv::Mat& desc1, const cv::Mat& desc2,
-                                 double& angle);
+  double calculateDistance(const cv::Mat& desc1, const cv::Mat& desc2, double& angle);
 
 
   double getScore(pcl::PointCloud<PointXYZIL>::Ptr cloud1,
@@ -125,7 +116,7 @@ class EPSCGeneration : public SemanticLabelParam {
                   Eigen::Matrix4f& trans);
 
 
- public:
+public:
   int current_frame_id;
   std::vector<int> matched_frame_id;
   std::vector<Eigen::Affine3f> matched_frame_transform;
@@ -138,20 +129,30 @@ class EPSCGeneration : public SemanticLabelParam {
   cv::Mat getLastEPSCRGB(void);
   cv::Mat getLastSSCRGB(void);
 
-  cv::Mat getLastSEPSCMONO(void){
-    if (UsingSEPSCFlag) return SEPSCArr.back();
+  cv::Mat getLastSEPSCMONO(void)
+  {
+    if (UsingSEPSCFlag) 
+      return SEPSCArr.back();
   }
-  cv::Mat getLastEPSCMONO(void){
-    if (UsingEPSCFlag) return EPSCArr.back();
+  cv::Mat getLastEPSCMONO(void)
+  {
+    if (UsingEPSCFlag) 
+      return EPSCArr.back();
   }
-  cv::Mat getLastSCMONO(void){
-    if (UsingSCFlag) return SCArr.back();
+  cv::Mat getLastSCMONO(void)
+  {
+    if (UsingSCFlag) 
+      return SCArr.back();
   }
-  cv::Mat getLastISCMONO(void){
-    if (UsingISCFlag) return ISCArr.back();
+  cv::Mat getLastISCMONO(void)
+  {
+    if (UsingISCFlag) 
+      return ISCArr.back();
   }
-  cv::Mat getLastSSCMONO(void){
-    if (UsingSSCFlag) return SSCArr.back();
+  cv::Mat getLastSSCMONO(void)
+  {
+    if (UsingSSCFlag) 
+      return SSCArr.back();
   }
 
 

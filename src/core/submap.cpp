@@ -42,23 +42,25 @@ bool SubMapManager::fisrt_submap(submap_Ptr local_map, keyframe_Ptr last_target_
 
     //calculate bbx (global)
     Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
-    transform_bbx(local_map->bound, tran_map);
+    transform_bbx(local_map->local_bound, local_map->bound, tran_map);
 
     local_map->free_tree();
 
 }
 
 
-bool SubMapManager::update_submap(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
-                float local_map_radius = 80, 
-                int max_num_pts = 80000, 
-                int kept_vertex_num = 800,
-                float last_frame_reliable_radius = 60,
-                bool map_based_dynamic_removal_on = false,
-                float dynamic_removal_center_radius = 30.0,
-                float dynamic_dist_thre_min = 0.3,
-                float dynamic_dist_thre_max = 3.0,
-                float near_dist_thre = 0.03){
+bool SubMapManager::update_submap(
+        submap_Ptr local_map, keyframe_Ptr last_target_cblock,
+        float local_map_radius = 80, 
+        int max_num_pts = 80000, 
+        int kept_vertex_num = 800,
+        float last_frame_reliable_radius = 60,
+        bool map_based_dynamic_removal_on = false,
+        float dynamic_removal_center_radius = 30.0,
+        float dynamic_dist_thre_min = 0.3,
+        float dynamic_dist_thre_max = 3.0,
+        float near_dist_thre = 0.03)
+{
 
     std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
 
@@ -121,7 +123,8 @@ bool SubMapManager::update_submap(submap_Ptr local_map, keyframe_Ptr last_target
 
     //calculate bbx (global)
     Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
-    transform_bbx(local_map->bound, tran_map);
+    // transform_bbx(local_map->bound, tran_map);
+    transform_bbx(local_map->local_bound, local_map->bound, tran_map);
 
     local_map->free_tree();
     
@@ -131,9 +134,11 @@ bool SubMapManager::update_submap(submap_Ptr local_map, keyframe_Ptr last_target
     return true;
 }
 
-bool SubMapManager::map_based_dynamic_close_removal(submap_Ptr local_map, keyframe_Ptr last_target_cblock,
-                                                    float center_radius, float dynamic_dist_thre_min, 
-                                                    float dynamic_dist_thre_max, float near_dist_thre){
+bool SubMapManager::map_based_dynamic_close_removal(
+        submap_Ptr local_map, keyframe_Ptr last_target_cblock,
+        float center_radius, float dynamic_dist_thre_min, 
+        float dynamic_dist_thre_max, float near_dist_thre)
+{
     #pragma omp parallel sections
     {
         #pragma omp section
@@ -155,21 +160,21 @@ bool SubMapManager::map_based_dynamic_close_removal(submap_Ptr local_map, keyfra
 
 //keep the points meet dist ~ (near_dist_thre, dynamic_dist_thre_min) U (dynamic_dist_thre_max, +inf)
 //filter the points meet dist ~ (0, near_dist_thre] U [dynamic_dist_thre_min, dynamic_dist_thre_max]
-bool SubMapManager::map_scan_feature_pts_distance_removal(pcl::PointCloud<PointT>::Ptr feature_pts, 
-                                                        const pcl::search::KdTree<PointT>::Ptr map_kdtree, 
-                                                        float center_radius, float dynamic_dist_thre_min = FLT_MAX, 
-                                                        float dynamic_dist_thre_max = FLT_MAX, float near_dist_thre = 0.0){
+bool SubMapManager::map_scan_feature_pts_distance_removal(
+        pcl::PointCloud<PointT>::Ptr feature_pts, 
+        const pcl::search::KdTree<PointT>::Ptr map_kdtree, 
+        float center_radius, float dynamic_dist_thre_min = FLT_MAX, 
+        float dynamic_dist_thre_max = FLT_MAX, float near_dist_thre = 0.0)
+{
     if (feature_pts->points.size() <= 10)
         return false;
 
     pcl::PointCloud<PointT>::Ptr  feature_pts_temp(new pcl::PointCloud<PointT>);
-    int i;
     
     //#pragma omp parallel for private(i) //Multi-thread
-
     std::vector<float> distances_square;
     std::vector<int> search_indices;
-    for (i = 0; i < feature_pts->points.size(); i++)
+    for (int i = 0; i < feature_pts->points.size(); i++)
     {
         if (feature_pts->points[i].x * feature_pts->points[i].x +
                 feature_pts->points[i].y * feature_pts->points[i].y >
@@ -193,9 +198,11 @@ bool SubMapManager::map_scan_feature_pts_distance_removal(pcl::PointCloud<PointT
 }
 
 
-bool SubMapManager::judge_new_submap(float &accu_tran, float &accu_rot, int &accu_frame,
-                                    float max_accu_tran = 30.0, float max_accu_rot = 90.0, 
-                                    int max_accu_frame = 150){
+bool SubMapManager::judge_new_submap(
+        float &accu_tran, float &accu_rot, int &accu_frame,
+        float max_accu_tran = 30.0, float max_accu_rot = 90.0, 
+        int max_accu_frame = 150)
+{
     // LOG(INFO) << "Submap division criterion is: \n"
     //           << "1. Frame Number <= " << max_accu_frame
     //           << " , 2. Translation <= " << max_accu_tran
@@ -217,7 +224,8 @@ bool SubMapManager::judge_new_submap(float &accu_tran, float &accu_rot, int &acc
 
 
 
-bool SubMapManager::bbx_filter(const typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, bounds_t &bbx, bool delete_box = false){
+bool SubMapManager::bbx_filter(const typename pcl::PointCloud<PointT>::Ptr &cloud_in_out, bounds_t &bbx, bool delete_box = false)
+{
     std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
     typename pcl::PointCloud<PointT>::Ptr cloud_temp(new pcl::PointCloud<PointT>);
     int original_pts_num = cloud_in_out->points.size();
@@ -328,7 +336,8 @@ bool SubMapManager::voxel_downsample_pcl(typename pcl::PointCloud<PointT>::Ptr &
 
 
 void SubMapManager::label2RGBCloud(pcl::PointCloud<PointXYZIL>::Ptr in_cloud, 
-                                   pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out_cloud){
+                                   pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out_cloud)
+{
     out_cloud->points.resize(in_cloud->points.size());
     for (size_t i = 0; i < out_cloud->points.size(); i++) {
         out_cloud->points[i].x = in_cloud->points[i].x;

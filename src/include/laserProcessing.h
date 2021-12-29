@@ -19,20 +19,25 @@ extern std::deque<sensor_msgs::PointCloud2> cloudQueue;
 
 extern const int queueLength;
 
-struct smoothness_t {
+struct smoothness_t 
+{
   float value;
   size_t ind;
 };
 
-struct by_value {
-  bool operator()(smoothness_t const &left, smoothness_t const &right) {
+struct by_value 
+{
+  bool operator()(smoothness_t const &left, smoothness_t const &right) 
+  {
     return left.value < right.value;
   }
 };
 
-class LaserProcessing : public ParamServer {
- public:
-  LaserProcessing() : deskewFlag(0) {
+class LaserProcessing : public ParamServer 
+{
+public:
+  LaserProcessing() : deskewFlag(0) 
+  {
     allocateMemory();
     resetParameters();
 
@@ -49,10 +54,8 @@ class LaserProcessing : public ParamServer {
   bool deskewInfo();
   void imuDeskewInfo();
   void odomDeskewInfo();
-  void findRotation(double pointTime, float *rotXCur, float *rotYCur,
-                    float *rotZCur);
-  void findPosition(double relTime, float *posXCur, float *posYCur,
-                    float *posZCur);
+  void findRotation(double pointTime, float *rotXCur, float *rotYCur, float *rotZCur);
+  void findPosition(double relTime, float *posXCur, float *posYCur, float *posZCur);
   PointXYZIRT deskewPoint(PointXYZIRT *point, double relTime);
   void projectPointCloud();
   void cloudExtraction();
@@ -65,7 +68,8 @@ class LaserProcessing : public ParamServer {
 
   lis_slam::cloud_info getCloudInfo() { return cloudInfo; }
   
-  void freeCloudInfoMemory() {
+  void freeCloudInfoMemory() 
+  {
     cloudInfo.imuAvailable = false;
     cloudInfo.odomAvailable = false;
 
@@ -85,7 +89,7 @@ class LaserProcessing : public ParamServer {
     // cloudInfo.cloud_surface.clear();
   }
 
- private:
+private:
   sensor_msgs::PointCloud2 currentCloudMsg;
   std_msgs::Header cloudHeader;
 

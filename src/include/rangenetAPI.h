@@ -15,19 +15,22 @@
 namespace cl = rangenet::segmentation;
 
 
-class RangenetAPI : public ParamServer, SemanticLabelParam {
- public:
+class RangenetAPI : public ParamServer, SemanticLabelParam 
+{
+public:
   typedef std::tuple<u_char, u_char, u_char> semantic_color;
 
   RangenetAPI(const string& params);
 
   /** @brief      Get the point cloud **/
-  std::vector<cv::Vec3f> getPointCloud(const std::vector<float>& scan) {
+  std::vector<cv::Vec3f> getPointCloud(const std::vector<float>& scan) 
+  {
     return net->getPoints(scan, num_points);
   }
 
   /** @brief      Get the color mask **/
-  std::vector<cv::Vec3b> getColorMask() {
+  std::vector<cv::Vec3b> getColorMask() 
+  {
     return net->getLabels(semantic_scan, num_points);
   }
 
@@ -35,20 +38,26 @@ class RangenetAPI : public ParamServer, SemanticLabelParam {
   void infer(pcl::PointCloud<PointType>& currentCloudIn);
 
   /** @brief      Get semantic scan **/
-  std::vector<std::vector<float>> getSemanticScan() { return semantic_scan; }
+  std::vector<std::vector<float>> getSemanticScan() 
+  { 
+    return semantic_scan; 
+  }
 
   /** @brief      Get Point Cloud With Label**/
-  pcl::PointCloud<PointXYZIL>::Ptr getLabelPointCloud() {
+  pcl::PointCloud<PointXYZIL>::Ptr getLabelPointCloud() 
+  {
     return semanticLabelCloud;
   }
 
   /** @brief      Get Point Cloud With RGB **/
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr getRGBPointCloud() {
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr getRGBPointCloud() 
+  {
     return semanticRGBCloud;
   }
 
   /** @brief      Get Point Cloud With RGB and Label **/
-  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr getSemanticCloud() {
+  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr getSemanticCloud() 
+  {
     return semanticCloud;
   }
 
