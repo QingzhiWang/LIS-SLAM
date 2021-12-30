@@ -143,7 +143,7 @@ pcl::PointCloud<PointType>::Ptr transformPointCloud(
 
 
 pcl::PointCloud<PointType>::Ptr transformPointCloud(
-    pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn) 
+    pcl::PointCloud<PointType>::Ptr cloudIn, const PointTypePose* transformIn) 
 {
   pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
 
@@ -176,7 +176,7 @@ pcl::PointCloud<PointType>::Ptr transformPointCloud(
 }
 
 pcl::PointCloud<PointXYZIL>::Ptr transformPointCloud(
-    pcl::PointCloud<PointXYZIL>::Ptr cloudIn, PointTypePose *transformIn) 
+    pcl::PointCloud<PointXYZIL>::Ptr cloudIn, const PointTypePose *transformIn) 
 {
     pcl::PointCloud<PointXYZIL>::Ptr cloudOut(new pcl::PointCloud<PointXYZIL>());
 

@@ -857,10 +857,10 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
+      Size (Pixels): 2
       Size (m): 0.10000000149011612
-      Style: Flat Squares
-      Topic: /lis_slam/make_submap/test_2
+      Style: Points
+      Topic: /lis_slam/make_submap/test_1
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -881,25 +881,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 67.54051208496094
+      Distance: 125.239013671875
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.850625991821289
-        Y: 17.445959091186523
-        Z: -9.938291549682617
+        X: 2.060147285461426
+        Y: 20.374834060668945
+        Z: -10.883505821228027
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3447964191436768
+      Pitch: 1.5697963237762451
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 5.694767475128174
+      Yaw: 5.871577739715576
     Saved: ~
 Window Geometry:
   Displays:

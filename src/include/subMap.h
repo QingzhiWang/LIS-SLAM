@@ -122,6 +122,13 @@ class CloudUtility
 		cp.z = cz;
 	}
 
+	void get_bound_cpt(const bounds_t &bound, centerpoint_t &cp)
+	{
+		cp.x = 0.5 * (bound.min_x + bound.max_x);
+		cp.y = 0.5 * (bound.min_y + bound.max_y);
+		cp.z = 0.5 * (bound.min_z + bound.max_z);
+	}
+    
 	//Get Bound of a Point Cloud
 	void get_cloud_bbx(const typename pcl::PointCloud<PointT>::Ptr &cloud, bounds_t &bound)
 	{
@@ -217,23 +224,36 @@ class CloudUtility
         bound.min_z = transCur(2, 2) * bound.min_z + transCur(2, 3);  
     }
 
-    void transform_bbx(bounds_t &bound_in, bounds_t &bound_out, Eigen::Affine3f &transCur)
+    void transform_bbx(bounds_t &bound_in, centerpoint_t &cp_in, bounds_t &bound_out, centerpoint_t &cp_out, Eigen::Affine3f &transCur)
     {
-        bound_out.max_x = bound_in.max_x + transCur(0, 3);
-        bound_out.max_y = bound_in.max_y + transCur(1, 3);
-        bound_out.max_z = bound_in.max_z + transCur(2, 3);
-        bound_out.min_x = bound_in.min_x + transCur(0, 3);
-        bound_out.min_y = bound_in.min_y + transCur(1, 3);
-        bound_out.min_z = bound_in.min_z + transCur(2, 3);  
+        cp_out.x = transCur(0, 0) * cp_in.x + transCur(0, 3);
+        cp_out.y = transCur(1, 1) * cp_in.y + transCur(1, 3);
+        cp_out.z = transCur(2, 2) * cp_in.z + transCur(2, 3);
 
-        // bound_out.max_x = transCur(0, 0) * bound_in.max_x + transCur(0, 3);
-        // bound_out.max_y = transCur(1, 1) * bound_in.max_y + transCur(1, 3);
-        // bound_out.max_z = transCur(2, 2) * bound_in.max_z + transCur(2, 3);
-        // bound_out.min_x = transCur(0, 0) * bound_in.min_x + transCur(0, 3);
-        // bound_out.min_y = transCur(1, 1) * bound_in.min_y + transCur(1, 3);
-        // bound_out.min_z = transCur(2, 2) * bound_in.min_z + transCur(2, 3);  
+        bound_out.max_x = bound_in.max_x - cp_in.x + cp_out.x;
+        bound_out.max_y = bound_in.max_y - cp_in.y + cp_out.y;
+        bound_out.max_z = bound_in.max_z - cp_in.z + cp_out.z;
+        bound_out.min_x = bound_in.min_x - cp_in.x + cp_out.x;
+        bound_out.min_y = bound_in.min_y - cp_in.y + cp_out.y;
+        bound_out.min_z = bound_in.min_z - cp_in.z + cp_out.z; 
     }
 
+    void transform_bbx(bounds_t &bound_in, bounds_t &bound_out, Eigen::Affine3f &transCur)
+    {
+        // bound_out.max_x = bound_in.max_x + transCur(0, 3);
+        // bound_out.max_y = bound_in.max_y + transCur(1, 3);
+        // bound_out.max_z = bound_in.max_z + transCur(2, 3);
+        // bound_out.min_x = bound_in.min_x + transCur(0, 3);
+        // bound_out.min_y = bound_in.min_y + transCur(1, 3);
+        // bound_out.min_z = bound_in.min_z + transCur(2, 3);  
+
+        bound_out.max_x = transCur(0, 0) * bound_in.max_x + transCur(0, 3);
+        bound_out.max_y = transCur(1, 1) * bound_in.max_y + transCur(1, 3);
+        bound_out.max_z = transCur(2, 2) * bound_in.max_z + transCur(2, 3);
+        bound_out.min_x = transCur(0, 0) * bound_in.min_x + transCur(0, 3);
+        bound_out.min_y = transCur(1, 1) * bound_in.min_y + transCur(1, 3);
+        bound_out.min_z = transCur(2, 2) * bound_in.min_z + transCur(2, 3);  
+    }
   protected:
   private:
 };
@@ -389,45 +409,36 @@ struct keyframe_t
         cloud_corner_down.reset(new pcl::PointCloud<pcl::PointXYZI>());
         cloud_surface_down.reset(new pcl::PointCloud<pcl::PointXYZI>());
     }
-
-    void transform_feature(const PointTypePose &trans_mat,
+    
+    // 不能正确被转换 未找到原因 但是在结构体外部使用内部操作可以完成转换
+    void transform_feature(const PointTypePose *trans_mat,
                             bool transform_down = true,
                             bool transform_undown = true) 
     {
+        ROS_WARN("trans_mat : relative_pose: [%f, %f, %f, %f, %f, %f]",
+                trans_mat->roll, trans_mat->pitch, trans_mat->yaw,
+                trans_mat->x, trans_mat->y, trans_mat->z);
+
         if (transform_undown) {
             // *cloud_semantic = *transformPointCloud(cloud_semantic, trans_mat);
             
-            *cloud_dynamic = *transformPointCloud(cloud_dynamic, trans_mat);
-            *cloud_static = *transformPointCloud(cloud_static, trans_mat);
-            *cloud_outlier = *transformPointCloud(cloud_outlier, trans_mat);
+            *this->cloud_dynamic = *transformPointCloud(cloud_dynamic, trans_mat);
+            *this->cloud_static = *transformPointCloud(cloud_static, trans_mat);
+            *this->cloud_outlier = *transformPointCloud(cloud_outlier, trans_mat);
             
             // *cloud_corner = *transformPointCloud(cloud_corner, trans_mat);
             // *cloud_surface = *transformPointCloud(cloud_surface, trans_mat);
-
-            // pcl::transformPointCloud(*cloud_semantic, *cloud_semantic, trans_mat);
-            // pcl::transformPointCloud(*cloud_dynamic, *cloud_dynamic, trans_mat);
-            // pcl::transformPointCloud(*cloud_static, *cloud_static, trans_mat);
-            // pcl::transformPointCloud(*cloud_outlier, *cloud_outlier, trans_mat);
-            // pcl::transformPointCloud(*cloud_corner, *cloud_corner, trans_mat); 
-            // pcl::transformPointCloud(*cloud_surface, *cloud_surface, trans_mat);
         }
         if (transform_down) 
         {
             // *cloud_semantic_down = *transformPointCloud(cloud_semantic_down, trans_mat);
             
-            *cloud_dynamic_down = *transformPointCloud(cloud_dynamic_down, trans_mat);
-            *cloud_static_down = *transformPointCloud(cloud_static_down, trans_mat);
-            *cloud_outlier_down = *transformPointCloud(cloud_outlier_down, trans_mat);
+            *this->cloud_dynamic_down = *transformPointCloud(cloud_dynamic_down, trans_mat);
+            *this->cloud_static_down = *transformPointCloud(cloud_static_down, trans_mat);
+            *this->cloud_outlier_down = *transformPointCloud(cloud_outlier_down, trans_mat);
             
             // *cloud_corner_down = *transformPointCloud(cloud_corner_down, trans_mat);
             // *cloud_surface_down = *transformPointCloud(cloud_surface_down, trans_mat);
-
-            // pcl::transformPointCloud(*cloud_semantic_down, *cloud_semantic_down, trans_mat);
-            // pcl::transformPointCloud(*cloud_dynamic_down, *cloud_dynamic_down, trans_mat);
-            // pcl::transformPointCloud(*cloud_static_down, *cloud_static_down, trans_mat);
-            // pcl::transformPointCloud(*cloud_outlier_down, *cloud_outlier_down, trans_mat);
-            // pcl::transformPointCloud(*cloud_corner_down, *cloud_corner_down, trans_mat);
-            // pcl::transformPointCloud(*cloud_surface_down, *cloud_surface_down, trans_mat);
         }
     }
 
@@ -604,12 +615,9 @@ struct submap_t
         pc_out->points.insert(pc_out->points.end(), submap_outlier->points.begin(), submap_outlier->points.end());
     }
 
-    void transform_feature(const PointTypePose &trans_mat) 
+    // 不能正确被转换 未找到原因 但是在结构体外部使用内部操作可以完成转换
+    void transform_feature(const PointTypePose *trans_mat) 
     {
-        // pcl::transformPointCloud(*submap_dynamic, *submap_dynamic, trans_mat);
-        // pcl::transformPointCloud(*submap_static, *submap_static, trans_mat);
-        // pcl::transformPointCloud(*submap_outlier, *submap_outlier, trans_mat);
-        
         *submap_dynamic = *transformPointCloud(submap_dynamic, trans_mat);
         *submap_static = *transformPointCloud(submap_static, trans_mat);
         *submap_outlier = *transformPointCloud(submap_outlier, trans_mat);
@@ -663,11 +671,14 @@ public:
         
         //calculate bbx (local)
         local_map->merge_feature_points(cloud_raw);
-        this->get_cloud_bbx(cloud_raw, local_map->local_bound);
+        // this->get_cloud_bbx(cloud_raw, local_map->local_bound);
+        this->get_cloud_bbx_cpt(cloud_raw, local_map->local_bound, local_map->local_cp);
 
         //calculate bbx (global)
         Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
-        this->transform_bbx(local_map->local_bound, local_map->bound, tran_map);
+        // this->transform_bbx(local_map->local_bound, local_map->bound, tran_map);
+        this->transform_bbx(local_map->local_bound, local_map->local_cp, local_map->bound, local_map->cp, tran_map);
+        
 
         local_map->free_tree();
 
@@ -693,13 +704,24 @@ public:
         // tran_target_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized).inverse() * pclPointToAffine3f(last_target_cblock->optimized_pose) ;
         
         // Eigen::Affine3f tran_target_map = pclPointToAffine3f(last_target_cblock->relative_pose);
-        // last_target_cblock->transform_feature(tran_target_map, false, true);
         
-        last_target_cblock->transform_feature(last_target_cblock->relative_pose, false, true);
+        // PointTypePose thisPose;
+        // pcl::getTranslationAndEulerAngles(tran_target_map, thisPose.x, thisPose.y, thisPose.z, 
+        //                                               thisPose.roll, thisPose.pitch, thisPose.yaw);
+        
+        // ROS_WARN("submap_pose_6D_optimized : [%f, %f, %f, %f, %f, %f]",
+        //         local_map->submap_pose_6D_optimized.roll, local_map->submap_pose_6D_optimized.pitch, local_map->submap_pose_6D_optimized.yaw,
+        //         local_map->submap_pose_6D_optimized.x, local_map->submap_pose_6D_optimized.y, local_map->submap_pose_6D_optimized.z);
+        
+        // ROS_WARN("thisPose : relative_pose: [%f, %f, %f, %f, %f, %f]",
+        //         thisPose.roll, thisPose.pitch, thisPose.yaw,
+        //         thisPose.x, thisPose.y, thisPose.z);
 
         // ROS_WARN("last_target_cblock : relative_pose: [%f, %f, %f, %f, %f, %f]",
         //         last_target_cblock->relative_pose.roll, last_target_cblock->relative_pose.pitch, last_target_cblock->relative_pose.yaw,
         //         last_target_cblock->relative_pose.x, last_target_cblock->relative_pose.y, last_target_cblock->relative_pose.z);
+        
+        // last_target_cblock->transform_feature(&last_target_cblock->relative_pose, false, true);
 
         dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, (float)(dynamic_dist_thre_min + 0.1));
         std::cout << "Map based filtering range(m): (0, " << near_dist_thre << "] U [" << dynamic_dist_thre_min << "," << dynamic_dist_thre_max << "]" << std::endl;
@@ -770,12 +792,15 @@ public:
         
         //calculate bbx (local)
         local_map->merge_feature_points(cloud_raw);
-        this->get_cloud_bbx(cloud_raw, local_map->local_bound);
+        // this->get_cloud_bbx(cloud_raw, local_map->local_bound);
+        this->get_cloud_bbx_cpt(cloud_raw, local_map->local_bound, local_map->local_cp);
+
 
         //calculate bbx (global)
         Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
         // transform_bbx(local_map->bound, tran_map);
-        this->transform_bbx(local_map->local_bound, local_map->bound, tran_map);
+        // this->transform_bbx(local_map->local_bound, local_map->bound, tran_map);
+        this->transform_bbx(local_map->local_bound, local_map->local_cp, local_map->bound, local_map->cp, tran_map);
 
         local_map->free_tree();
         
