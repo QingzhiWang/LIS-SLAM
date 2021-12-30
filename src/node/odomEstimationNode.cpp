@@ -952,8 +952,8 @@ class OdomEstimationNode : public ParamServer
     nav_msgs::Odometry laserOdometryROS;
     laserOdometryROS.header.stamp = timeLaserInfoStamp;
     laserOdometryROS.header.frame_id = odometryFrame;
-    // laserOdometryROS.child_frame_id = "odom_estimation";
-    laserOdometryROS.child_frame_id = lidarFrame;
+    laserOdometryROS.child_frame_id = "odom_estimation";
+    // laserOdometryROS.child_frame_id = lidarFrame;
     laserOdometryROS.pose.pose.position.x = transformTobeMapped[3];
     laserOdometryROS.pose.pose.position.y = transformTobeMapped[4];
     laserOdometryROS.pose.pose.position.z = transformTobeMapped[5];
@@ -971,7 +971,7 @@ class OdomEstimationNode : public ParamServer
                                     transformTobeMapped[2]),
         tf::Vector3(transformTobeMapped[3], transformTobeMapped[4],
                     transformTobeMapped[5]));
-    tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, "lidar_link");
+    tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, "odom_estimation");
     br.sendTransform(trans_odom_to_lidar);
 
     // Publish odometry for ROS (incremental)

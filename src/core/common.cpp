@@ -113,7 +113,7 @@ PointType trans2PointType(float transformIn[], int id)
 
 
 pcl::PointCloud<PointType>::Ptr transformPointCloud(
-    pcl::PointCloud<PointType>::Ptr cloudIn, Eigen::Affine3f transformIn) 
+    pcl::PointCloud<PointType>::Ptr cloudIn, Eigen::Affine3f &transformIn) 
 {
   pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
 

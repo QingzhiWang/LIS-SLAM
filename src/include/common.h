@@ -148,7 +148,7 @@ PointTypePose trans2PointTypePose(float transformIn[], int id, double time);
 PointType trans2PointType(float transformIn[]);
 PointType trans2PointType(float transformIn[], int id);
 
-pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, Eigen::Affine3f transformIn);
+pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, Eigen::Affine3f &transformIn);
 
 pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn);
 

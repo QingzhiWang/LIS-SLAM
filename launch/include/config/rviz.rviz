@@ -7,15 +7,13 @@ Panels:
         - /Global Options1
         - /links1
         - /Odometry1
+        - /Odometry1/keyFrame Odometry1/Shape1
         - /Point Cloud1
         - /Semantic Cloud1
-        - /Semantic Cloud1/semantic_cloud_rgb1/Status1
-        - /Mapping1
         - /Mapping1/Map (global)1/Autocompute Value Bounds1
-        - /Submap1
         - /EPSC1
-        - /EPSC1/Image_DE1
         - /Test1
+        - /PointCloud21
       Splitter Ratio: 0.6264045238494873
     Tree Height: 472
   - Class: rviz/Selection
@@ -120,6 +118,40 @@ Visualization Manager:
             Shaft Radius: 0.05000000074505806
             Value: Axes
           Topic: /lis_slam/odom_estimation/odometry
+          Unreliable: false
+          Value: true
+        - Angle Tolerance: 0.10000000149011612
+          Class: rviz/Odometry
+          Covariance:
+            Orientation:
+              Alpha: 0.5
+              Color: 255; 255; 127
+              Color Style: Unique
+              Frame: Local
+              Offset: 1
+              Scale: 1
+              Value: true
+            Position:
+              Alpha: 0.30000001192092896
+              Color: 204; 51; 204
+              Scale: 1
+              Value: true
+            Value: true
+          Enabled: true
+          Keep: 1000
+          Name: keyFrame Odometry
+          Position Tolerance: 0.10000000149011612
+          Shape:
+            Alpha: 1
+            Axes Length: 1
+            Axes Radius: 0.10000000149011612
+            Color: 255; 25; 0
+            Head Length: 0.30000001192092896
+            Head Radius: 0.5
+            Shaft Length: 1.5
+            Shaft Radius: 0.20000000298023224
+            Value: Arrow
+          Topic: /lis_slam/make_submap/odometry
           Unreliable: false
           Value: true
         - Angle Tolerance: 0.10000000149011612
@@ -388,7 +420,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: RGB8
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -403,7 +435,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
       Enabled: true
       Name: Semantic Cloud
     - Class: rviz/Group
@@ -548,7 +580,7 @@ Visualization Manager:
             {}
           Queue Size: 100
           Value: false
-      Enabled: false
+      Enabled: true
       Name: Mapping
     - Class: rviz/Group
       Displays:
@@ -805,6 +837,34 @@ Visualization Manager:
       Topic: /lis_slam/imu/path
       Unreliable: false
       Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: label
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.10000000149011612
+      Style: Flat Squares
+      Topic: /lis_slam/make_submap/test_2
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -821,25 +881,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 92.08794403076172
+      Distance: 67.54051208496094
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -11.321157455444336
-        Y: 4.53583288192749
-        Z: -11.119551658630371
+        X: 2.850625991821289
+        Y: 17.445959091186523
+        Z: -9.938291549682617
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.3447964191436768
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 1.55476975440979
+      Yaw: 5.694767475128174
     Saved: ~
 Window Geometry:
   Displays:
