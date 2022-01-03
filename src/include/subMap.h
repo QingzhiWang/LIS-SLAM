@@ -273,11 +273,11 @@ struct keyframe_t
     PointTypePose gt_pose;
     PointTypePose relative_pose;
 
-	bounds_t bound;				  //Bounding Box in geo-coordinate system
-	centerpoint_t cp;			  //Center Point in geo-coordinate system
+    bounds_t bound;				  //Bounding Box in geo-coordinate system
+    centerpoint_t cp;			  //Center Point in geo-coordinate system
 
-	bounds_t local_bound;				//Bounding Box in local coordinate system
-	centerpoint_t local_cp;				//Center Point in local coordinate system
+    bounds_t local_bound;				//Bounding Box in local coordinate system
+    centerpoint_t local_cp;				//Center Point in local coordinate system
     
     
     cv::Mat global_descriptor;
@@ -457,11 +457,11 @@ struct submap_t
     int submap_id;
     int submap_size;
 
-	bounds_t bound;				  //Bounding Box in geo-coordinate system
-	centerpoint_t cp;			  //Center Point in geo-coordinate system
+    bounds_t bound;				  //Bounding Box in geo-coordinate system
+    centerpoint_t cp;			  //Center Point in geo-coordinate system
 
-	bounds_t local_bound;				//Bounding Box in local coordinate system
-	centerpoint_t local_cp;				//Center Point in local coordinate system
+    bounds_t local_bound;				//Bounding Box in local coordinate system
+    centerpoint_t local_cp;				//Center Point in local coordinate system
     
     PointTypePose submap_pose_6D_init;
     PointTypePose submap_pose_6D_gt;

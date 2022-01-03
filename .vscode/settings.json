@@ -77,5 +77,8 @@
         "/home/wqz/AWorkSpace/LIS-SLAM/devel/lib/python2.7/dist-packages",
         "/home/wqz/AWorkSpace/rangenet_ws/devel/lib/python3/dist-packages",
         "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ]
+    ],
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4
 }

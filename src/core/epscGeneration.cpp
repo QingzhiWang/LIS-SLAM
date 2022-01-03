@@ -7,10 +7,10 @@
 
 void EPSCGeneration::init_param() 
 {
-  print_param();
-  init_color();
+    print_param();
+    init_color();
 
-  if (show) viewer.reset(new pcl::visualization::CloudViewer("viewer"));
+    if (show) viewer.reset(new pcl::visualization::CloudViewer("viewer"));
 }
 
 void EPSCGeneration::init_color(void) 
