@@ -119,8 +119,8 @@ lis_slam:
   mappingSurfLeafSize: 0.4                   # default: 0.4 - outdoor, 0.2 - indoor        
   
   #新增 submap voxel filter 
-  subMapCornerLeafSize: 0.2                    
-  subMapSurfLeafSize: 0.5   
+  subMapCornerLeafSize: 0.1                    
+  subMapSurfLeafSize: 0.3   
   subMapLeafSize: 0.5     
 
   # Surrounding map

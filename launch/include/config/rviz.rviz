@@ -6,11 +6,13 @@ Panels:
       Expanded:
         - /Global Options1
         - /links1
+        - /links1/Odom1
         - /Odometry1
         - /Odometry1/keyFrame Odometry1/Shape1
         - /Point Cloud1
         - /Semantic Cloud1
         - /Mapping1/Map (global)1/Autocompute Value Bounds1
+        - /Submap1
         - /EPSC1
         - /Test1
         - /PointCloud21
@@ -51,11 +53,18 @@ Visualization Manager:
           Update Interval: 0
           Value: false
         - Class: rviz/Axes
-          Enabled: true
+          Enabled: false
           Length: 2
           Name: map
           Radius: 0.5
           Reference Frame: map
+          Value: false
+        - Class: rviz/Axes
+          Enabled: true
+          Length: 2
+          Name: Odom
+          Radius: 0.5
+          Reference Frame: odom
           Value: true
         - Class: rviz/Axes
           Enabled: true
@@ -607,7 +616,7 @@ Visualization Manager:
           Size (Pixels): 3
           Size (m): 0.20000000298023224
           Style: Flat Squares
-          Topic: /lis_slam/submap/submap_id
+          Topic: /lis_slam/make_submap/submap_id
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -619,7 +628,7 @@ Visualization Manager:
             Min Value: -10
             Value: true
           Axis: Z
-          Channel Name: intensity
+          Channel Name: label
           Class: rviz/PointCloud2
           Color: 255; 255; 255
           Color Transformer: Intensity
@@ -632,70 +641,14 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
-          Size (Pixels): 3
+          Size (Pixels): 1.5
           Size (m): 0.30000001192092896
-          Style: Flat Squares
-          Topic: /lis_slam/submap/submap_raw
+          Style: Points
+          Topic: /lis_slam/make_submap/submap
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Min Color: 0; 0; 0
-          Name: submap_corner
-          Position Transformer: XYZ
-          Queue Size: 10
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.4000000059604645
-          Style: Flat Squares
-          Topic: /lis_slam/submap/submap_corner
-          Unreliable: false
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
-          Decay Time: 0
-          Enabled: false
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Min Color: 0; 0; 0
-          Name: submap_surf
-          Position Transformer: XYZ
-          Queue Size: 10
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.3499999940395355
-          Style: Flat Squares
-          Topic: /lis_slam/submap/submap_surf
-          Unreliable: false
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: false
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -724,7 +677,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
-      Enabled: false
+      Enabled: true
       Name: Submap
     - Class: rviz/Group
       Displays:
@@ -881,16 +834,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 125.239013671875
+      Distance: 153.22207641601562
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.060147285461426
-        Y: 20.374834060668945
-        Z: -10.883505821228027
+        X: 11.929254531860352
+        Y: 13.024641036987305
+        Z: -15.557600021362305
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -899,7 +852,7 @@ Visualization Manager:
       Pitch: 1.5697963237762451
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 5.871577739715576
+      Yaw: 5.993396759033203
     Saved: ~
 Window Geometry:
   Displays:

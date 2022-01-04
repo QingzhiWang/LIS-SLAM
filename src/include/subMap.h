@@ -128,7 +128,7 @@ class CloudUtility
 		cp.y = 0.5 * (bound.min_y + bound.max_y);
 		cp.z = 0.5 * (bound.min_z + bound.max_z);
 	}
-    
+
 	//Get Bound of a Point Cloud
 	void get_cloud_bbx(const typename pcl::PointCloud<PointT>::Ptr &cloud, bounds_t &bound)
 	{
@@ -224,11 +224,22 @@ class CloudUtility
         bound.min_z = transCur(2, 2) * bound.min_z + transCur(2, 3);  
     }
 
-    void transform_bbx(bounds_t &bound_in, centerpoint_t &cp_in, bounds_t &bound_out, centerpoint_t &cp_out, Eigen::Affine3f &transCur)
+    void transform_bbx(bounds_t &bound_in, bounds_t &bound_out, Eigen::Affine3f &transCur)
     {
-        cp_out.x = transCur(0, 0) * cp_in.x + transCur(0, 3);
-        cp_out.y = transCur(1, 1) * cp_in.y + transCur(1, 3);
-        cp_out.z = transCur(2, 2) * cp_in.z + transCur(2, 3);
+        bound_out.max_x = bound_in.max_x + transCur(0, 3);
+        bound_out.max_y = bound_in.max_y + transCur(1, 3);
+        bound_out.max_z = bound_in.max_z + transCur(2, 3);
+        bound_out.min_x = bound_in.min_x + transCur(0, 3);
+        bound_out.min_y = bound_in.min_y + transCur(1, 3);
+        bound_out.min_z = bound_in.min_z + transCur(2, 3);  
+    }
+
+
+	void transform_bbx(bounds_t &bound_in, centerpoint_t &cp_in, bounds_t &bound_out, centerpoint_t &cp_out, Eigen::Affine3f &transCur)
+    {
+        cp_out.x = transCur(0, 0) * cp_in.x + transCur(0, 1) * cp_in.y + transCur(0, 2) * cp_in.z + transCur(0, 3);
+        cp_out.y = transCur(1, 0) * cp_in.x + transCur(1, 1) * cp_in.y + transCur(1, 2) * cp_in.z + transCur(1, 3);
+        cp_out.z = transCur(2, 0) * cp_in.x + transCur(2, 1) * cp_in.y + transCur(2, 2) * cp_in.z + transCur(2, 3);
 
         bound_out.max_x = bound_in.max_x - cp_in.x + cp_out.x;
         bound_out.max_y = bound_in.max_y - cp_in.y + cp_out.y;
@@ -236,23 +247,6 @@ class CloudUtility
         bound_out.min_x = bound_in.min_x - cp_in.x + cp_out.x;
         bound_out.min_y = bound_in.min_y - cp_in.y + cp_out.y;
         bound_out.min_z = bound_in.min_z - cp_in.z + cp_out.z; 
-    }
-
-    void transform_bbx(bounds_t &bound_in, bounds_t &bound_out, Eigen::Affine3f &transCur)
-    {
-        // bound_out.max_x = bound_in.max_x + transCur(0, 3);
-        // bound_out.max_y = bound_in.max_y + transCur(1, 3);
-        // bound_out.max_z = bound_in.max_z + transCur(2, 3);
-        // bound_out.min_x = bound_in.min_x + transCur(0, 3);
-        // bound_out.min_y = bound_in.min_y + transCur(1, 3);
-        // bound_out.min_z = bound_in.min_z + transCur(2, 3);  
-
-        bound_out.max_x = transCur(0, 0) * bound_in.max_x + transCur(0, 3);
-        bound_out.max_y = transCur(1, 1) * bound_in.max_y + transCur(1, 3);
-        bound_out.max_z = transCur(2, 2) * bound_in.max_z + transCur(2, 3);
-        bound_out.min_x = transCur(0, 0) * bound_in.min_x + transCur(0, 3);
-        bound_out.min_y = transCur(1, 1) * bound_in.min_y + transCur(1, 3);
-        bound_out.min_z = transCur(2, 2) * bound_in.min_z + transCur(2, 3);  
     }
   protected:
   private:
@@ -607,12 +601,32 @@ struct submap_t
             submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.cloud_outlier->points.begin(), in_keyframe.cloud_outlier->points.end());
         }
     }
-  
-    void merge_feature_points(pcl::PointCloud<PointXYZIL>::Ptr &pc_out)
+
+
+  	void append_feature(const pcl::PointCloud<PointXYZIL>::Ptr &dynamic_in, 
+						const pcl::PointCloud<PointXYZIL>::Ptr &static_in,
+						const pcl::PointCloud<PointXYZIL>::Ptr &outlier_in) 
     {
-        pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
-        pc_out->points.insert(pc_out->points.end(), submap_static->points.begin(), submap_static->points.end());
-        pc_out->points.insert(pc_out->points.end(), submap_outlier->points.begin(), submap_outlier->points.end());
+		submap_dynamic->points.insert(submap_dynamic->points.end(), dynamic_in->points.begin(), dynamic_in->points.end());
+		submap_static->points.insert(submap_static->points.end(), static_in->points.begin(), static_in->points.end());
+		submap_outlier->points.insert(submap_outlier->points.end(), outlier_in->points.begin(), outlier_in->points.end());
+    }
+
+
+    void merge_feature_points(pcl::PointCloud<PointXYZIL>::Ptr &pc_out, bool merge_outlier = true)
+    {	
+		if(merge_outlier)
+		{
+			pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_static->points.begin(), submap_static->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_outlier->points.begin(), submap_outlier->points.end());
+		}
+		else
+		{
+			pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_static->points.begin(), submap_static->points.end());
+		}
+        
     }
 
     // 不能正确被转换 未找到原因 但是在结构体外部使用内部操作可以完成转换
@@ -620,8 +634,7 @@ struct submap_t
     {
         *submap_dynamic = *transformPointCloud(submap_dynamic, trans_mat);
         *submap_static = *transformPointCloud(submap_static, trans_mat);
-        *submap_outlier = *transformPointCloud(submap_outlier, trans_mat);
-            
+        *submap_outlier = *transformPointCloud(submap_outlier, trans_mat);      
     }
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -629,6 +642,93 @@ struct submap_t
 
 typedef boost::shared_ptr<submap_t> submap_Ptr;
 
+
+struct localMap_t 
+{
+    int feature_point_num;
+
+    bounds_t bound;				  //Bounding Box in geo-coordinate system
+    centerpoint_t cp;			  //Center Point in geo-coordinate system
+
+	pcl::PointCloud<PointXYZIL>::Ptr submap_dynamic;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_static;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_outlier;
+
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_dynamic;
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_static;
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_outlier;
+
+	localMap_t()
+	{
+        submap_dynamic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        submap_static = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        submap_outlier = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+		
+        tree_dynamic = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		tree_static = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		tree_outlier = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		
+		feature_point_num = 0;
+	}
+
+	void free()
+	{
+		submap_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
+		submap_static.reset(new pcl::PointCloud<PointXYZIL>());
+		submap_outlier.reset(new pcl::PointCloud<PointXYZIL>());
+        
+        free_tree();
+	}
+
+	void free_tree()
+	{
+        tree_dynamic.reset(new pcl::search::KdTree<PointXYZIL>());
+		tree_static.reset(new pcl::search::KdTree<PointXYZIL>());
+		tree_outlier.reset(new pcl::search::KdTree<PointXYZIL>());
+	}
+
+	void append_feature(const keyframe_t &in_keyframe, bool using_down_cloud = false) 
+    {
+        if(using_down_cloud){
+            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.cloud_dynamic_down->points.begin(), in_keyframe.cloud_dynamic_down->points.end());
+            submap_static->points.insert(submap_static->points.end(), in_keyframe.cloud_static_down->points.begin(), in_keyframe.cloud_static_down->points.end());
+            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.cloud_outlier_down->points.begin(), in_keyframe.cloud_outlier_down->points.end());
+        }else{
+            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.cloud_dynamic->points.begin(), in_keyframe.cloud_dynamic->points.end());
+            submap_static->points.insert(submap_static->points.end(), in_keyframe.cloud_static->points.begin(), in_keyframe.cloud_static->points.end());
+            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.cloud_outlier->points.begin(), in_keyframe.cloud_outlier->points.end());
+        }
+    }
+
+	void append_feature(const pcl::PointCloud<PointXYZIL>::Ptr &dynamic_in, 
+						const pcl::PointCloud<PointXYZIL>::Ptr &static_in,
+						const pcl::PointCloud<PointXYZIL>::Ptr &outlier_in) 
+    {
+		submap_dynamic->points.insert(submap_dynamic->points.end(), dynamic_in->points.begin(), dynamic_in->points.end());
+		submap_static->points.insert(submap_static->points.end(), static_in->points.begin(), static_in->points.end());
+		submap_outlier->points.insert(submap_outlier->points.end(), outlier_in->points.begin(), outlier_in->points.end());
+    }
+
+    void merge_feature_points(pcl::PointCloud<PointXYZIL>::Ptr &pc_out, bool merge_outlier = true)
+    {	
+		if(merge_outlier)
+		{
+			pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_static->points.begin(), submap_static->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_outlier->points.begin(), submap_outlier->points.end());
+		}
+		else
+		{
+			pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_static->points.begin(), submap_static->points.end());
+		}
+        
+    }
+
+
+
+};
+typedef boost::shared_ptr<localMap_t> localMap_Ptr;
 
 
 template <typename PointT>
@@ -671,12 +771,10 @@ public:
         
         //calculate bbx (local)
         local_map->merge_feature_points(cloud_raw);
-        // this->get_cloud_bbx(cloud_raw, local_map->local_bound);
         this->get_cloud_bbx_cpt(cloud_raw, local_map->local_bound, local_map->local_cp);
 
         //calculate bbx (global)
         Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
-        // this->transform_bbx(local_map->local_bound, local_map->bound, tran_map);
         this->transform_bbx(local_map->local_bound, local_map->local_cp, local_map->bound, local_map->cp, tran_map);
         
 
@@ -721,7 +819,15 @@ public:
         //         last_target_cblock->relative_pose.roll, last_target_cblock->relative_pose.pitch, last_target_cblock->relative_pose.yaw,
         //         last_target_cblock->relative_pose.x, last_target_cblock->relative_pose.y, last_target_cblock->relative_pose.z);
         
+		typename pcl::PointCloud<PointT>::Ptr  cloud_dynamic(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  cloud_static(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  cloud_outlier(new pcl::PointCloud<PointT>);
+
+		// 不能正确被转换 未找到原因 但是在下面操作可以完成转换
         // last_target_cblock->transform_feature(&last_target_cblock->relative_pose, false, true);
+        *cloud_dynamic = *transformPointCloud(last_target_cblock->cloud_dynamic_down, &last_target_cblock->relative_pose);
+        *cloud_static = *transformPointCloud(last_target_cblock->cloud_static_down, &last_target_cblock->relative_pose);
+        *cloud_outlier = *transformPointCloud(last_target_cblock->cloud_outlier_down, &last_target_cblock->relative_pose);
 
         dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, (float)(dynamic_dist_thre_min + 0.1));
         std::cout << "Map based filtering range(m): (0, " << near_dist_thre << "] U [" << dynamic_dist_thre_min << "," << dynamic_dist_thre_max << "]" << std::endl;
@@ -732,11 +838,11 @@ public:
             // local_map->tree_static->setInputCloud(local_map->submap_static);
             // local_map->tree_outlier->setInputCloud(local_map->submap_outlier);
 
-            map_scan_feature_pts_distance_removal(last_target_cblock->cloud_dynamic_down, local_map->tree_dynamic, 
+            map_scan_feature_pts_distance_removal(cloud_dynamic, local_map->tree_dynamic, 
                                                   dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-            // map_scan_feature_pts_distance_removal(last_target_cblock->cloud_static_down, local_map->tree_static, 
+            // map_scan_feature_pts_distance_removal(cloud_static, local_map->tree_static, 
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-            // map_scan_feature_pts_distance_removal(last_target_cblock->cloud_outlier_down, local_map->tree_outlier, 
+            // map_scan_feature_pts_distance_removal(cloud_outlier, local_map->tree_outlier, 
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
 
             // #pragma omp parallel sections
@@ -744,17 +850,17 @@ public:
             //     #pragma omp section
             //     {
             //         //dynamic + close points
-            //         map_scan_feature_pts_distance_removal(last_target_cblock->cloud_dynamic, local_map->tree_dynamic, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            //         map_scan_feature_pts_distance_removal(cloud_dynamic, local_map->tree_dynamic, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
             //     }
             //     #pragma omp section
             //     {
             //         //dynamic + close points
-            //         map_scan_feature_pts_distance_removal(last_target_cblock->cloud_static, local_map->tree_static, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            //         map_scan_feature_pts_distance_removal(cloud_static, local_map->tree_static, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
             //     }        
             //     #pragma omp section
             //     {
             //         //dynamic + close points
-            //         map_scan_feature_pts_distance_removal(last_target_cblock->cloud_outlier, local_map->tree_outlier, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            //         map_scan_feature_pts_distance_removal(cloud_outlier, local_map->tree_outlier, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
             //     }
             // }
 
@@ -764,10 +870,8 @@ public:
                       <<  "Outlier: [" << last_target_cblock->cloud_outlier->points.size() << " | " << last_target_cblock->cloud_outlier_down->points.size() << "]."
                       << std::endl;
         }  
-        local_map->append_feature(*last_target_cblock, true);
-
-        // @TODO 恢复
-        // last_target_cblock->transform_feature(tran_target_map.inverse(), false, true);
+        // local_map->append_feature(*last_target_cblock, true);
+        local_map->append_feature(cloud_dynamic, cloud_static, cloud_outlier);
         
         local_map->submap_size++;
         local_map->keyframe_id_in_submap.push_back(last_target_cblock->keyframe_id);
@@ -792,23 +896,96 @@ public:
         
         //calculate bbx (local)
         local_map->merge_feature_points(cloud_raw);
-        // this->get_cloud_bbx(cloud_raw, local_map->local_bound);
         this->get_cloud_bbx_cpt(cloud_raw, local_map->local_bound, local_map->local_cp);
 
 
         //calculate bbx (global)
         Eigen::Affine3f tran_map = pclPointToAffine3f(local_map->submap_pose_6D_optimized);
-        // transform_bbx(local_map->bound, tran_map);
-        // this->transform_bbx(local_map->local_bound, local_map->bound, tran_map);
         this->transform_bbx(local_map->local_bound, local_map->local_cp, local_map->bound, local_map->cp, tran_map);
 
         local_map->free_tree();
         
         std::chrono::steady_clock::time_point toc = std::chrono::steady_clock::now();
         std::chrono::duration<double> time_update_local_map = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic);
-        std::cout << "Update local map ([" << local_map->feature_point_num << "] points at present) done in [" << time_update_local_map.count() * 1000.0 << "] ms.\n";
+        std::cout << "Update submap ([" << local_map->feature_point_num << "] points at present) done in [" << time_update_local_map.count() * 1000.0 << "] ms.\n";
         return true;
     }
+
+
+
+
+    bool insert_local_map(
+            localMap_Ptr &local_map, keyframe_Ptr &last_target_cblock,
+            float local_map_radius = 80, 
+            int max_num_pts = 20000, 
+            int kept_vertex_num = 800,
+            float last_frame_reliable_radius = 60,
+            bool map_based_dynamic_removal_on = false,
+            float dynamic_removal_center_radius = 30.0,
+            float dynamic_dist_thre_min = 0.3,
+            float dynamic_dist_thre_max = 3.0,
+            float near_dist_thre = 0.03)
+    {
+
+        std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
+
+        ROS_WARN("localMap last_target_cblock->optimized_pose : [%f, %f, %f, %f, %f, %f]",
+                last_target_cblock->optimized_pose.roll, last_target_cblock->optimized_pose.pitch, last_target_cblock->optimized_pose.yaw,
+                last_target_cblock->optimized_pose.x, last_target_cblock->optimized_pose.y, last_target_cblock->optimized_pose.z);
+
+        typename pcl::PointCloud<PointT>::Ptr  cloud_dynamic(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  cloud_static(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  cloud_outlier(new pcl::PointCloud<PointT>);
+
+        *cloud_dynamic = *transformPointCloud(last_target_cblock->cloud_dynamic_down, &last_target_cblock->optimized_pose);
+        *cloud_static = *transformPointCloud(last_target_cblock->cloud_static_down, &last_target_cblock->optimized_pose);
+        *cloud_outlier = *transformPointCloud(last_target_cblock->cloud_outlier_down, &last_target_cblock->optimized_pose);
+        
+		dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, (float)(dynamic_dist_thre_min + 0.1));
+        std::cout << "Map based filtering range(m): (0, " << near_dist_thre << "] U [" << dynamic_dist_thre_min << "," << dynamic_dist_thre_max << "]" << std::endl;
+
+        if (map_based_dynamic_removal_on && local_map->feature_point_num > max_num_pts / 5)
+        {
+            local_map->tree_dynamic->setInputCloud(local_map->submap_dynamic);
+            // local_map->tree_static->setInputCloud(local_map->submap_static);
+            // local_map->tree_outlier->setInputCloud(local_map->submap_outlier);
+
+            map_scan_feature_pts_distance_removal(cloud_dynamic, local_map->tree_dynamic, 
+                                                  dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            // map_scan_feature_pts_distance_removal(cloud_static, local_map->tree_static, 
+                                                //   dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            // map_scan_feature_pts_distance_removal(cloud_outlier, local_map->tree_outlier, 
+            //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+
+
+            std::cout << "Feature point number of last frame after dynamic removal: "
+                      <<  "Dynamic: [" << cloud_dynamic->points.size() <<  "]."
+                      <<  "Static: [" << cloud_static->points.size() <<  "]."
+                      <<  "Outlier: [" << cloud_outlier->points.size() << "]."
+                      << std::endl;
+        }  
+
+        local_map->append_feature(cloud_dynamic, cloud_static, cloud_outlier);
+
+        local_map->feature_point_num = local_map->submap_dynamic->points.size() + 
+                                       local_map->submap_static->points.size() + 
+                                       local_map->submap_outlier->points.size();
+
+        typename pcl::PointCloud<PointT>::Ptr cloud_raw(new pcl::PointCloud<PointT>);
+        
+        //calculate bbx 
+        local_map->merge_feature_points(cloud_raw);
+        this->get_cloud_bbx_cpt(cloud_raw, local_map->bound, local_map->cp);
+
+
+        local_map->free_tree();
+        
+        std::chrono::steady_clock::time_point toc = std::chrono::steady_clock::now();
+        std::chrono::duration<double> time_update_local_map = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic);
+        std::cout << "Update localMap ([" << local_map->feature_point_num << "] points at present) done in [" << time_update_local_map.count() * 1000.0 << "] ms.\n";
+        return true;
+    }
+
 
 
     //keep the points meet dist ~ (near_dist_thre, dynamic_dist_thre_min) U (dynamic_dist_thre_max, +inf)

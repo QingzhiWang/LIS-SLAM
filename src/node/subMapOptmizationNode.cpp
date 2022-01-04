@@ -23,7 +23,10 @@
 #include "common.h"
 
 #define USING_SINGLE_TARGET false
-#define USING_SUBMAP_TARGET true
+#define USING_SUBMAP_TARGET false
+#define USING_SLIDING_TARGET false
+#define USING_MULTI_KEYFRAME_TARGET true
+
 
 using namespace gtsam;
 
@@ -38,9 +41,9 @@ std::deque<int> subMapIndexQueue;
 map<int, submap_Ptr> subMapInfo;
 
 map<int, int> loopIndexContainer;  // from new to old
-vector<pair<int, int>> loopIndexQueue;
-vector<gtsam::Pose3> loopPoseQueue;
-vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseQueue;
+vector<pair<int, int>> loopIndexVec;
+vector<gtsam::Pose3> loopPoseVec;
+vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseVec;
 
 
 gtsam::Pose3 pclPointTogtsamPose3(PointTypePose thisPoint) {
@@ -75,6 +78,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     keyframe_Ptr currentKeyFrame = keyframe_Ptr(new keyframe_t);
     submap_Ptr currentSubMap = submap_Ptr(new submap_t);
+    localMap_Ptr localMap = localMap_Ptr(new localMap_t);
 
     pcl::PointCloud<PointTypePose>::Ptr subMapPose6D; 
     pcl::PointCloud<PointType>::Ptr subMapPose3D;
@@ -95,8 +99,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     pcl::PointCloud<PointXYZIL>::Ptr laserCloudCornerFromSubMap;
     pcl::PointCloud<PointXYZIL>::Ptr laserCloudSurfFromSubMap;
-    pcl::PointCloud<PointXYZIL>::Ptr laserCloudCornerFromSubMapDS;
-    pcl::PointCloud<PointXYZIL>::Ptr laserCloudSurfFromSubMapDS;
+
+	std::vector<pcl::PointCloud<PointXYZIL>::Ptr> laserCloudSurfVec;
+	std::vector<pcl::PointCloud<PointXYZIL>::Ptr> laserCloudCornerVec;
 
     pcl::KdTreeFLANN<PointTypePose>::Ptr kdtreeFromKeyPoses6D;
     pcl::KdTreeFLANN<PointTypePose>::Ptr kdtreeFromsubMapPose6D;
@@ -179,8 +184,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         laserCloudCornerFromSubMap.reset(new pcl::PointCloud<PointXYZIL>());
         laserCloudSurfFromSubMap.reset(new pcl::PointCloud<PointXYZIL>());
-        laserCloudCornerFromSubMapDS.reset(new pcl::PointCloud<PointXYZIL>());
-        laserCloudSurfFromSubMapDS.reset(new pcl::PointCloud<PointXYZIL>());
 
         kdtreeFromKeyPoses6D.reset(new pcl::KdTreeFLANN<PointTypePose>());
         kdtreeFromsubMapPose6D.reset(new pcl::KdTreeFLANN<PointTypePose>());
@@ -314,12 +317,19 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     publishKeyFrameCloud();
                     
                     fisrt_submap(currentSubMap, currentKeyFrame);
-  
-                    ROS_WARN("USING_SINGLE_TARGET !");  
-                    pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
-                    pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
-                    *laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
-                    *laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
+					
+					#if USING_SLIDING_TARGET
+						insert_local_map(localMap, currentKeyFrame, 
+										local_map_radius, max_num_pts, kept_vertex_num,
+										last_frame_reliable_radius, map_based_dynamic_removal_on,
+										dynamic_removal_center_radius, dynamic_dist_thre_min,
+										dynamic_dist_thre_max, near_dist_thre);
+					#endif
+                    // ROS_WARN("USING_SINGLE_TARGET !");  
+                    // pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
+                    // pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
+                    // *laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
+                    // *laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
 
                     subMapFirstFlag=false;
                     continue;
@@ -335,42 +345,83 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     *laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
                 #endif
 
+				#if USING_MULTI_KEYFRAME_TARGET
+					laserCloudCornerFromSubMap->clear();
+					laserCloudSurfFromSubMap->clear();
+
+					pcl::PointCloud<PointXYZIL>::Ptr tmpSurf( new pcl::PointCloud<PointXYZIL>());
+					pcl::PointCloud<PointXYZIL>::Ptr tmpCorner( new pcl::PointCloud<PointXYZIL>());
+					pcl::copyPointCloud(*laserCloudSurfLast,    *tmpSurf);
+                    pcl::copyPointCloud(*laserCloudCornerLast,    *tmpCorner);
+
+					*tmpSurf = *transformPointCloud(tmpSurf, &keyFramePoses6D->back());
+                    *tmpCorner = *transformPointCloud(tmpCorner, &keyFramePoses6D->back());
+
+					laserCloudSurfVec.push_back(tmpSurf);
+					laserCloudCornerVec.push_back(tmpCorner);
+
+					while(laserCloudSurfVec.size() >= 5)
+					{
+						laserCloudSurfVec.erase(laserCloudSurfVec.begin());
+						laserCloudCornerVec.erase(laserCloudCornerVec.begin());
+					}
+					
+					for(int i = 0; i < laserCloudSurfVec.size(); i++){
+						*laserCloudCornerFromSubMap += *laserCloudCornerVec[i];
+						*laserCloudSurfFromSubMap += *laserCloudSurfVec[i];
+					}
+					
+					pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+					*tmpCloud += *laserCloudCornerFromSubMap;
+					*tmpCloud += *laserCloudSurfFromSubMap;
+					publishLabelCloud(&pubTest1, tmpCloud, timeLaserInfoStamp, odometryFrame);
+
+				#endif
+
+				#if USING_SLIDING_TARGET
+					PointTypePose  cur_pose = trans2PointTypePose(transformTobeSubMapped, keyFrameID, timeLaserInfoCur);
+    				extractLocalMapCloud(currentKeyFrame, cur_pose, false);
+                #endif
+
                 #if USING_SUBMAP_TARGET    
-                    if(subMapPose6D->points.size() == 0){
-                        ROS_WARN("Dont extract Target Submap ID from Surrounding KeyFrames! -- USING_SINGLE_TARGET !");  
-                        // @Todo
-                        pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
-                        pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
-                        *laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
-                        *laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
-                    }else{
-                        int target_submap_id = -1;
-                        int target_keyframe_id = -1;
-                        bool using_target_id = false;
-                        PointTypePose  cur_pose = trans2PointTypePose(transformTobeSubMapped, keyFrameID, timeLaserInfoCur);
-                        
-                        // subMapInfo[subMapID] = currentSubMap;
-                        extractSurroundingKeyFrames(cur_pose, target_submap_id, target_keyframe_id, using_target_id);
-                        
-                        auto it_ = subMapInfo.find(target_submap_id);
-                        if(it_ != subMapInfo.end())
-                        {
-                            ROS_WARN("USING_SUBMAP_TARGET !");  
-                            extractSubMapCloud(currentKeyFrame, it_->second, cur_pose, false);
-                            // continue;
-                        }else{
-                            ROS_WARN("Dont extract Target Submap ID from Surrounding KeyFrames! -- USING_SINGLE_TARGET !");  
-                            // @Todo
-                            pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
-                            pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
-                            *laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
-                            *laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
-                        }
-                    }
+					int target_submap_id = -1;
+					int target_keyframe_id = -1;
+					bool using_target_id = false;
+					PointTypePose  cur_pose = trans2PointTypePose(transformTobeSubMapped, keyFrameID, timeLaserInfoCur);
+					
+					// subMapInfo[subMapID] = currentSubMap;
+					extractSurroundingKeyFrames(cur_pose, target_submap_id, target_keyframe_id, using_target_id);
+					
+					auto it_ = subMapInfo.find(target_submap_id);
+					if(it_ != subMapInfo.end())
+					{
+						ROS_WARN("USING_SUBMAP_TARGET !");  
+						extractSubMapCloud(currentKeyFrame, it_->second, cur_pose, false);
+						// continue;
+					}else{
+						ROS_WARN("Dont extract Target Submap ID from Surrounding KeyFrames! -- USING_SINGLE_TARGET !");  
+						// @Todo
+						pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
+						pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
+						*laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
+						*laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
+					}
                 #endif
 
                 currentCloudInit();
+
+				// static pcl::PointCloud<PointXYZIL>::Ptr sourcePC( new pcl::PointCloud<PointXYZIL>());
+				// static pcl::PointCloud<PointXYZIL>::Ptr targetPC( new pcl::PointCloud<PointXYZIL>());
+				// sourcePC->clear();
+				// targetPC->clear();
+				// *sourcePC += *currentKeyFrame->cloud_dynamic;
+				// *sourcePC += *currentKeyFrame->cloud_static;
+				// *targetPC += *laserCloudSurfFromSubMap;
+				// *targetPC += *laserCloudCornerFromSubMap;
+				// icpAlignment(sourcePC, targetPC, transformTobeSubMapped);
+
                 scan2SubMapOptimization();
+
 
                 // bool judge_new_submap(float &accu_tran, float &accu_rot, int &accu_frame,
                 //                       float max_accu_tran = 30.0, 
@@ -407,10 +458,18 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     
                     publishOdometry();
                     publishKeyFrameCloud();
-                    ROS_WARN("Current SubMap Static Cloud Size: %d .", currentSubMap->submap_static->points.size());
+                    ROS_WARN("Current SubMap Static Cloud Size: %d ", currentSubMap->submap_static->points.size());
                     publishLabelCloud(&pubTest2, currentSubMap->submap_static, timeLaserInfoStamp, lidarFrame);
     
                 }
+				
+				#if USING_SLIDING_TARGET
+					insert_local_map(localMap, currentKeyFrame, 
+									local_map_radius, max_num_pts, kept_vertex_num,
+									last_frame_reliable_radius, map_based_dynamic_removal_on,
+									dynamic_removal_center_radius, dynamic_dist_thre_min,
+									dynamic_dist_thre_max, near_dist_thre);
+				#endif
 
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<float> elapsed_seconds = end - start;
@@ -472,14 +531,14 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         pcl::fromROSMsg(cloudInfo.cloud_corner, *currentKeyFrame->cloud_corner);
         pcl::fromROSMsg(cloudInfo.cloud_surface, *currentKeyFrame->cloud_surface);     
 
-        ROS_WARN("mappingCornerLeafSize: %f, mappingSurfLeafSize: %f.", mappingCornerLeafSize, mappingSurfLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_semantic, currentKeyFrame->cloud_semantic_down, mappingSurfLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_dynamic, currentKeyFrame->cloud_dynamic_down, mappingCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_static, currentKeyFrame->cloud_static_down, mappingCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_outlier, currentKeyFrame->cloud_outlier_down, mappingSurfLeafSize);
+        ROS_WARN("subMapCornerLeafSize: %f, subMapSurfLeafSize: %f.", subMapCornerLeafSize, subMapSurfLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_semantic, currentKeyFrame->cloud_semantic_down, subMapSurfLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_dynamic, currentKeyFrame->cloud_dynamic_down, subMapCornerLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_static, currentKeyFrame->cloud_static_down, subMapCornerLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_outlier, currentKeyFrame->cloud_outlier_down, subMapSurfLeafSize);
         
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, mappingCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, mappingSurfLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, subMapCornerLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, subMapSurfLeafSize);
         
         //calculate bbx (local)
         // this->get_cloud_bbx(currentKeyFrame->cloud_semantic, currentKeyFrame->local_bound);
@@ -488,13 +547,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         ROS_WARN("keyFrameID: %d ,keyFrameInfo Size: %d ",keyFrameID, keyFrameInfo.size());    
         ROS_WARN("cloud_static size: %d .", currentKeyFrame->cloud_static->points.size());
         ROS_WARN("cloud_static_down size: %d .", currentKeyFrame->cloud_static_down->points.size());    
-        // std::cout << "currentKeyFrame local_bound: [" << currentKeyFrame->local_bound.min_x << ", "
-        //                                             << currentKeyFrame->local_bound.min_y << ", " 
-        //                                             << currentKeyFrame->local_bound.min_z << ", " 
-        //                                             << currentKeyFrame->local_bound.max_x << ", " 
-        //                                             << currentKeyFrame->local_bound.max_y << ", " 
-        //                                             << currentKeyFrame->local_bound.max_z
-        //                                             << "]" << std::endl;    
+
         return true;
     }
     
@@ -679,13 +732,13 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     {
         keyFrameID++;
 
-        // ROS_WARN("transformTobeSubMapped: [%f, %f, %f, %f, %f, %f]",
-        //         transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2],
-        //         transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5]);
+        ROS_WARN("transformTobeSubMapped: [%f, %f, %f, %f, %f, %f]",
+                transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2],
+                transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5]);
         
-        ROS_WARN("transformCurSubmap: [%f, %f, %f, %f, %f, %f]",
-                transformCurSubmap[0], transformCurSubmap[1], transformCurSubmap[2],
-                transformCurSubmap[3], transformCurSubmap[4], transformCurSubmap[5]);
+        // ROS_WARN("transformCurSubmap: [%f, %f, %f, %f, %f, %f]",
+        //         transformCurSubmap[0], transformCurSubmap[1], transformCurSubmap[2],
+        //         transformCurSubmap[3], transformCurSubmap[4], transformCurSubmap[5]);
 
         PointTypePose  point6d = trans2PointTypePose(transformTobeSubMapped, keyFrameID, timeLaserInfoCur);
         PointType  point3d = trans2PointType(transformTobeSubMapped, keyFrameID);
@@ -723,12 +776,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 currentKeyFrame->optimized_pose.roll, currentKeyFrame->optimized_pose.pitch, currentKeyFrame->optimized_pose.yaw,
                 currentKeyFrame->optimized_pose.x, currentKeyFrame->optimized_pose.y, currentKeyFrame->optimized_pose.z);
 
-        
-        // 不能正确被转换 未找到原因 但是在下面操作可以完成转换
-        // currentKeyFrame->transform_feature(&currentKeyFrame->relative_pose, false, true);
-        *currentKeyFrame->cloud_dynamic_down = *transformPointCloud(currentKeyFrame->cloud_dynamic_down, &point6d);
-        *currentKeyFrame->cloud_static_down = *transformPointCloud(currentKeyFrame->cloud_static_down, &point6d);
-        *currentKeyFrame->cloud_outlier_down = *transformPointCloud(currentKeyFrame->cloud_outlier_down, &point6d);
     }
 
 
@@ -847,12 +894,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     {
         kdtreeFromsubMapPose6D.reset(new pcl::KdTreeFLANN<PointTypePose>());
 
-        // pcl::PointCloud<PointTypePose>::Ptr copyPose6D(new pcl::PointCloud<PointTypePose>);
-        // pcl::copyPointCloud(*subMapPose6D,  *copyPose6D);
-
-        // double curSubMapTime = timeSubMapInfoStamp.toSec();
-        // PointTypePose  point6d = trans2PointTypePose(transformCurSubmap, subMapID, curSubMapTime);
-        // copyPose6D->points.push_back(point6d);      
+		if(subMapPose6D->points.size() <= 0)
+			return;   
 
         if(using_target_id)
         {
@@ -913,20 +956,16 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     {
         laserCloudCornerFromSubMap->clear();
         laserCloudSurfFromSubMap->clear();
-        laserCloudCornerFromSubMapDS->clear();
-        laserCloudSurfFromSubMapDS->clear();
 
         if(using_keyframe_pose)
         {
             Eigen::Affine3f tran_map = pclPointToAffine3f(cur_keyframe->optimized_pose);
-            // this->transform_bbx(cur_keyframe->local_bound, cur_keyframe->bound, tran_map);
             this->transform_bbx(cur_keyframe->local_bound, cur_keyframe->local_cp, cur_keyframe->bound, cur_keyframe->cp, tran_map);
 
         }
         else
         {
             Eigen::Affine3f tran_map = pclPointToAffine3f(cur_pose);
-            // this->transform_bbx(cur_keyframe->local_bound, cur_keyframe->bound, tran_map);
             this->transform_bbx(cur_keyframe->local_bound, cur_keyframe->local_cp, cur_keyframe->bound, cur_keyframe->cp, tran_map);
         }
 
@@ -947,7 +986,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         //                                     << "]" << std::endl;
 
         Eigen::Affine3f tran_map = pclPointToAffine3f(cur_submap->submap_pose_6D_optimized);
-        // this->transform_bbx(cur_submap->local_bound, cur_submap->bound, tran_map);
         this->transform_bbx(cur_submap->local_bound, cur_submap->local_cp, cur_submap->bound, cur_submap->cp, tran_map);
 
         bounds_t bbx_intersection;
@@ -982,7 +1020,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 
         Eigen::Affine3f tran_map_inv = tran_map.inverse();
-        // this->transform_bbx(bbx_intersection, bbx_intersection, tran_map_inv);
         centerpoint_t intersection_cp;
         get_bound_cpt(bbx_intersection, intersection_cp);
         
@@ -1030,6 +1067,102 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         publishLabelCloud(&pubTest1, cloud_temp, timeLaserInfoStamp, lidarFrame);
 
     }
+
+
+    void extractLocalMapCloud(keyframe_Ptr &cur_keyframe, PointTypePose cur_pose, bool using_keyframe_pose = false)
+    {	
+        laserCloudCornerFromSubMap->clear();
+        laserCloudSurfFromSubMap->clear();
+
+		if(using_keyframe_pose)
+        {
+            Eigen::Affine3f tran_map = pclPointToAffine3f(cur_keyframe->optimized_pose);
+            this->transform_bbx(cur_keyframe->local_bound, cur_keyframe->local_cp, cur_keyframe->bound, cur_keyframe->cp, tran_map);
+
+        }
+        else
+        {
+            Eigen::Affine3f tran_map = pclPointToAffine3f(cur_pose);
+            this->transform_bbx(cur_keyframe->local_bound, cur_keyframe->local_cp, cur_keyframe->bound, cur_keyframe->cp, tran_map);
+        }
+        
+		bounds_t bbx_intersection;
+        get_intersection_bbx(cur_keyframe->bound, localMap->bound, bbx_intersection, 20.0);
+        
+		pcl::PointCloud<PointXYZIL>::Ptr cloud_temp(new pcl::PointCloud<PointXYZIL>);
+        // pcl::copyPointCloud(*localMap->submap_static,  *cloud_temp);
+		localMap->merge_feature_points(cloud_temp, false);
+
+        bbx_filter(cloud_temp, bbx_intersection);
+
+        pcl::copyPointCloud(*cloud_temp,  *localMap->submap_static);
+
+		int cloudSize = cloud_temp->points.size();
+		std::cout << "cloud_temp size: " << cloudSize << std::endl;
+
+        for (int i = 0; i < (int)cloud_temp->points.size(); i++) {
+            auto label = cloud_temp->points[i].label;
+            
+            if (UsingLableMap[label] == 40) {
+                laserCloudSurfFromSubMap->points.push_back(cloud_temp->points[i]);
+            } else if (UsingLableMap[label] == 81 || UsingLableMap[label] == 10) {
+                laserCloudCornerFromSubMap->points.push_back(cloud_temp->points[i]);
+            }
+        }
+
+
+        publishLabelCloud(&pubTest1, cloud_temp, timeLaserInfoStamp, odometryFrame);
+	}
+
+
+	void icpAlignment(pcl::PointCloud<PointXYZIL>::Ptr source_pc, pcl::PointCloud<PointXYZIL>::Ptr target_pc, float transformIn[])
+	{
+
+		ROS_WARN("Source PC Size: %d, Target PC Size: %d", source_pc->points.size(), target_pc->points.size());
+
+        std::cout << "matching..." << std::flush;
+        auto t1 = ros::Time::now();
+
+        // ICP Settings
+        static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> icp;
+        icp.setMaxCorrespondenceDistance(historyKeyframeSearchRadius * 2);
+        icp.setMaximumIterations(40);
+        icp.setTransformationEpsilon(1e-6);
+        icp.setEuclideanFitnessEpsilon(1e-6);
+        icp.setRANSACIterations(0);
+
+		Eigen::Affine3f initLidarFrame = trans2Affine3f(transformIn);
+		// Align clouds
+		pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+		*tmpCloud += *transformPointCloud(source_pc, initLidarFrame);
+		icp.setInputSource(tmpCloud);
+
+		icp.setInputTarget(target_pc);
+		pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
+		icp.align(*unused_result);
+
+		double score = icp.getFitnessScore();
+		
+		Eigen::Affine3f correctionLidarFrame;
+		correctionLidarFrame = icp.getFinalTransformation();
+        
+		auto t2 = ros::Time::now();
+        std::cout << " done" << std::endl;
+        std::cout << "score: " << score << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
+        
+		float X, Y, Z, ROLL, PITCH, YAW;
+        Eigen::Affine3f tCorrect = correctionLidarFrame * initLidarFrame;  // pre-multiplying -> successive rotation about a fixed frame
+        pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
+        
+		std::cout << "TransformIn: [" << ROLL << ", " << PITCH << ", " << YAW << ", " 
+                                      << X << ", " << Y << ", " << Z << "]" << std::endl;
+		// transformIn[0] = ROLL;
+		// transformIn[1] = PITCH;
+		// transformIn[2] = YAW;
+		// transformIn[3] = X;
+		// transformIn[4] = Y;
+		// transformIn[5] = Z;
+	}
 
 
 
@@ -1624,9 +1757,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         // Add pose constraint
         // mtx.lock();
-        loopIndexQueue.push_back(make_pair(loopKeyCur, bestMatched));
-        loopPoseQueue.push_back(pose);
-        loopNoiseQueue.push_back(constraintNoise);
+        loopIndexVec.push_back(make_pair(loopKeyCur, bestMatched));
+        loopPoseVec.push_back(pose);
+        loopNoiseVec.push_back(constraintNoise);
         // mtx.unlock();
 
         // add loop constriant
@@ -1634,6 +1767,12 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         return true;
     }
+
+
+
+
+
+
 
     void visualizeLoopClosure() 
     {
