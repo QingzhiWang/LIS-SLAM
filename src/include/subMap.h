@@ -277,20 +277,22 @@ struct keyframe_t
     cv::Mat global_descriptor;
     vector<int> loop_container;
 
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_semantic;
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_dynamic;
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_static_corner;
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_static_surface;
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_outlier;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_raw;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_dynamic;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_pole;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_ground;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_building;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_outlier;
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_corner;
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_surface;
 
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_semantic_down;
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_dynamic_down;
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_static_corner_down;
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_static_surface_down;
-    pcl::PointCloud<PointXYZIL>::Ptr cloud_outlier_down;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_raw_down;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_dynamic_down;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_pole_down;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_ground_down;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_building_down;
+    pcl::PointCloud<PointXYZIL>::Ptr semantic_outlier_down;
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_corner_down;
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_surface_down;
@@ -313,20 +315,22 @@ struct keyframe_t
 
         if (clone_cloud) {
             // clone point cloud (instead of pointer)
-            *cloud_semantic = *(in_keyframe.cloud_semantic);
-            *cloud_dynamic = *(in_keyframe.cloud_dynamic);
-            *cloud_static_corner = *(in_keyframe.cloud_static_corner);
-            *cloud_static_surface = *(in_keyframe.cloud_static_surface);
-            *cloud_outlier = *(in_keyframe.cloud_outlier);
+            *semantic_raw = *(in_keyframe.semantic_raw);
+            *semantic_dynamic = *(in_keyframe.semantic_dynamic);
+            *semantic_pole = *(in_keyframe.semantic_pole);
+            *semantic_ground = *(in_keyframe.semantic_ground);
+            *semantic_building = *(in_keyframe.semantic_building);
+            *semantic_outlier = *(in_keyframe.semantic_outlier);
 
             *cloud_corner = *(in_keyframe.cloud_corner);
             *cloud_surface = *(in_keyframe.cloud_surface);
 
-            *cloud_semantic_down = *(in_keyframe.cloud_semantic_down);
-            *cloud_dynamic_down = *(in_keyframe.cloud_dynamic_down);
-            *cloud_static_corner_down = *(in_keyframe.cloud_static_corner_down);
-            *cloud_static_surface_down = *(in_keyframe.cloud_static_surface_down);
-            *cloud_outlier_down = *(in_keyframe.cloud_outlier_down);
+            *semantic_raw_down = *(in_keyframe.semantic_raw_down);
+            *semantic_dynamic_down = *(in_keyframe.semantic_dynamic_down);
+            *semantic_pole_down = *(in_keyframe.semantic_pole_down);
+            *semantic_ground_down = *(in_keyframe.semantic_ground_down);
+            *semantic_building_down = *(in_keyframe.semantic_building_down);
+            *semantic_outlier_down = *(in_keyframe.semantic_outlier_down);
 
             *cloud_corner_down = *(in_keyframe.cloud_corner_down);
             *cloud_surface_down = *(in_keyframe.cloud_surface_down);
@@ -336,20 +340,22 @@ struct keyframe_t
 
     void init() 
     {
-        cloud_semantic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        cloud_dynamic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        cloud_static_corner = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        cloud_static_surface = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        cloud_outlier = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_raw = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_dynamic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_pole = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_ground = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_building = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_outlier = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
 
         cloud_corner = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         cloud_surface = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
 
-        cloud_semantic_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        cloud_dynamic_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        cloud_static_corner_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        cloud_static_surface_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        cloud_outlier_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_raw_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_dynamic_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_pole_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_ground_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_building_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        semantic_outlier_down = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
 
         cloud_corner_down = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
         cloud_surface_down = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
@@ -378,20 +384,22 @@ struct keyframe_t
 
     void free_all() 
     {
-        cloud_semantic.reset(new pcl::PointCloud<PointXYZIL>());
-        cloud_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
-        cloud_static_corner.reset(new pcl::PointCloud<PointXYZIL>());
-        cloud_static_surface.reset(new pcl::PointCloud<PointXYZIL>());
-        cloud_outlier.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_raw.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_pole.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_ground.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_building.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_outlier.reset(new pcl::PointCloud<PointXYZIL>());
 
         cloud_corner.reset(new pcl::PointCloud<pcl::PointXYZI>());
         cloud_surface.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
-        cloud_semantic_down.reset(new pcl::PointCloud<PointXYZIL>());
-        cloud_dynamic_down.reset(new pcl::PointCloud<PointXYZIL>());
-        cloud_static_corner_down.reset(new pcl::PointCloud<PointXYZIL>());
-        cloud_static_surface_down.reset(new pcl::PointCloud<PointXYZIL>());
-        cloud_outlier_down.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_raw_down.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_dynamic_down.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_pole_down.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_ground_down.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_building_down.reset(new pcl::PointCloud<PointXYZIL>());
+        semantic_outlier_down.reset(new pcl::PointCloud<PointXYZIL>());
 
         cloud_corner_down.reset(new pcl::PointCloud<pcl::PointXYZI>());
         cloud_surface_down.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -407,24 +415,26 @@ struct keyframe_t
                 trans_mat->x, trans_mat->y, trans_mat->z);
 
         if (transform_undown) {
-            // *cloud_semantic = *transformPointCloud(cloud_semantic, trans_mat);
+            // *semantic_raw = *transformPointCloud(semantic_raw, trans_mat);
             
-            *this->cloud_dynamic = *transformPointCloud(cloud_dynamic, trans_mat);
-            *this->cloud_static_corner = *transformPointCloud(cloud_static_corner, trans_mat);
-            *this->cloud_static_surface = *transformPointCloud(cloud_static_surface, trans_mat);
-            *this->cloud_outlier = *transformPointCloud(cloud_outlier, trans_mat);
+            *this->semantic_dynamic = *transformPointCloud(semantic_dynamic, trans_mat);
+            *this->semantic_pole = *transformPointCloud(semantic_pole, trans_mat);
+            *this->semantic_ground = *transformPointCloud(semantic_ground, trans_mat);
+            *this->semantic_building = *transformPointCloud(semantic_building, trans_mat);
+            *this->semantic_outlier = *transformPointCloud(semantic_outlier, trans_mat);
             
             // *cloud_corner = *transformPointCloud(cloud_corner, trans_mat);
             // *cloud_surface = *transformPointCloud(cloud_surface, trans_mat);
         }
         if (transform_down) 
         {
-            // *cloud_semantic_down = *transformPointCloud(cloud_semantic_down, trans_mat);
+            // *semantic_raw_down = *transformPointCloud(semantic_raw_down, trans_mat);
             
-            *this->cloud_dynamic_down = *transformPointCloud(cloud_dynamic_down, trans_mat);
-            *this->cloud_static_corner_down = *transformPointCloud(cloud_static_corner_down, trans_mat);
-            *this->cloud_static_surface_down = *transformPointCloud(cloud_static_surface_down, trans_mat);
-            *this->cloud_outlier_down = *transformPointCloud(cloud_outlier_down, trans_mat);
+            *this->semantic_dynamic_down = *transformPointCloud(semantic_dynamic_down, trans_mat);
+            *this->semantic_pole_down = *transformPointCloud(semantic_pole_down, trans_mat);
+            *this->semantic_ground_down = *transformPointCloud(semantic_ground_down, trans_mat);
+            *this->semantic_building_down = *transformPointCloud(semantic_building_down, trans_mat);
+            *this->semantic_outlier_down = *transformPointCloud(semantic_outlier_down, trans_mat);
             
             // *cloud_corner_down = *transformPointCloud(cloud_corner_down, trans_mat);
             // *cloud_surface_down = *transformPointCloud(cloud_surface_down, trans_mat);
@@ -464,13 +474,15 @@ struct submap_t
     map<int,PointTypePose> keyframe_poses_6D_map;
 
     pcl::PointCloud<PointXYZIL>::Ptr submap_dynamic;
-    pcl::PointCloud<PointXYZIL>::Ptr submap_static_corner;
-    pcl::PointCloud<PointXYZIL>::Ptr submap_static_surface;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_pole;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_ground;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_building;
     pcl::PointCloud<PointXYZIL>::Ptr submap_outlier;
 
     pcl::search::KdTree<PointXYZIL>::Ptr tree_dynamic;
-    pcl::search::KdTree<PointXYZIL>::Ptr tree_static_corner;
-    pcl::search::KdTree<PointXYZIL>::Ptr tree_static_surface;
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_pole;
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_ground;
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_building;
     pcl::search::KdTree<PointXYZIL>::Ptr tree_outlier;
 
     int feature_point_num;
@@ -502,13 +514,15 @@ struct submap_t
 		if (clone_feature)
 		{
 			*submap_dynamic = *(in_block.submap_dynamic);
-			*submap_static_corner = *(in_block.submap_static_corner);
-			*submap_static_surface = *(in_block.submap_static_surface);
+			*submap_pole = *(in_block.submap_pole);
+			*submap_ground = *(in_block.submap_ground);
+			*submap_building = *(in_block.submap_building);
 			*submap_outlier = *(in_block.submap_outlier);
 
             // pcl::copyPointCloud(*in_block.submap_dynamic,  *submap_dynamic);
-            // pcl::copyPointCloud(*in_block.submap_static_corner,  *submap_static_corner);
-            // pcl::copyPointCloud(*in_block.submap_static_surface,  *submap_static_surface);
+            // pcl::copyPointCloud(*in_block.submap_pole,  *submap_pole);
+            // pcl::copyPointCloud(*in_block.submap_ground,  *submap_ground);
+            // pcl::copyPointCloud(*in_block.submap_building,  *submap_building);
             // pcl::copyPointCloud(*in_block.submap_outlier,  *submap_outlier);
 		}
 
@@ -525,16 +539,18 @@ struct submap_t
 	void init()
 	{
         submap_dynamic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        submap_static_corner = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        submap_static_surface = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        submap_pole = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        submap_ground = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        submap_building = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
         submap_outlier = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
         
         keyframe_poses_3D.reset(new pcl::PointCloud<PointType>());
         keyframe_poses_6D.reset(new pcl::PointCloud<PointTypePose>());
 		
         tree_dynamic = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
-		tree_static_corner = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
-		tree_static_surface = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		tree_pole = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		tree_ground = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		tree_building = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
 		tree_outlier = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
 
 	}
@@ -573,8 +589,9 @@ struct submap_t
 	void free()
 	{
 		submap_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
-		submap_static_corner.reset(new pcl::PointCloud<PointXYZIL>());
-		submap_static_surface.reset(new pcl::PointCloud<PointXYZIL>());
+		submap_pole.reset(new pcl::PointCloud<PointXYZIL>());
+		submap_ground.reset(new pcl::PointCloud<PointXYZIL>());
+		submap_building.reset(new pcl::PointCloud<PointXYZIL>());
 		submap_outlier.reset(new pcl::PointCloud<PointXYZIL>());
 
         keyframe_poses_3D.reset(new pcl::PointCloud<PointType>());
@@ -586,8 +603,9 @@ struct submap_t
 	void free_tree()
 	{
         tree_dynamic.reset(new pcl::search::KdTree<PointXYZIL>());
-		tree_static_corner.reset(new pcl::search::KdTree<PointXYZIL>());
-		tree_static_surface.reset(new pcl::search::KdTree<PointXYZIL>());
+		tree_pole.reset(new pcl::search::KdTree<PointXYZIL>());
+		tree_ground.reset(new pcl::search::KdTree<PointXYZIL>());
+		tree_building.reset(new pcl::search::KdTree<PointXYZIL>());
 		tree_outlier.reset(new pcl::search::KdTree<PointXYZIL>());
 	}
 
@@ -595,27 +613,31 @@ struct submap_t
     void append_feature(const keyframe_t &in_keyframe, bool using_down_cloud = false) 
     {
         if(using_down_cloud){
-            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.cloud_dynamic_down->points.begin(), in_keyframe.cloud_dynamic_down->points.end());
-            submap_static_corner->points.insert(submap_static_corner->points.end(), in_keyframe.cloud_static_corner_down->points.begin(), in_keyframe.cloud_static_corner_down->points.end());
-            submap_static_surface->points.insert(submap_static_surface->points.end(), in_keyframe.cloud_static_surface_down->points.begin(), in_keyframe.cloud_static_surface_down->points.end());
-            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.cloud_outlier_down->points.begin(), in_keyframe.cloud_outlier_down->points.end());
+            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.semantic_dynamic_down->points.begin(), in_keyframe.semantic_dynamic_down->points.end());
+            submap_pole->points.insert(submap_pole->points.end(), in_keyframe.semantic_pole_down->points.begin(), in_keyframe.semantic_pole_down->points.end());
+            submap_ground->points.insert(submap_ground->points.end(), in_keyframe.semantic_ground_down->points.begin(), in_keyframe.semantic_ground_down->points.end());
+            submap_building->points.insert(submap_building->points.end(), in_keyframe.semantic_building_down->points.begin(), in_keyframe.semantic_building_down->points.end());
+            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.semantic_outlier_down->points.begin(), in_keyframe.semantic_outlier_down->points.end());
         }else{
-            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.cloud_dynamic->points.begin(), in_keyframe.cloud_dynamic->points.end());
-            submap_static_corner->points.insert(submap_static_corner->points.end(), in_keyframe.cloud_static_corner->points.begin(), in_keyframe.cloud_static_corner->points.end());
-            submap_static_surface->points.insert(submap_static_surface->points.end(), in_keyframe.cloud_static_surface->points.begin(), in_keyframe.cloud_static_surface->points.end());
-            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.cloud_outlier->points.begin(), in_keyframe.cloud_outlier->points.end());
+            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.semantic_dynamic->points.begin(), in_keyframe.semantic_dynamic->points.end());
+            submap_pole->points.insert(submap_pole->points.end(), in_keyframe.semantic_pole->points.begin(), in_keyframe.semantic_pole->points.end());
+            submap_ground->points.insert(submap_ground->points.end(), in_keyframe.semantic_ground->points.begin(), in_keyframe.semantic_ground->points.end());
+            submap_building->points.insert(submap_building->points.end(), in_keyframe.semantic_building->points.begin(), in_keyframe.semantic_building->points.end());
+            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.semantic_outlier->points.begin(), in_keyframe.semantic_outlier->points.end());
         }
     }
 
 
   	void append_feature(const pcl::PointCloud<PointXYZIL>::Ptr &dynamic_in, 
-						const pcl::PointCloud<PointXYZIL>::Ptr &staticz_corner_in,
-						const pcl::PointCloud<PointXYZIL>::Ptr &static_surface_in,
+						const pcl::PointCloud<PointXYZIL>::Ptr &pole_in,
+						const pcl::PointCloud<PointXYZIL>::Ptr &ground_in,
+						const pcl::PointCloud<PointXYZIL>::Ptr &building_in,
 						const pcl::PointCloud<PointXYZIL>::Ptr &outlier_in) 
     {
 		submap_dynamic->points.insert(submap_dynamic->points.end(), dynamic_in->points.begin(), dynamic_in->points.end());
-		submap_static_corner->points.insert(submap_static_corner->points.end(), staticz_corner_in->points.begin(), staticz_corner_in->points.end());
-		submap_static_surface->points.insert(submap_static_surface->points.end(), static_surface_in->points.begin(), static_surface_in->points.end());
+		submap_pole->points.insert(submap_pole->points.end(), pole_in->points.begin(), pole_in->points.end());
+		submap_ground->points.insert(submap_ground->points.end(), ground_in->points.begin(), ground_in->points.end());
+		submap_building->points.insert(submap_building->points.end(), building_in->points.begin(), building_in->points.end());
 		submap_outlier->points.insert(submap_outlier->points.end(), outlier_in->points.begin(), outlier_in->points.end());
     }
 
@@ -625,15 +647,17 @@ struct submap_t
 		if(merge_outlier)
 		{
 			pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
-			pc_out->points.insert(pc_out->points.end(), submap_static_corner->points.begin(), submap_static_corner->points.end());
-			pc_out->points.insert(pc_out->points.end(), submap_static_surface->points.begin(), submap_static_surface->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_pole->points.begin(), submap_pole->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_ground->points.begin(), submap_ground->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_building->points.begin(), submap_building->points.end());
 			pc_out->points.insert(pc_out->points.end(), submap_outlier->points.begin(), submap_outlier->points.end());
 		}
 		else
 		{
 			pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
-			pc_out->points.insert(pc_out->points.end(), submap_static_corner->points.begin(), submap_static_corner->points.end());
-			pc_out->points.insert(pc_out->points.end(), submap_static_surface->points.begin(), submap_static_surface->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_pole->points.begin(), submap_pole->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_ground->points.begin(), submap_ground->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_building->points.begin(), submap_building->points.end());
 		}
         
     }
@@ -642,8 +666,9 @@ struct submap_t
     void transform_feature(const PointTypePose *trans_mat) 
     {
         *submap_dynamic = *transformPointCloud(submap_dynamic, trans_mat);
-        *submap_static_corner = *transformPointCloud(submap_static_corner, trans_mat);
-        *submap_static_surface = *transformPointCloud(submap_static_surface, trans_mat);
+        *submap_pole = *transformPointCloud(submap_pole, trans_mat);
+        *submap_ground = *transformPointCloud(submap_ground, trans_mat);
+        *submap_building = *transformPointCloud(submap_building, trans_mat);
         *submap_outlier = *transformPointCloud(submap_outlier, trans_mat);      
     }
 
@@ -660,26 +685,30 @@ struct localMap_t
     bounds_t bound;				  //Bounding Box in geo-coordinate system
     centerpoint_t cp;			  //Center Point in geo-coordinate system
 
-	pcl::PointCloud<PointXYZIL>::Ptr submap_dynamic;
-    pcl::PointCloud<PointXYZIL>::Ptr submap_static_corner;
-    pcl::PointCloud<PointXYZIL>::Ptr submap_static_surface;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_dynamic;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_pole;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_ground;
+    pcl::PointCloud<PointXYZIL>::Ptr submap_building;
     pcl::PointCloud<PointXYZIL>::Ptr submap_outlier;
 
     pcl::search::KdTree<PointXYZIL>::Ptr tree_dynamic;
-    pcl::search::KdTree<PointXYZIL>::Ptr tree_static_corner;
-    pcl::search::KdTree<PointXYZIL>::Ptr tree_static_surface;
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_pole;
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_ground;
+    pcl::search::KdTree<PointXYZIL>::Ptr tree_building;
     pcl::search::KdTree<PointXYZIL>::Ptr tree_outlier;
 
 	localMap_t()
 	{
         submap_dynamic = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        submap_static_corner = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
-        submap_static_surface = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        submap_pole = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        submap_ground = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
+        submap_building = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
         submap_outlier = boost::make_shared<pcl::PointCloud<PointXYZIL>>();
 		
         tree_dynamic = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
-		tree_static_corner = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
-		tree_static_surface = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		tree_pole = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		tree_ground = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
+		tree_building = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
 		tree_outlier = boost::make_shared<pcl::search::KdTree<PointXYZIL>>();
 		
 		feature_point_num = 0;
@@ -688,8 +717,9 @@ struct localMap_t
 	void free()
 	{
 		submap_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
-		submap_static_corner.reset(new pcl::PointCloud<PointXYZIL>());
-		submap_static_surface.reset(new pcl::PointCloud<PointXYZIL>());
+		submap_pole.reset(new pcl::PointCloud<PointXYZIL>());
+		submap_ground.reset(new pcl::PointCloud<PointXYZIL>());
+		submap_building.reset(new pcl::PointCloud<PointXYZIL>());
 		submap_outlier.reset(new pcl::PointCloud<PointXYZIL>());
         
         free_tree();
@@ -698,34 +728,39 @@ struct localMap_t
 	void free_tree()
 	{
         tree_dynamic.reset(new pcl::search::KdTree<PointXYZIL>());
-		tree_static_corner.reset(new pcl::search::KdTree<PointXYZIL>());
-		tree_static_surface.reset(new pcl::search::KdTree<PointXYZIL>());
+		tree_pole.reset(new pcl::search::KdTree<PointXYZIL>());
+		tree_ground.reset(new pcl::search::KdTree<PointXYZIL>());
+		tree_building.reset(new pcl::search::KdTree<PointXYZIL>());
 		tree_outlier.reset(new pcl::search::KdTree<PointXYZIL>());
 	}
 
 	void append_feature(const keyframe_t &in_keyframe, bool using_down_cloud = false) 
     {
         if(using_down_cloud){
-            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.cloud_dynamic_down->points.begin(), in_keyframe.cloud_dynamic_down->points.end());
-            submap_static_corner->points.insert(submap_static_corner->points.end(), in_keyframe.cloud_static_corner_down->points.begin(), in_keyframe.cloud_static_corner_down->points.end());
-            submap_static_surface->points.insert(submap_static_surface->points.end(), in_keyframe.cloud_static_surface_down->points.begin(), in_keyframe.cloud_static_surface_down->points.end());
-            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.cloud_outlier_down->points.begin(), in_keyframe.cloud_outlier_down->points.end());
+            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.semantic_dynamic_down->points.begin(), in_keyframe.semantic_dynamic_down->points.end());
+            submap_pole->points.insert(submap_pole->points.end(), in_keyframe.semantic_pole_down->points.begin(), in_keyframe.semantic_pole_down->points.end());
+            submap_ground->points.insert(submap_ground->points.end(), in_keyframe.semantic_ground_down->points.begin(), in_keyframe.semantic_ground_down->points.end());
+            submap_building->points.insert(submap_building->points.end(), in_keyframe.semantic_building_down->points.begin(), in_keyframe.semantic_building_down->points.end());
+            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.semantic_outlier_down->points.begin(), in_keyframe.semantic_outlier_down->points.end());
         }else{
-            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.cloud_dynamic->points.begin(), in_keyframe.cloud_dynamic->points.end());
-            submap_static_corner->points.insert(submap_static_corner->points.end(), in_keyframe.cloud_static_corner->points.begin(), in_keyframe.cloud_static_corner->points.end());
-            submap_static_surface->points.insert(submap_static_surface->points.end(), in_keyframe.cloud_static_surface->points.begin(), in_keyframe.cloud_static_surface->points.end());
-            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.cloud_outlier->points.begin(), in_keyframe.cloud_outlier->points.end());
+            submap_dynamic->points.insert(submap_dynamic->points.end(), in_keyframe.semantic_dynamic->points.begin(), in_keyframe.semantic_dynamic->points.end());
+            submap_pole->points.insert(submap_pole->points.end(), in_keyframe.semantic_pole->points.begin(), in_keyframe.semantic_pole->points.end());
+            submap_ground->points.insert(submap_ground->points.end(), in_keyframe.semantic_ground->points.begin(), in_keyframe.semantic_ground->points.end());
+            submap_building->points.insert(submap_building->points.end(), in_keyframe.semantic_building->points.begin(), in_keyframe.semantic_building->points.end());
+            submap_outlier->points.insert(submap_outlier->points.end(), in_keyframe.semantic_outlier->points.begin(), in_keyframe.semantic_outlier->points.end());
         }
     }
 
   	void append_feature(const pcl::PointCloud<PointXYZIL>::Ptr &dynamic_in, 
-						const pcl::PointCloud<PointXYZIL>::Ptr &staticz_corner_in,
-						const pcl::PointCloud<PointXYZIL>::Ptr &static_surface_in,
+						const pcl::PointCloud<PointXYZIL>::Ptr &pole_in,
+						const pcl::PointCloud<PointXYZIL>::Ptr &ground_in,
+						const pcl::PointCloud<PointXYZIL>::Ptr &building_in,
 						const pcl::PointCloud<PointXYZIL>::Ptr &outlier_in) 
     {
 		submap_dynamic->points.insert(submap_dynamic->points.end(), dynamic_in->points.begin(), dynamic_in->points.end());
-		submap_static_corner->points.insert(submap_static_corner->points.end(), staticz_corner_in->points.begin(), staticz_corner_in->points.end());
-		submap_static_surface->points.insert(submap_static_surface->points.end(), static_surface_in->points.begin(), static_surface_in->points.end());
+		submap_pole->points.insert(submap_pole->points.end(), pole_in->points.begin(), pole_in->points.end());
+		submap_ground->points.insert(submap_ground->points.end(), ground_in->points.begin(), ground_in->points.end());
+		submap_building->points.insert(submap_building->points.end(), building_in->points.begin(), building_in->points.end());
 		submap_outlier->points.insert(submap_outlier->points.end(), outlier_in->points.begin(), outlier_in->points.end());
     }
 
@@ -734,15 +769,17 @@ struct localMap_t
 		if(merge_outlier)
 		{
 			pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
-			pc_out->points.insert(pc_out->points.end(), submap_static_corner->points.begin(), submap_static_corner->points.end());
-			pc_out->points.insert(pc_out->points.end(), submap_static_surface->points.begin(), submap_static_surface->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_pole->points.begin(), submap_pole->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_ground->points.begin(), submap_ground->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_building->points.begin(), submap_building->points.end());
 			pc_out->points.insert(pc_out->points.end(), submap_outlier->points.begin(), submap_outlier->points.end());
 		}
 		else
 		{
 			pc_out->points.insert(pc_out->points.end(), submap_dynamic->points.begin(), submap_dynamic->points.end());
-			pc_out->points.insert(pc_out->points.end(), submap_static_corner->points.begin(), submap_static_corner->points.end());
-			pc_out->points.insert(pc_out->points.end(), submap_static_surface->points.begin(), submap_static_surface->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_pole->points.begin(), submap_pole->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_ground->points.begin(), submap_ground->points.end());
+			pc_out->points.insert(pc_out->points.end(), submap_building->points.begin(), submap_building->points.end());
 		}
         
     }
@@ -786,8 +823,9 @@ public:
         local_map->append_feature(*last_target_cblock, true);  
 
         local_map->feature_point_num = local_map->submap_dynamic->points.size() + 
-                                    local_map->submap_static_corner->points.size() + 
-                                    local_map->submap_static_surface->points.size() + 
+                                    local_map->submap_pole->points.size() + 
+                                    local_map->submap_ground->points.size() + 
+                                    local_map->submap_building->points.size() + 
                                     local_map->submap_outlier->points.size();
 
         typename pcl::PointCloud<PointT>::Ptr cloud_raw(new pcl::PointCloud<PointT>);
@@ -842,17 +880,19 @@ public:
         //         last_target_cblock->relative_pose.roll, last_target_cblock->relative_pose.pitch, last_target_cblock->relative_pose.yaw,
         //         last_target_cblock->relative_pose.x, last_target_cblock->relative_pose.y, last_target_cblock->relative_pose.z);
         
-		typename pcl::PointCloud<PointT>::Ptr  cloud_dynamic(new pcl::PointCloud<PointT>);
-        typename pcl::PointCloud<PointT>::Ptr  cloud_static_corner(new pcl::PointCloud<PointT>);
-        typename pcl::PointCloud<PointT>::Ptr  cloud_static_surface(new pcl::PointCloud<PointT>);
-        typename pcl::PointCloud<PointT>::Ptr  cloud_outlier(new pcl::PointCloud<PointT>);
+		typename pcl::PointCloud<PointT>::Ptr  semantic_dynamic(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_pole(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_ground(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_building(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_outlier(new pcl::PointCloud<PointT>);
 
 		// 不能正确被转换 未找到原因 但是在下面操作可以完成转换
         // last_target_cblock->transform_feature(&last_target_cblock->relative_pose, false, true);
-        *cloud_dynamic = *transformPointCloud(last_target_cblock->cloud_dynamic_down, &last_target_cblock->relative_pose);
-        *cloud_static_corner = *transformPointCloud(last_target_cblock->cloud_static_corner_down, &last_target_cblock->relative_pose);
-        *cloud_static_surface = *transformPointCloud(last_target_cblock->cloud_static_surface_down, &last_target_cblock->relative_pose);
-        *cloud_outlier = *transformPointCloud(last_target_cblock->cloud_outlier_down, &last_target_cblock->relative_pose);
+        *semantic_dynamic = *transformPointCloud(last_target_cblock->semantic_dynamic_down, &last_target_cblock->relative_pose);
+        *semantic_pole = *transformPointCloud(last_target_cblock->semantic_pole_down, &last_target_cblock->relative_pose);
+        *semantic_ground = *transformPointCloud(last_target_cblock->semantic_ground_down, &last_target_cblock->relative_pose);
+        *semantic_building = *transformPointCloud(last_target_cblock->semantic_building_down, &last_target_cblock->relative_pose);
+        *semantic_outlier = *transformPointCloud(last_target_cblock->semantic_outlier_down, &last_target_cblock->relative_pose);
 
         dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, (float)(dynamic_dist_thre_min + 0.1));
         std::cout << "Map based filtering range(m): (0, " << near_dist_thre << "] U [" << dynamic_dist_thre_min << "," << dynamic_dist_thre_max << "]" << std::endl;
@@ -860,17 +900,20 @@ public:
         if (map_based_dynamic_removal_on && local_map->feature_point_num > max_num_pts / 5)
         {
             local_map->tree_dynamic->setInputCloud(local_map->submap_dynamic);
-            // local_map->tree_static_corner->setInputCloud(local_map->submap_static_corner);
-            // local_map->tree_static_surface->setInputCloud(local_map->submap_static_surface);
+            // local_map->tree_pole->setInputCloud(local_map->submap_pole);
+            // local_map->tree_ground->setInputCloud(local_map->submap_ground);
+            // local_map->tree_building->setInputCloud(local_map->submap_building);
             // local_map->tree_outlier->setInputCloud(local_map->submap_outlier);
 
-            map_scan_feature_pts_distance_removal(cloud_dynamic, local_map->tree_dynamic, 
+            map_scan_feature_pts_distance_removal(semantic_dynamic, local_map->tree_dynamic, 
                                                   dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-            // map_scan_feature_pts_distance_removal(cloud_static_corner, local_map->tree_static_corner, 
+            // map_scan_feature_pts_distance_removal(semantic_pole, local_map->tree_pole, 
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-			// map_scan_feature_pts_distance_removal(cloud_static_surface, local_map->tree_static_surface, 
+			// map_scan_feature_pts_distance_removal(semantic_ground, local_map->tree_ground, 
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-			// map_scan_feature_pts_distance_removal(cloud_outlier, local_map->tree_outlier, 
+			// map_scan_feature_pts_distance_removal(semantic_building, local_map->tree_building, 
+            //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+			// map_scan_feature_pts_distance_removal(semantic_outlier, local_map->tree_outlier, 
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
 
             // #pragma omp parallel sections
@@ -878,30 +921,32 @@ public:
             //     #pragma omp section
             //     {
             //         //dynamic + close points
-            //         map_scan_feature_pts_distance_removal(cloud_dynamic, local_map->tree_dynamic, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            //         map_scan_feature_pts_distance_removal(semantic_dynamic, local_map->tree_dynamic, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
             //     }
             //     #pragma omp section
             //     {
             //         //dynamic + close points
-            //         map_scan_feature_pts_distance_removal(cloud_static_corner, local_map->tree_static_corner, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-            //         map_scan_feature_pts_distance_removal(cloud_static_surface, local_map->tree_static_surface, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            //         map_scan_feature_pts_distance_removal(semantic_pole, local_map->tree_pole, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            //         map_scan_feature_pts_distance_removal(semantic_ground, local_map->tree_ground, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            //         map_scan_feature_pts_distance_removal(semantic_building, local_map->tree_building, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
             //     }        
             //     #pragma omp section
             //     {
             //         //dynamic + close points
-            //         map_scan_feature_pts_distance_removal(cloud_outlier, local_map->tree_outlier, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+            //         map_scan_feature_pts_distance_removal(semantic_outlier, local_map->tree_outlier, center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
             //     }
             // }
 
-            std::cout << "Feature point number of last frame after dynamic removal: "
-                      <<  "Dynamic: [" << last_target_cblock->cloud_dynamic->points.size() << " | " << last_target_cblock->cloud_dynamic_down->points.size() << "]."
-                      <<  "Static Corner: [" << last_target_cblock->cloud_static_corner->points.size() << " | " << last_target_cblock->cloud_static_corner_down->points.size() << "]."
-                      <<  "Static Surface: [" << last_target_cblock->cloud_static_surface->points.size() << " | " << last_target_cblock->cloud_static_surface_down->points.size() << "]."
-                      <<  "Outlier: [" << last_target_cblock->cloud_outlier->points.size() << " | " << last_target_cblock->cloud_outlier_down->points.size() << "]."
+            std::cout << "Feature point number of last frame after dynamic removal (Ori | Removal): " << std::endl 
+                      <<  "Dynamic: [" << last_target_cblock->semantic_dynamic_down->points.size() << " | " << semantic_dynamic->points.size() << "]." << std::endl 
+                      <<  "Pole: [" << last_target_cblock->semantic_pole_down->points.size() << " | " << semantic_pole->points.size() << "]." << std::endl 
+                      <<  "Ground: [" << last_target_cblock->semantic_ground_down->points.size() << " | " << semantic_ground->points.size() << "]." << std::endl 
+                      <<  "Building: [" << last_target_cblock->semantic_building_down->points.size() << " | " << semantic_building->points.size() << "]." << std::endl 
+                      <<  "Outlier: [" << last_target_cblock->semantic_outlier_down->points.size() << " | " << semantic_outlier->points.size() << "]." << std::endl 
                       << std::endl;
         }  
         // local_map->append_feature(*last_target_cblock, true);
-        local_map->append_feature(cloud_dynamic, cloud_static_corner, cloud_static_surface, cloud_outlier);
+        local_map->append_feature(semantic_dynamic, semantic_pole, semantic_ground, semantic_outlier);
         
         local_map->submap_size++;
         local_map->keyframe_id_in_submap.push_back(last_target_cblock->keyframe_id);
@@ -919,8 +964,9 @@ public:
         local_map->keyframe_poses_6D_map.insert(std::make_pair(last_target_cblock->keyframe_id, last_target_cblock->relative_pose));
 
         local_map->feature_point_num = local_map->submap_dynamic->points.size() + 
-                                       local_map->submap_static_corner->points.size() + 
-                                       local_map->submap_static_surface->points.size() + 
+                                       local_map->submap_pole->points.size() + 
+                                       local_map->submap_ground->points.size() + 
+                                       local_map->submap_building->points.size() + 
                                        local_map->submap_outlier->points.size();
 
         typename pcl::PointCloud<PointT>::Ptr cloud_raw(new pcl::PointCloud<PointT>);
@@ -964,39 +1010,45 @@ public:
                 last_target_cblock->optimized_pose.roll, last_target_cblock->optimized_pose.pitch, last_target_cblock->optimized_pose.yaw,
                 last_target_cblock->optimized_pose.x, last_target_cblock->optimized_pose.y, last_target_cblock->optimized_pose.z);
 
-        typename pcl::PointCloud<PointT>::Ptr  cloud_dynamic(new pcl::PointCloud<PointT>);
-        typename pcl::PointCloud<PointT>::Ptr  cloud_static_corner(new pcl::PointCloud<PointT>);
-        typename pcl::PointCloud<PointT>::Ptr  cloud_static_surface(new pcl::PointCloud<PointT>);
-        typename pcl::PointCloud<PointT>::Ptr  cloud_outlier(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_dynamic(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_pole(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_ground(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_building(new pcl::PointCloud<PointT>);
+        typename pcl::PointCloud<PointT>::Ptr  semantic_outlier(new pcl::PointCloud<PointT>);
 
-        *cloud_dynamic = *transformPointCloud(last_target_cblock->cloud_dynamic_down, &last_target_cblock->optimized_pose);
-        *cloud_static_corner = *transformPointCloud(last_target_cblock->cloud_static_corner_down, &last_target_cblock->optimized_pose);
-        *cloud_static_surface = *transformPointCloud(last_target_cblock->cloud_static_surface_down, &last_target_cblock->optimized_pose);
-        *cloud_outlier = *transformPointCloud(last_target_cblock->cloud_outlier_down, &last_target_cblock->optimized_pose);
+        *semantic_dynamic = *transformPointCloud(last_target_cblock->semantic_dynamic_down, &last_target_cblock->optimized_pose);
+        *semantic_pole = *transformPointCloud(last_target_cblock->semantic_pole_down, &last_target_cblock->optimized_pose);
+        *semantic_ground = *transformPointCloud(last_target_cblock->semantic_ground_down, &last_target_cblock->optimized_pose);
+        *semantic_building = *transformPointCloud(last_target_cblock->semantic_building_down, &last_target_cblock->optimized_pose);
+        *semantic_outlier = *transformPointCloud(last_target_cblock->semantic_outlier_down, &last_target_cblock->optimized_pose);
         
 		dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, (float)(dynamic_dist_thre_min + 0.1));
         if (map_based_dynamic_removal_on && local_map->feature_point_num > max_num_pts / 5)
         {
             local_map->tree_dynamic->setInputCloud(local_map->submap_dynamic);
-            // local_map->tree_static_corner->setInputCloud(local_map->submap_static_corner);
-            // local_map->tree_static_surface->setInputCloud(local_map->submap_static_surface);
+            // local_map->tree_pole->setInputCloud(local_map->submap_pole);
+            // local_map->tree_ground->setInputCloud(local_map->submap_ground);
+            // local_map->tree_building->setInputCloud(local_map->submap_building);
             // local_map->tree_outlier->setInputCloud(local_map->submap_outlier);
 
-            map_scan_feature_pts_distance_removal(cloud_dynamic, local_map->tree_dynamic, 
+            map_scan_feature_pts_distance_removal(semantic_dynamic, local_map->tree_dynamic, 
                                                   dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-			// map_scan_feature_pts_distance_removal(cloud_static_corner, local_map->tree_static_corner, 
+			// map_scan_feature_pts_distance_removal(semantic_pole, local_map->tree_pole, 
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-			// map_scan_feature_pts_distance_removal(cloud_static_surface, local_map->tree_static_surface, 
+			// map_scan_feature_pts_distance_removal(semantic_ground, local_map->tree_ground, 
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
-			// map_scan_feature_pts_distance_removal(cloud_outlier, local_map->tree_outlier, 
+			// map_scan_feature_pts_distance_removal(semantic_building, local_map->tree_building, 
+            //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
+			// map_scan_feature_pts_distance_removal(semantic_outlier, local_map->tree_outlier, 
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
 
         }  
-        local_map->append_feature(cloud_dynamic, cloud_static_corner, cloud_static_surface, cloud_outlier);
+        local_map->append_feature(semantic_dynamic, semantic_pole, semantic_ground, semantic_outlier);
 
         local_map->feature_point_num = local_map->submap_dynamic->points.size() + 
-                                       local_map->submap_static_corner->points.size() + 
-                                       local_map->submap_static_surface->points.size() + 
+                                       local_map->submap_pole->points.size() + 
+                                       local_map->submap_ground->points.size() + 
+                                       local_map->submap_building->points.size() + 
                                        local_map->submap_outlier->points.size();
 
         typename pcl::PointCloud<PointT>::Ptr cloud_raw(new pcl::PointCloud<PointT>);

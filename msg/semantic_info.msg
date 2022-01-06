@@ -18,11 +18,14 @@ float32 initialGuessPitch
 float32 initialGuessYaw
 
 # Point cloud messages
-sensor_msgs/PointCloud2 cloud_semantic 
-sensor_msgs/PointCloud2 cloud_outlier
-sensor_msgs/PointCloud2 cloud_dynamic
-sensor_msgs/PointCloud2 cloud_static_corner
-sensor_msgs/PointCloud2 cloud_static_surface
+sensor_msgs/PointCloud2 semantic_raw
+
+sensor_msgs/PointCloud2 semantic_outlier
+sensor_msgs/PointCloud2 semantic_dynamic
+
+sensor_msgs/PointCloud2 semantic_pole
+sensor_msgs/PointCloud2 semantic_ground
+sensor_msgs/PointCloud2 semantic_building
   
 # extracted corner surface feature
 sensor_msgs/PointCloud2 cloud_corner    

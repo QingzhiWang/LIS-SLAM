@@ -45,8 +45,9 @@ private:
 	pcl::PointCloud<PointXYZIL>::Ptr outlierCloudOut;
 	pcl::PointCloud<PointXYZIL>::Ptr dynamicCloudOut;
 
-	pcl::PointCloud<PointXYZIL>::Ptr staticCornerCloudOut;
-	pcl::PointCloud<PointXYZIL>::Ptr staticsurfaceCloudOut;
+	pcl::PointCloud<PointXYZIL>::Ptr poleCloudOut;
+	pcl::PointCloud<PointXYZIL>::Ptr groundCloudOut;
+	pcl::PointCloud<PointXYZIL>::Ptr buildingCloudOut;
 
 	lis_slam::semantic_info semanticInfo;
 
@@ -84,8 +85,9 @@ public:
 		semanticRGBCloudOut.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
 		
 		dynamicCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
-		staticCornerCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
-		staticsurfaceCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
+		poleCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
+		groundCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
+		buildingCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
 		outlierCloudOut.reset(new pcl::PointCloud<PointXYZIL>());
 	}
 
@@ -102,8 +104,9 @@ public:
 		semanticRGBCloudOut->clear();
 		
 		dynamicCloudOut->clear();
-		staticCornerCloudOut->clear();
-		staticsurfaceCloudOut->clear();
+		poleCloudOut->clear();
+		groundCloudOut->clear();
+		buildingCloudOut->clear();
 		outlierCloudOut->clear();
 
 	}
@@ -177,9 +180,11 @@ public:
 			if (UsingLableMap[semanticCloudOut->points[i].label] == 10)
 				dynamicCloudOut->points.push_back(semanticCloudOut->points[i]);
 			else if (UsingLableMap[semanticCloudOut->points[i].label] == 40)
-				staticsurfaceCloudOut->points.push_back(semanticCloudOut->points[i]);
+				groundCloudOut->points.push_back(semanticCloudOut->points[i]);
+			else if (UsingLableMap[semanticCloudOut->points[i].label] == 50)
+				buildingCloudOut->points.push_back(semanticCloudOut->points[i]);
 			else if (UsingLableMap[semanticCloudOut->points[i].label] == 81)
-				staticCornerCloudOut->points.push_back(semanticCloudOut->points[i]);
+				poleCloudOut->points.push_back(semanticCloudOut->points[i]);
 			else
 				outlierCloudOut->points.push_back(semanticCloudOut->points[i]);
 		}
@@ -216,27 +221,32 @@ public:
 		tempCloud.header.stamp = cloudHeader.stamp;
 		tempCloud.header.frame_id = lidarFrame;
 		pubSemanticCloud.publish(tempCloud);
-		semanticInfo.cloud_semantic = tempCloud;
+		semanticInfo.semantic_raw = tempCloud;
 
 		pcl::toROSMsg(*dynamicCloudOut, tempCloud);
 		tempCloud.header.stamp = cloudHeader.stamp;
 		tempCloud.header.frame_id = lidarFrame;
-		semanticInfo.cloud_dynamic = tempCloud;
+		semanticInfo.semantic_dynamic = tempCloud;
 
-		pcl::toROSMsg(*staticCornerCloudOut, tempCloud);
+		pcl::toROSMsg(*poleCloudOut, tempCloud);
 		tempCloud.header.stamp = cloudHeader.stamp;
 		tempCloud.header.frame_id = lidarFrame;
-		semanticInfo.cloud_static_corner = tempCloud;
+		semanticInfo.semantic_pole = tempCloud;
 
-		pcl::toROSMsg(*staticsurfaceCloudOut, tempCloud);
+		pcl::toROSMsg(*groundCloudOut, tempCloud);
 		tempCloud.header.stamp = cloudHeader.stamp;
 		tempCloud.header.frame_id = lidarFrame;
-		semanticInfo.cloud_static_surface = tempCloud;
+		semanticInfo.semantic_ground = tempCloud;
+
+		pcl::toROSMsg(*buildingCloudOut, tempCloud);
+		tempCloud.header.stamp = cloudHeader.stamp;
+		tempCloud.header.frame_id = lidarFrame;
+		semanticInfo.semantic_building = tempCloud;
 
 		pcl::toROSMsg(*outlierCloudOut, tempCloud);
 		tempCloud.header.stamp = cloudHeader.stamp;
 		tempCloud.header.frame_id = lidarFrame;
-		semanticInfo.cloud_outlier = tempCloud;
+		semanticInfo.semantic_outlier = tempCloud;
 
 		pubSemanticInfo.publish(semanticInfo);
 	}

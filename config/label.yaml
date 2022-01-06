@@ -197,8 +197,8 @@ using_label:
   10: 40     # "parking"
   11: 40     # "sidewalk"
   12: 70     # "other-ground" to "vegetation"
-  13: 40     # "building"
-  14: 40     # "fence"
+  13: 50     # "building"
+  14: 50     # "fence"
   15: 70     # "vegetation" Not Used
   16: 81     # "trunk"
   17: 70     # "terrain" to "vegetation"

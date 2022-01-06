@@ -572,27 +572,23 @@ void EPSCGeneration::loopDetection(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &corner_pc,
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &surf_pc,
     const pcl::PointCloud<PointXYZIL>::Ptr &semantic_pc,
-    const pcl::PointCloud<PointXYZIL>::Ptr &static_pc, Eigen::Affine3f &odom) 
+    Eigen::Affine3f &odom) 
 {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered_corner(new pcl::PointCloud<pcl::PointXYZI>());
 	pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered_surf(new pcl::PointCloud<pcl::PointXYZI>());
 	pcl::PointCloud<PointXYZIL>::Ptr pc_filtered_semantic(new pcl::PointCloud<PointXYZIL>());
-	pcl::PointCloud<PointXYZIL>::Ptr pc_filtered_static(new pcl::PointCloud<PointXYZIL>());
 
 	// groundFilter(corner_pc, pc_filtered_corner);
 	// groundFilter(surf_pc, pc_filtered_surf);
 	// groundFilter(semantic_pc, pc_filtered_semantic);
-	// groundFilter(static_pc, pc_filtered_static);
 	pc_filtered_corner = corner_pc;
 	pc_filtered_surf = surf_pc;
 	pc_filtered_semantic = semantic_pc;
-	pc_filtered_static = static_pc;
 
 	std::cout << "--- EPSCGeneration ---" << std::endl;
 	std::cout << "pc_filtered_corner size : " << pc_filtered_corner->size() << std::endl;
 	std::cout << "pc_filtered_surf size : " << pc_filtered_surf->size() << std::endl;
 	std::cout << "pc_filtered_semantic size : " << pc_filtered_semantic->size() << std::endl;
-	std::cout << "pc_filtered_static size : " << pc_filtered_static->size() << std::endl;
 
   	Eigen::Vector3d current_t(odom(0, 3), odom(1, 3),odom(2, 3));
 
@@ -646,14 +642,14 @@ void EPSCGeneration::loopDetection(
 	}
 
 	if (UsingSEPSCFlag) {
-		SEPSC_cur = calculateSEPSC(pc_filtered_static);
+		SEPSC_cur = calculateSEPSC(pc_filtered_semantic);
 	}
 
 	if (UsingSSCFlag) {
-		SSC_cur = calculateSSC(pc_filtered_static);
+		SSC_cur = calculateSSC(pc_filtered_semantic);
 	}
 
-  	cv::Mat cur_dis = project(pc_filtered_static);
+  	cv::Mat cur_dis = project(pc_filtered_semantic);
 	for (int i = 0; i < (int)posArr.size(); i++) {
 		double delta_travel_distance = travelDistanceArr.back() - travelDistanceArr[i];
 		double pos_distance = std::sqrt((posArr[i] - posArr.back()).array().square().sum());
@@ -664,8 +660,8 @@ void EPSCGeneration::loopDetection(
 			double angle = 0;
 			float diff_x = 0;
 			float diff_y = 0;
-			cv::Mat before_dis = project(staticPointCloud[i]);
-			// cv::Mat cur_dis = project(pc_filtered_static);
+			cv::Mat before_dis = project(semanticPointCloud[i]);
+			// cv::Mat cur_dis = project(pc_filtered_semantic);
 			globalICP(before_dis, cur_dis, angle, diff_x, diff_y);
 			if (fabs(diff_x) > 5 || fabs(diff_y) > 5) {
 				diff_x = 0;
@@ -678,7 +674,7 @@ void EPSCGeneration::loopDetection(
 			// Eigen::Matrix4f transform = globalICP(_dis1, _dis2);;
 
 			pcl::PointCloud<PointXYZIL>::Ptr trans_cloud(new pcl::PointCloud<PointXYZIL>);
-			transformPointCloud(*pc_filtered_static, *trans_cloud, transform);
+			transformPointCloud(*pc_filtered_semantic, *trans_cloud, transform);
 
 			if (UsingISCFlag) 
 			{
@@ -761,7 +757,6 @@ void EPSCGeneration::loopDetection(
 	cornerPointCloud.push_back(pc_filtered_corner);
 	surfPointCloud.push_back(pc_filtered_surf);
 	semanticPointCloud.push_back(pc_filtered_semantic);
-	staticPointCloud.push_back(pc_filtered_static);
 	if (UsingISCFlag) 
 	{
 		ISCArr.push_back(ISC_cur);

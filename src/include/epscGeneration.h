@@ -51,7 +51,6 @@ private:
 	std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cornerPointCloud;
 	std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> surfPointCloud;
 	std::vector<pcl::PointCloud<PointXYZIL>::Ptr> semanticPointCloud;
-	std::vector<pcl::PointCloud<PointXYZIL>::Ptr> staticPointCloud;
 
 	std::vector<Eigen::Vector3d> posArr;
 	std::vector<cv::Mat> ISCArr;
@@ -149,7 +148,6 @@ public:
 	void loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Ptr& corner_pc,
 						const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc,
 						const pcl::PointCloud<PointXYZIL>::Ptr& semantic_pc,
-						const pcl::PointCloud<PointXYZIL>::Ptr& static_pc,
 						Eigen::Affine3f& odom);
 };
 
