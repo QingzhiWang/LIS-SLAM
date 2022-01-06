@@ -28,6 +28,10 @@
 #define USING_SLIDING_TARGET false
 #define USING_MULTI_KEYFRAME_TARGET true
 
+#define USING_SEMANTIC_FEATURE false
+#define USING_LOAM_FEATURE true
+
+
 
 using namespace gtsam;
 
@@ -167,6 +171,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 	// ---- IMUPreintegration start ----  
 	bool systemInitialized = false;
+
 	
 	gtsam::noiseModel::Diagonal::shared_ptr priorPoseNoise;
 	gtsam::noiseModel::Diagonal::shared_ptr priorVelNoise;
@@ -195,6 +200,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 	const double delta_t = 0;
 
+	int key = 1;
+
 	gtsam::Pose3 imu2Lidar =
 		gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0),
 					 gtsam::Point3(-extTrans.x(), -extTrans.y(), -extTrans.z()));
@@ -216,6 +223,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 	ros::Publisher pubImuOdometry;
 	ros::Publisher pubImuPath;
 	ros::Publisher pubOdometry;
+	
+	ros::Publisher pubIMUPreOdometry;
 	
 	
 	// ---- test publisher ----  
@@ -252,6 +261,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     	pubImuPath = nh.advertise<nav_msgs::Path>("lis_slam/imu/path", 1);
   		pubOdometry = nh.advertise<nav_msgs::Odometry>(odomTopic, 2000);
   
+  		pubIMUPreOdometry = nh.advertise<nav_msgs::Odometry>("lis_slam/pre_odometry", 2000);
+  		
         pubTest1 = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/test_1", 1);
         pubTest2 = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/test_2", 1);
         
@@ -313,10 +324,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		p->integrationCovariance = gtsam::Matrix33::Identity(3, 3) * pow(1e-4, 2);  // error committed in integrating position from velocities
 		gtsam::imuBias::ConstantBias prior_imu_bias((gtsam::Vector(6) << 0, 0, 0, 0, 0, 0).finished());;  // assume zero initial bias
 
-		priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas(
-			(gtsam::Vector(6) << 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2).finished());  // rad,rad,rad,m, m, m
-		// priorPoseNoise  = gtsam::noiseModel::Diagonal::Sigmas(
-		// 	(gtsam::Vector(6)<< 1e-1, 1e-1, 1e-1, 1.0, 1.0, 1.0).finished()); // rad,rad,rad,m, m, m
+		// priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas(
+		// 	(gtsam::Vector(6) << 1e-4, 1e-4, 1e-5, 1e-3, 1e-3, 1e-5).finished());  // rad,rad,rad,m, m, m
+		priorPoseNoise  = gtsam::noiseModel::Diagonal::Sigmas(
+			(gtsam::Vector(6)<< 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1).finished()); // rad,rad,rad,m, m, m
 		priorVelNoise = gtsam::noiseModel::Isotropic::Sigma(3, 1e4);  // m/s
 		priorBiasNoise = gtsam::noiseModel::Isotropic::Sigma(6, 1e-3);  // 1e-2 ~ 1e-3 seems to be good
 		correctionNoise = gtsam::noiseModel::Isotropic::Sigma(6, 1);  // meter
@@ -378,6 +389,23 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         imuQueOpt.push_back(thisImu);
         imuQueImu.push_back(thisImu);
 
+		// debug IMU data
+		// cout << std::setprecision(6);
+		// cout << "IMU acc: " << endl;
+		// cout << "x: " << thisImu.linear_acceleration.x <<
+		//       ", y: " << thisImu.linear_acceleration.y <<
+		//       ", z: " << thisImu.linear_acceleration.z << endl;
+		// cout << "IMU gyro: " << endl;
+		// cout << "x: " << thisImu.angular_velocity.x <<
+		//       ", y: " << thisImu.angular_velocity.y <<
+		//       ", z: " << thisImu.angular_velocity.z << endl;
+		// double imuRoll, imuPitch, imuYaw;
+		// tf::Quaternion orientation;
+		// tf::quaternionMsgToTF(thisImu.orientation, orientation);
+		// tf::Matrix3x3(orientation).getRPY(imuRoll, imuPitch, imuYaw);
+		// cout << "IMU roll pitch yaw: " << endl;
+		// cout << "roll: " << imuRoll << ", pitch: " << imuPitch << ", yaw: " << imuYaw << endl << endl;
+
 		if (doneFirstOpt == false) return;
 		double imuTime = ROS_TIME(&thisImu);
 		double dt = (lastImuT_imu < 0) ? (1.0 / 500.0) : (imuTime - lastImuT_imu);
@@ -420,6 +448,20 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 	    imuOdomQueue.push_back(odometry);
 
+
+		// cout << std::setprecision(6);
+		// cout << "CurrentState IMU velocity: " << endl;
+		// cout << "x: " << odometry.twist.twist.linear.x <<
+		//       ", y: " << odometry.twist.twist.linear.y <<
+		//       ", z: " << odometry.twist.twist.linear.z << endl;
+		// cout << "CurrentState IMU gyro: " << endl;
+		// cout << "x: " << odometry.twist.twist.angular.x <<
+		//       ", y: " << odometry.twist.twist.angular.y <<
+		//       ", z: " << odometry.twist.twist.angular.z << endl;
+		// cout << "CurrentState IMU roll pitch yaw: " << endl;
+		// cout << "roll: " << lidarPose.rotation().roll() << ", pitch: " << lidarPose.rotation().pitch() << ", yaw: " << lidarPose.rotation().yaw() << endl << endl;
+
+
 		// get latest odometry (at current IMU stamp)
 		if (lidarOdomTime == -1) return;
 		while (!imuOdomQueue.empty()) {
@@ -449,7 +491,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		// publish IMU path
 		static nav_msgs::Path imuPath;
 		static double last_path_time = -1;
-		double imuTime = imuOdomQueue.back().header.stamp.toSec();
+		imuTime = imuOdomQueue.back().header.stamp.toSec();
 		if (imuTime - last_path_time > 0.1) {
 			last_path_time = imuTime;
 			geometry_msgs::PoseStamped pose_stamped;
@@ -508,6 +550,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 if(!keyframeInit())
                     continue;
                 
+                ROS_WARN("Now (keyframeInit) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+
                 updateInitialGuess();
 
                 if(subMapFirstFlag)
@@ -526,6 +570,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 										dynamic_removal_center_radius, dynamic_dist_thre_min,
 										dynamic_dist_thre_max, near_dist_thre);
 					#endif
+
                     // ROS_WARN("USING_SINGLE_TARGET !");  
                     // pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
                     // pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
@@ -539,7 +584,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 
                 #if USING_SINGLE_TARGET
-                    ROS_WARN("USING_SINGLE_TARGET !");  
                     pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
                     pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
                     *laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
@@ -575,7 +619,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
 					*tmpCloud += *laserCloudCornerFromSubMap;
 					*tmpCloud += *laserCloudSurfFromSubMap;
-					publishLabelCloud(&pubTest1, tmpCloud, timeLaserInfoStamp, odometryFrame);
+					publishLabelCloud(&pubTest1, laserCloudSurfFromSubMap, timeLaserInfoStamp, odometryFrame);
 
 				#endif
 
@@ -596,11 +640,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					auto it_ = subMapInfo.find(target_submap_id);
 					if(it_ != subMapInfo.end())
 					{
-						ROS_WARN("USING_SUBMAP_TARGET !");  
 						extractSubMapCloud(currentKeyFrame, it_->second, cur_pose, false);
 						// continue;
 					}else{
-						ROS_WARN("Dont extract Target Submap ID from Surrounding KeyFrames! -- USING_SINGLE_TARGET !");  
+						ROS_WARN("Dont extract Target Submap ID from Surrounding KeyFrames! ");  
+						ROS_WARN("USING_SINGLE_TARGET !");  
 						// @Todo
 						pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
 						pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
@@ -609,21 +653,15 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					}
                 #endif
 
+                ROS_WARN("Now (extractCloud) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+
                 currentCloudInit();
-
-				// static pcl::PointCloud<PointXYZIL>::Ptr sourcePC( new pcl::PointCloud<PointXYZIL>());
-				// static pcl::PointCloud<PointXYZIL>::Ptr targetPC( new pcl::PointCloud<PointXYZIL>());
-				// sourcePC->clear();
-				// targetPC->clear();
-				// *sourcePC += *currentKeyFrame->cloud_dynamic;
-				// *sourcePC += *currentKeyFrame->cloud_static_corner;
-				// *sourcePC += *currentKeyFrame->cloud_static_surface;
-				// *targetPC += *laserCloudSurfFromSubMap;
-				// *targetPC += *laserCloudCornerFromSubMap;
-				// icpAlignment(sourcePC, targetPC, transformTobeSubMapped);
-
+				// scan2SubMapOptimizationICP()
                 scan2SubMapOptimization();
+                ROS_WARN("Now (scan2SubMapOptimization) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
+				IMUPreintegration();
+                ROS_WARN("Now (IMUPreintegration) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
                 // bool judge_new_submap(float &accu_tran, float &accu_rot, int &accu_frame,
                 //                       float max_accu_tran = 30.0, 
@@ -744,11 +782,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         pcl::fromROSMsg(cloudInfo.cloud_corner, *currentKeyFrame->cloud_corner);
         pcl::fromROSMsg(cloudInfo.cloud_surface, *currentKeyFrame->cloud_surface);     
 
-        ROS_WARN("subMapCornerLeafSize: %f, subMapSurfLeafSize: %f.", subMapCornerLeafSize, subMapSurfLeafSize);
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_semantic, currentKeyFrame->cloud_semantic_down, subMapSurfLeafSize);
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_dynamic, currentKeyFrame->cloud_dynamic_down, subMapCornerLeafSize);
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_static_corner, currentKeyFrame->cloud_static_corner_down, subMapCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_static_surface, currentKeyFrame->cloud_static_surface, subMapCornerLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_static_surface, currentKeyFrame->cloud_static_surface_down, subMapCornerLeafSize);
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_outlier, currentKeyFrame->cloud_outlier_down, subMapSurfLeafSize);
         
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, subMapCornerLeafSize);
@@ -771,21 +808,36 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         laserCloudSurfLast->clear();
         laserCloudCornerLastDS->clear();
         laserCloudSurfLastDS->clear();
-
-		laserCloudCornerLast->points.insert(laserCloudCornerLast->points.end(), 
-											currentKeyFrame->cloud_static_corner->points.begin(), 
-											currentKeyFrame->cloud_static_corner->points.end());
-		laserCloudCornerLastDS->points.insert(laserCloudCornerLastDS->points.end(), 
-											currentKeyFrame->cloud_static_corner_down->points.begin(), 
-											currentKeyFrame->cloud_static_corner_down->points.end());
 		
-		laserCloudSurfLast->points.insert(laserCloudSurfLast->points.end(), 
-										  currentKeyFrame->cloud_static_surface->points.begin(), 
-										  currentKeyFrame->cloud_static_surface->points.end());
-		laserCloudSurfLastDS->points.insert(laserCloudSurfLastDS->points.end(), 
-											currentKeyFrame->cloud_static_surface_down->points.begin(), 
-											currentKeyFrame->cloud_static_surface_down->points.end());																						
-        
+		#if USING_SEMANTIC_FEATURE
+			laserCloudCornerLast->points.insert(laserCloudCornerLast->points.end(), 
+												currentKeyFrame->cloud_static_corner->points.begin(), 
+												currentKeyFrame->cloud_static_corner->points.end());
+			laserCloudCornerLastDS->points.insert(laserCloudCornerLastDS->points.end(), 
+												currentKeyFrame->cloud_static_corner_down->points.begin(), 
+												currentKeyFrame->cloud_static_corner_down->points.end());
+			
+			laserCloudSurfLast->points.insert(laserCloudSurfLast->points.end(), 
+												currentKeyFrame->cloud_dynamic->points.begin(), 
+												currentKeyFrame->cloud_dynamic->points.end());
+			laserCloudSurfLastDS->points.insert(laserCloudSurfLastDS->points.end(), 
+												currentKeyFrame->cloud_dynamic_down->points.begin(), 
+												currentKeyFrame->cloud_dynamic_down->points.end());
+			
+			laserCloudSurfLast->points.insert(laserCloudSurfLast->points.end(), 
+											currentKeyFrame->cloud_static_surface->points.begin(), 
+											currentKeyFrame->cloud_static_surface->points.end());
+			laserCloudSurfLastDS->points.insert(laserCloudSurfLastDS->points.end(), 
+												currentKeyFrame->cloud_static_surface_down->points.begin(), 
+												currentKeyFrame->cloud_static_surface_down->points.end());																						
+        #endif
+
+		#if USING_LOAM_FEATURE
+			*laserCloudCornerLast = *trans2LabelPointCloud(currentKeyFrame->cloud_corner);
+			*laserCloudCornerLastDS = *trans2LabelPointCloud(currentKeyFrame->cloud_corner_down);
+			*laserCloudSurfLast = *trans2LabelPointCloud(currentKeyFrame->cloud_surface);
+			*laserCloudSurfLastDS = *trans2LabelPointCloud(currentKeyFrame->cloud_surface_down);																				
+        #endif	
 
         laserCloudCornerLastDSNum = laserCloudCornerLastDS->points.size();
         laserCloudSurfLastDSNum = laserCloudSurfLastDS->points.size();
@@ -802,7 +854,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         static bool firstTransAvailable = false;
         if (firstTransAvailable == false)
         {
-            // ROS_WARN("MakeSubmap: firstTransAvailable!");
+            ROS_WARN("MakeSubmap: firstTransAvailable!");
             transformTobeSubMapped[0] = cloudInfo.imuRollInit;
             transformTobeSubMapped[1] = cloudInfo.imuPitchInit;
             transformTobeSubMapped[2] = cloudInfo.imuYawInit;
@@ -828,7 +880,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         static Eigen::Affine3f lastImuPreTransformation;
         if (cloudInfo.odomAvailable == true)
         {
-            // ROS_WARN("MakeSubmap: cloudInfo.odomAvailable == true!");
+            ROS_WARN("MakeSubmap: cloudInfo.odomAvailable == true!");
             Eigen::Affine3f transBack = pcl::getTransformation(cloudInfo.initialGuessX,    cloudInfo.initialGuessY,     cloudInfo.initialGuessZ, 
                                                                cloudInfo.initialGuessRoll, cloudInfo.initialGuessPitch, cloudInfo.initialGuessYaw);
             if (lastImuPreTransAvailable == false) {
@@ -857,7 +909,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         // use imu incremental estimation for pose guess (only rotation)
         if (cloudInfo.imuAvailable == true)
         {
-            // ROS_WARN("MakeSubmap: cloudInfo.imuAvailable == true!");
+            ROS_WARN("MakeSubmap: cloudInfo.imuAvailable == true!");
             Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);
            
             Eigen::Affine3f transIncre = lastImuTransformation.inverse() * transBack;
@@ -938,6 +990,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     void saveKeyFrames()
     {
         keyFrameID++;
+		ROS_WARN("transPredictionMapped: [%f, %f, %f, %f, %f, %f]",
+                transPredictionMapped[0], transPredictionMapped[1], transPredictionMapped[2],
+                transPredictionMapped[3], transPredictionMapped[4], transPredictionMapped[5]);
 
         ROS_WARN("transformTobeSubMapped: [%f, %f, %f, %f, %f, %f]",
                 transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2],
@@ -975,13 +1030,13 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         keyFrameQueue.push_back(tmpKeyFrame);
         keyFrameInfo.insert(std::make_pair(keyFrameID, tmpKeyFrame));
         
-        ROS_WARN("currentKeyFrame : relative_pose: [%f, %f, %f, %f, %f, %f]",
-                currentKeyFrame->relative_pose.roll, currentKeyFrame->relative_pose.pitch, currentKeyFrame->relative_pose.yaw,
-                currentKeyFrame->relative_pose.x, currentKeyFrame->relative_pose.y, currentKeyFrame->relative_pose.z);
+        // ROS_WARN("currentKeyFrame : relative_pose: [%f, %f, %f, %f, %f, %f]",
+        //         currentKeyFrame->relative_pose.roll, currentKeyFrame->relative_pose.pitch, currentKeyFrame->relative_pose.yaw,
+        //         currentKeyFrame->relative_pose.x, currentKeyFrame->relative_pose.y, currentKeyFrame->relative_pose.z);
 
-        ROS_WARN("currentKeyFrame : optimized_pose: [%f, %f, %f, %f, %f, %f]",
-                currentKeyFrame->optimized_pose.roll, currentKeyFrame->optimized_pose.pitch, currentKeyFrame->optimized_pose.yaw,
-                currentKeyFrame->optimized_pose.x, currentKeyFrame->optimized_pose.y, currentKeyFrame->optimized_pose.z);
+        // ROS_WARN("currentKeyFrame : optimized_pose: [%f, %f, %f, %f, %f, %f]",
+        //         currentKeyFrame->optimized_pose.roll, currentKeyFrame->optimized_pose.pitch, currentKeyFrame->optimized_pose.yaw,
+        //         currentKeyFrame->optimized_pose.x, currentKeyFrame->optimized_pose.y, currentKeyFrame->optimized_pose.z);
 
     }
 
@@ -1194,14 +1249,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		// localMap->merge_feature_points(cloud_temp, false);
 
 		laserCloudCornerFromSubMap->points.insert(laserCloudCornerFromSubMap->points.end(), 
-								  				cur_submap->submap_static_corner->points.begin(), 
-								  				cur_submap->submap_static_corner->points.end());
+								  				localMap->submap_static_corner->points.begin(), 
+								  				localMap->submap_static_corner->points.end());
 		laserCloudSurfFromSubMap->points.insert(laserCloudSurfFromSubMap->points.end(), 
-								  				cur_submap->submap_static_surface->points.begin(), 
-								  				cur_submap->submap_static_surface->points.end());
-		
-		*laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &cur_submap->submap_pose_6D_optimized);
-        *laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &cur_submap->submap_pose_6D_optimized);
+								  				localMap->submap_static_surface->points.begin(), 
+								  				localMap->submap_static_surface->points.end());
 		
         // Use the intersection bounding box to filter the outlier points
         bbx_filter(laserCloudCornerFromSubMap, bbx_intersection);
@@ -1272,7 +1324,20 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		// transformIn[5] = Z;
 	}
 
+    void scan2SubMapOptimizationICP()
+	{
+		pcl::PointCloud<PointXYZIL>::Ptr sourcePC( new pcl::PointCloud<PointXYZIL>());
+		pcl::PointCloud<PointXYZIL>::Ptr targetPC( new pcl::PointCloud<PointXYZIL>());
 
+		*sourcePC += *currentKeyFrame->cloud_dynamic;
+		*sourcePC += *currentKeyFrame->cloud_static_corner;
+		*sourcePC += *currentKeyFrame->cloud_static_surface;
+
+		*targetPC += *laserCloudSurfFromSubMap;
+		*targetPC += *laserCloudCornerFromSubMap;
+
+		icpAlignment(sourcePC, targetPC, transformTobeSubMapped);
+	}
 
     void scan2SubMapOptimization()
     {
@@ -1324,23 +1389,59 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     {
         updatePointAssociateToSubMap();
 
+		int numSearch = 0;
+
         // #pragma omp for
         #pragma omp parallel for num_threads(numberOfCores)
         for (int i = 0; i < laserCloudCornerLastDSNum; i++)
         {
             PointXYZIL pointOri, pointSel, coeff;
-            std::vector<int> pointSearchInd;
-            std::vector<float> pointSearchSqDis;
-
             pointOri = laserCloudCornerLastDS->points[i];
             pointAssociateToSubMap(&pointOri, &pointSel);
+
+			std::vector<int> pointSearchInd;
+            std::vector<float> pointSearchSqDis;
             kdtreeCornerFromSubMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
+
+
+			// std::vector<int> pointSearchIndPre;
+            // std::vector<float> pointSearchSqDisPre;
+            // kdtreeCornerFromSubMap->nearestKSearch(pointSel, 10, pointSearchIndPre, pointSearchSqDisPre);
+
+            // std::vector<int> pointSearchInd;
+            // std::vector<float> pointSearchSqDis;
+
+            // std::vector<int> pointSearchIndNo;
+            // std::vector<float> pointSearchSqDisNo;
+				
+			// int labelOri = laserCloudCornerLastDS->points[i].label;
+			// for(int id = 0; id < pointSearchIndPre.size(); ++id)
+			// {
+			// 	int labelCur = laserCloudCornerFromSubMap->points[pointSearchIndPre[id]].label;
+			// 	if(pointSearchInd.size() <= 5 && labelOri == labelCur && pointSearchSqDisPre[id] < 2.0)
+			// 	{
+			// 		pointSearchInd.push_back(pointSearchIndPre[id]);
+			// 		pointSearchSqDis.push_back(pointSearchSqDisPre[id]);
+			// 	}else{
+			// 		pointSearchIndNo.push_back(pointSearchIndPre[id]);
+			// 		pointSearchSqDisNo.push_back(pointSearchSqDisPre[id]);
+			// 	}
+			// }
+			// int curIndSize = 5 - pointSearchInd.size();
+			// for(int id = 0; id < curIndSize; ++id){
+			// 	pointSearchInd.push_back(pointSearchIndNo[id]);
+			// 	pointSearchSqDis.push_back(pointSearchSqDisNo[id]);
+			// }
 
             cv::Mat matA1(3, 3, CV_32F, cv::Scalar::all(0));
             cv::Mat matD1(1, 3, CV_32F, cv::Scalar::all(0));
             cv::Mat matV1(3, 3, CV_32F, cv::Scalar::all(0));
 
-            if (pointSearchSqDis[4] < 1.0) {
+            // if (pointSearchSqDis.size() == 5 && pointSearchSqDis[4] < 1.0) 
+            if (pointSearchSqDis.size() == 5 && pointSearchSqDis[4] < 2.0) 
+			{
+				numSearch++;
+
                 float cx = 0, cy = 0, cz = 0;
                 for (int j = 0; j < 5; j++) {
                     cx += laserCloudCornerFromSubMap->points[pointSearchInd[j]].x;
@@ -1413,6 +1514,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 }
             }
         }
+
+		ROS_WARN("Corner numSearch: [%d / %d]", numSearch, laserCloudCornerLastDSNum);
+
     }
 
 
@@ -1421,17 +1525,52 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     {
         updatePointAssociateToSubMap();
 
+		int numSearch = 0;
+
         // #pragma omp for
         #pragma omp parallel for num_threads(numberOfCores)
         for (int i = 0; i < laserCloudSurfLastDSNum; i++)
         {
             PointXYZIL pointOri, pointSel, coeff;
-            std::vector<int> pointSearchInd;
-            std::vector<float> pointSearchSqDis;
-
             pointOri = laserCloudSurfLastDS->points[i];
-            pointAssociateToSubMap(&pointOri, &pointSel); 
+            pointAssociateToSubMap(&pointOri, &pointSel);
+			
+			std::vector<int> pointSearchInd;
+            std::vector<float> pointSearchSqDis;
             kdtreeSurfFromSubMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
+			
+			
+			// std::vector<int> pointSearchIndPre;
+            // std::vector<float> pointSearchSqDisPre;
+            // kdtreeSurfFromSubMap->nearestKSearch(pointSel, 10, pointSearchIndPre, pointSearchSqDisPre);
+
+            // std::vector<int> pointSearchInd;
+            // std::vector<float> pointSearchSqDis;
+				
+            // std::vector<int> pointSearchIndNo;
+            // std::vector<float> pointSearchSqDisNo;
+				
+			// int labelOri = laserCloudSurfLastDS->points[i].label;
+			// for(int id = 0; id < pointSearchIndPre.size(); ++id)
+			// {
+			// 	int labelCur = laserCloudSurfFromSubMap->points[pointSearchIndPre[id]].label;
+			// 	if(pointSearchInd.size() <= 5 && labelOri == labelCur && pointSearchSqDisPre[id] < 2.0)
+			// 	{
+			// 		pointSearchInd.push_back(pointSearchIndPre[id]);
+			// 		pointSearchSqDis.push_back(pointSearchSqDisPre[id]);
+			// 	}else{
+			// 		pointSearchIndNo.push_back(pointSearchIndPre[id]);
+			// 		pointSearchSqDisNo.push_back(pointSearchSqDisPre[id]);
+
+			// 	}
+			// }
+
+			// int curIndSize = 5 - pointSearchInd.size();
+			// for(int id = 0; id < curIndSize; ++id){
+			// 	pointSearchInd.push_back(pointSearchIndNo[id]);
+			// 	pointSearchSqDis.push_back(pointSearchSqDisNo[id]);
+			// }
+
 
             Eigen::Matrix<float, 5, 3> matA0;
             Eigen::Matrix<float, 5, 1> matB0;
@@ -1441,7 +1580,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             matB0.fill(-1);
             matX0.setZero();
 
-            if (pointSearchSqDis[4] < 1.0) {
+            // if (pointSearchSqDis.size() == 5 && pointSearchSqDis[4] < 1.0) 
+            if (pointSearchSqDis.size() == 5 && pointSearchSqDis[4] < 2.0) 
+			{
+				numSearch++;
+
                 for (int j = 0; j < 5; j++) {
                         matA0(j, 0) = laserCloudSurfFromSubMap->points[pointSearchInd[j]].x;
                         matA0(j, 1) = laserCloudSurfFromSubMap->points[pointSearchInd[j]].y;
@@ -1487,6 +1630,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 }
             }
         }
+
+		ROS_WARN("Surf numSearch: [%d / %d]", numSearch, laserCloudSurfLastDSNum);
+
     }
 
     void combineOptimizationCoeffs()
@@ -1676,14 +1822,231 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 	void IMUPreintegration()
 	{
+        std::lock_guard<std::mutex> lock(imuMtx);
 
+    	double currentCorrectionTime = timeLaserInfoCur;
+
+		// make sure we have imu data to integrate
+		if (imuQueOpt.empty()) return;
+
+		nav_msgs::Odometry laserOdomeROS;
+		laserOdomeROS.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(transformTobeSubMapped[0], 
+																					transformTobeSubMapped[1], 
+																					transformTobeSubMapped[2]);
+
+		float p_x = transformTobeSubMapped[3];
+		float p_y = transformTobeSubMapped[4];
+		float p_z = transformTobeSubMapped[5];
+		float r_x = laserOdomeROS.pose.pose.orientation.x;
+		float r_y = laserOdomeROS.pose.pose.orientation.y;
+		float r_z = laserOdomeROS.pose.pose.orientation.z;
+		float r_w = laserOdomeROS.pose.pose.orientation.w;
+		gtsam::Pose3 lidarPose = gtsam::Pose3(gtsam::Rot3::Quaternion(r_w, r_x, r_y, r_z), gtsam::Point3(p_x, p_y, p_z));
+		
+		// 0. initialize system
+		if (systemInitialized == false) {
+			resetOptimization();
+
+			// pop old IMU message
+			while (!imuQueOpt.empty()) {
+				if (ROS_TIME(&imuQueOpt.front()) < currentCorrectionTime - delta_t) {
+					lastImuT_opt = ROS_TIME(&imuQueOpt.front());
+					imuQueOpt.pop_front();
+				} else
+					break;
+			}
+
+			// initial pose
+			prevPose_ = lidarPose.compose(lidar2Imu);
+			gtsam::PriorFactor<gtsam::Pose3> priorPose(X(0), prevPose_, priorPoseNoise);
+			graphFactors.add(priorPose);
+			// initial velocity
+			prevVel_ = gtsam::Vector3(0, 0, 0);
+			gtsam::PriorFactor<gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
+			graphFactors.add(priorVel);
+			// initial bias
+			prevBias_ = gtsam::imuBias::ConstantBias();
+			gtsam::PriorFactor<gtsam::imuBias::ConstantBias> priorBias(B(0), prevBias_, priorBiasNoise);
+			graphFactors.add(priorBias);
+			// add values
+			graphValues.insert(X(0), prevPose_);
+			graphValues.insert(V(0), prevVel_);
+			graphValues.insert(B(0), prevBias_);	
+
+			// optimize once
+			optimizer.update(graphFactors, graphValues);
+			graphFactors.resize(0);
+			graphValues.clear();
+
+			imuIntegratorImu_->resetIntegrationAndSetBias(prevBias_);
+			imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
+
+			key = 1;
+			systemInitialized = true;
+			return;
+		}
+		
+		// reset graph for speed
+		if (key == 100) {
+			// get updated noise before reset
+			gtsam::noiseModel::Gaussian::shared_ptr updatedPoseNoise = gtsam::noiseModel::Gaussian::Covariance(optimizer.marginalCovariance(X(key - 1)));
+			gtsam::noiseModel::Gaussian::shared_ptr updatedVelNoise = gtsam::noiseModel::Gaussian::Covariance(optimizer.marginalCovariance(V(key - 1)));
+			gtsam::noiseModel::Gaussian::shared_ptr updatedBiasNoise = gtsam::noiseModel::Gaussian::Covariance(optimizer.marginalCovariance(B(key - 1)));
+			// reset graph
+			resetOptimization();
+			// add pose
+			gtsam::PriorFactor<gtsam::Pose3> priorPose(X(0), prevPose_, updatedPoseNoise);
+			graphFactors.add(priorPose);
+			// add velocity
+			gtsam::PriorFactor<gtsam::Vector3> priorVel(V(0), prevVel_, updatedVelNoise);
+			graphFactors.add(priorVel);
+			// add bias
+			gtsam::PriorFactor<gtsam::imuBias::ConstantBias> priorBias(B(0), prevBias_, updatedBiasNoise);
+			graphFactors.add(priorBias);
+			// add values
+			graphValues.insert(X(0), prevPose_);
+			graphValues.insert(V(0), prevVel_);
+			graphValues.insert(B(0), prevBias_);
+			// optimize once
+			optimizer.update(graphFactors, graphValues);
+			graphFactors.resize(0);
+			graphValues.clear();
+
+			key = 1;
+		}
+
+		// 1. integrate imu data and optimize
+		while (!imuQueOpt.empty()) {
+			// pop and integrate imu data that is between two optimizations
+			sensor_msgs::Imu* thisImu = &imuQueOpt.front();
+			double imuTime = ROS_TIME(thisImu);
+			if (imuTime < currentCorrectionTime - delta_t) {
+				double dt = (lastImuT_opt < 0) ? (1.0 / 500.0) : (imuTime - lastImuT_opt);
+				imuIntegratorOpt_->integrateMeasurement(
+					gtsam::Vector3(thisImu->linear_acceleration.x, thisImu->linear_acceleration.y, thisImu->linear_acceleration.z),
+					gtsam::Vector3(thisImu->angular_velocity.x, thisImu->angular_velocity.y, thisImu->angular_velocity.z),
+					dt);
+				lastImuT_opt = imuTime;
+				imuQueOpt.pop_front();
+			} else
+				break;
+		}
+
+		// add imu factor to graph
+		const gtsam::PreintegratedImuMeasurements& preint_imu = dynamic_cast<const gtsam::PreintegratedImuMeasurements&>(*imuIntegratorOpt_);
+		gtsam::ImuFactor imu_factor(X(key - 1), V(key - 1), X(key), V(key), B(key - 1), preint_imu);
+		graphFactors.add(imu_factor);
+		// add imu bias between factor
+		graphFactors.add(gtsam::BetweenFactor<gtsam::imuBias::ConstantBias>(B(key - 1), B(key), gtsam::imuBias::ConstantBias(), gtsam::noiseModel::Diagonal::Sigmas(sqrt(imuIntegratorOpt_->deltaTij()) * noiseModelBetweenBias)));
+		// add pose factor
+		gtsam::Pose3 curPose = lidarPose.compose(lidar2Imu);
+		gtsam::PriorFactor<gtsam::Pose3> pose_factor(X(key), curPose, correctionNoise);
+		graphFactors.add(pose_factor);
+		// insert predicted values
+		gtsam::NavState propState_ = imuIntegratorOpt_->predict(prevState_, prevBias_);
+		graphValues.insert(X(key), propState_.pose());
+		graphValues.insert(V(key), propState_.v());
+		graphValues.insert(B(key), prevBias_);
+		// optimize
+		optimizer.update(graphFactors, graphValues);
+		optimizer.update();
+		graphFactors.resize(0);
+		graphValues.clear();
+		// Overwrite the beginning of the preintegration for the next step.
+		gtsam::Values result = optimizer.calculateEstimate();
+		prevPose_ = result.at<gtsam::Pose3>(X(key));
+		prevVel_ = result.at<gtsam::Vector3>(V(key));
+		prevState_ = gtsam::NavState(prevPose_, prevVel_);
+		prevBias_ = result.at<gtsam::imuBias::ConstantBias>(B(key));
+		// Reset the optimization preintegration object.
+		imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
+		// check optimization
+		if (failureDetection(prevVel_, prevBias_)) {
+			resetParams();
+			return;
+		}
+
+
+		// 2. after optiization, re-propagate imu odometry preintegration
+		prevStateOdom = prevState_;
+		prevBiasOdom = prevBias_;
+		// first pop imu message older than current correction data
+		double lastImuQT = -1;
+		while (!imuQueImu.empty() && ROS_TIME(&imuQueImu.front()) < currentCorrectionTime - delta_t) {
+			lastImuQT = ROS_TIME(&imuQueImu.front());
+			imuQueImu.pop_front();
+		}
+		// repropogate
+		if (!imuQueImu.empty()) {
+			// reset bias use the newly optimized bias
+			imuIntegratorImu_->resetIntegrationAndSetBias(prevBiasOdom);
+			// integrate imu message from the beginning of this optimization
+			for (int i = 0; i < (int)imuQueImu.size(); ++i) {
+				sensor_msgs::Imu* thisImu = &imuQueImu[i];
+				double imuTime = ROS_TIME(thisImu);
+				double dt = (lastImuQT < 0) ? (1.0 / 500.0) : (imuTime - lastImuQT);
+
+				imuIntegratorImu_->integrateMeasurement(
+					gtsam::Vector3(thisImu->linear_acceleration.x, thisImu->linear_acceleration.y, thisImu->linear_acceleration.z),
+					gtsam::Vector3(thisImu->angular_velocity.x, thisImu->angular_velocity.y, thisImu->angular_velocity.z),
+					dt);
+				lastImuQT = imuTime;
+			}
+		}
+
+		++key;
+		doneFirstOpt = true;
+
+
+		// publish odometry
+		nav_msgs::Odometry odometry;
+		odometry.header.stamp = timeLaserInfoStamp;
+		odometry.header.frame_id = odometryFrame;
+		odometry.child_frame_id = "odom_imu";
+
+		// transform imu pose to ldiar
+		gtsam::Pose3 imuPose = gtsam::Pose3(prevStateOdom.quaternion(), prevStateOdom.position());
+		gtsam::Pose3 curlidarPose = imuPose.compose(imu2Lidar);
+
+		odometry.pose.pose.position.x = curlidarPose.translation().x();
+		odometry.pose.pose.position.y = curlidarPose.translation().y();
+		odometry.pose.pose.position.z = curlidarPose.translation().z();
+		odometry.pose.pose.orientation.x = curlidarPose.rotation().toQuaternion().x();
+		odometry.pose.pose.orientation.y = curlidarPose.rotation().toQuaternion().y();
+		odometry.pose.pose.orientation.z = curlidarPose.rotation().toQuaternion().z();
+		odometry.pose.pose.orientation.w = curlidarPose.rotation().toQuaternion().w();
+
+		pubIMUPreOdometry.publish(odometry);
+		
+		// transformTobeSubMapped[3] = curlidarPose.translation().x();
+		// transformTobeSubMapped[4] = curlidarPose.translation().y();
+		// transformTobeSubMapped[5] = curlidarPose.translation().z();
+		// transformTobeSubMapped[0] = curlidarPose.rotation().roll();
+		// transformTobeSubMapped[1] = curlidarPose.rotation().pitch();
+		// transformTobeSubMapped[2] = curlidarPose.rotation().yaw();
 
 		// lidarOdomAffine = odom2affine(*odomMsg);
 		// lidarOdomTime = odomMsg->header.stamp.toSec();
 	}
 
 
+	bool failureDetection(const gtsam::Vector3& velCur,
+						  const gtsam::imuBias::ConstantBias& biasCur) {
+		Eigen::Vector3f vel(velCur.x(), velCur.y(), velCur.z());
+		if (vel.norm() > 30) {
+			ROS_WARN("Large velocity, reset IMU-preintegration!");
+			return true;
+		}
 
+		Eigen::Vector3f ba(biasCur.accelerometer().x(), biasCur.accelerometer().y(), biasCur.accelerometer().z());
+		Eigen::Vector3f bg(biasCur.gyroscope().x(), biasCur.gyroscope().y(), biasCur.gyroscope().z());
+		if (ba.norm() > 1.0 || bg.norm() > 1.0) {
+			ROS_WARN("Large bias, reset IMU-preintegration!");
+			return true;
+		}
+
+		return false;
+	}
 
     void publishOdometry()
     {
@@ -1699,6 +2062,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                                                                                          transformTobeSubMapped[1], 
                                                                                          transformTobeSubMapped[2]);
         pubKeyFrameOdometryGlobal.publish(laserOdometryROS);
+
+		// lidarOdomAffine update
+		// lidarOdomAffine = odom2affine(laserOdometryROS);
+		// lidarOdomTime = laserOdometryROS.header.stamp.toSec();
 
         // Publish TF
         static tf::TransformBroadcaster br;
@@ -1730,6 +2097,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             laserOdomIncremental.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw);
         }
         pubKeyFrameOdometryIncremental.publish(laserOdomIncremental);
+
         // ROS_WARN("Finshed  publishOdometry !");
     }
 
@@ -1803,7 +2171,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             Eigen::Affine3f curPose = pclPointToAffine3f(curKeyFramePtr->optimized_pose);
             epscGen.loopDetection(
                 curKeyFramePtr->cloud_corner, curKeyFramePtr->cloud_surface,
-                curKeyFramePtr->cloud_semantic, curKeyFramePtr->cloud_static,
+                curKeyFramePtr->cloud_semantic, curKeyFramePtr->cloud_semantic,
                 curPose);
 
             int loopKeyCur = epscGen.current_frame_id;
@@ -1877,7 +2245,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         auto thisCurId = keyFrameInfo.find(loopKeyCur);
         if (thisCurId != keyFrameInfo.end()) {
             loopKeyCur = (int)keyFrameInfo[loopKeyCur]->keyframe_id;
-            *cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->cloud_static;
+            *cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->cloud_semantic;
         } else {
             loopKeyCur = -1;
             ROS_WARN("LoopKeyCur do not find !");
@@ -1913,7 +2281,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 std::cout << "loopContainerHandler: loopKeyPre : " << PreID << std::endl;
 
                 prevKeyframeCloud->clear();
-                *tmpCloud += *keyFrameInfo[loopKeyPre[i]]->cloud_static;
+                *tmpCloud += *keyFrameInfo[loopKeyPre[i]]->cloud_semantic;
                 icp.setInputTarget(prevKeyframeCloud);
 
                 pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());

@@ -156,6 +156,7 @@ pcl::PointCloud<PointXYZIL>::Ptr transformPointCloud(pcl::PointCloud<PointXYZIL>
 
 pcl::PointCloud<PointXYZIL>::Ptr transformPointCloud(pcl::PointCloud<PointXYZIL>::Ptr cloudIn, const PointTypePose *transformIn);
 
+pcl::PointCloud<PointXYZIL>::Ptr trans2LabelPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn);
 
 float constraintTransformation(float value, float limit);
 

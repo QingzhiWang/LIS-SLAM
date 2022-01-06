@@ -136,10 +136,9 @@ class SemanticLabelParam {
 
 	std::map<uint32_t, uint32_t> UsingLableMap;
 	SemanticLabelParam() {
-		nodeH.param<std::string>("lis_slam/PROJECT_PATH", PROJECT_PATH,
-							"/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/");
+		nodeH.param<std::string>("lis_slam/PROJECT_PATH", PROJECT_PATH, "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/");
 		// Try to get the config file as well 
-		///home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/config/label.yaml
+		// /home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/config/label.yaml
 		std::string yaml_path = PROJECT_PATH + "config/label.yaml";
 		try {
 			label_yaml = YAML::LoadFile(yaml_path);
@@ -152,9 +151,7 @@ class SemanticLabelParam {
 		try {
 			color_map = label_yaml["color_map"];
 		} catch (YAML::Exception &ex) {
-			std::cerr << "Can't open one the label dictionary from cfg in " +
-							yaml_path
-						<< std::endl;
+			std::cerr << "Can't open one the label dictionary from cfg in " + yaml_path << std::endl;
 			throw ex;
 		}
 
@@ -176,9 +173,7 @@ class SemanticLabelParam {
 		try {
 			learning_class = label_yaml["learning_map_inv"];
 		} catch (YAML::Exception &ex) {
-			std::cerr << "Can't open one the label dictionary from cfg in " +
-							yaml_path
-						<< std::endl;
+			std::cerr << "Can't open one the label dictionary from cfg in " + yaml_path << std::endl;
 			throw ex;
 		}
 
@@ -199,9 +194,7 @@ class SemanticLabelParam {
 		try {
 			using_class = label_yaml["using_label"];
 		} catch (YAML::Exception &ex) {
-			std::cerr << "Can't open one the label dictionary from cfg in " +
-							yaml_path
-						<< std::endl;
+			std::cerr << "Can't open one the label dictionary from cfg in " + yaml_path << std::endl;
 			throw ex;
 		}
 
@@ -236,7 +229,6 @@ class ParamServer {
 
 	// Frames
 	string lidarFrame;
-	string baselinkFrame;
 	string odometryFrame;
 	string mapFrame;
 
@@ -361,7 +353,6 @@ class ParamServer {
 		nh.param<std::string>("lis_slam/gpsTopic", gpsTopic, "odometry/gps");
 
 		nh.param<std::string>("lis_slam/lidarFrame", lidarFrame, "base_link");
-		nh.param<std::string>("lis_slam/baselinkFrame", baselinkFrame, "base_link");
 		nh.param<std::string>("lis_slam/odometryFrame", odometryFrame, "odom");
 		nh.param<std::string>("lis_slam/mapFrame", mapFrame, "map");
 
