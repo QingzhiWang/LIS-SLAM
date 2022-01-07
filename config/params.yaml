@@ -7,39 +7,41 @@ lis_slam:
   useImu: true       # If using IMU data, set to "true" 
   loopClosureEnableFlag: true
   
+  useOdometryPitchPrediction: true              # 在结构性较强时可使用前端里程计pitch预测值
+  
   PROJECT_PATH: "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/"
-  RESULT_PATH: "../assets/trajectory/00_pred_loop.txt"
   MODEL_PATH: "/home/wqz/AWorkSpace/darknet53"
 
   # Export settings
   savePCD: false                                       
   savePCDDirectory: "../assets/MyNoLoop/kitti_00/"     # in your home folder, starts and ends with "/".
 
+  saveTrajectory: false
+  RESULT_PATH: "../assets/trajectory/00_pred_loop.txt"
 
-  useOdometryPitchPrediction: true              # 在结构性较强时可使用前端里程计pitch预测值
 
   # Topics   velodyne_points  points_raw
   pointCloudTopic: "points_raw"                 # Point cloud data
   imuTopic: "imu_raw"                           # IMU data
-  odomTopic: "odometry/imu"                     # IMU pre-preintegration odometry, same frequency as IMU
+  odomTopic: "odometry"                     # IMU pre-preintegration odometry, same frequency as IMU
   gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
   
   # Topics kitti(RAW)
   # pointCloudTopic: "/kitti/velo/pointcloud"   # Point cloud data
   # imuTopic: "/kitti/oxts/imu"                 # IMU data
-  # odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
+  # odomTopic: "odometry"                   # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "odometry/gps"                    # GPS odometry topic from navsat, see module_navsat.launch file
  
   #CQU
   # pointCloudTopic: "rslidar_points"           # Point cloud data
   # imuTopic: "imu/data"                        # IMU data
-  # odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
+  # odomTopic: "odometry"                   # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "odometry/gpsz"  
 
   # Topics  HCLT/KITTI(odometry)
   # pointCloudTopic: "/velodyne_points"         # Point cloud data
   # imuTopic: "/imu/data"                       # IMU data
-  # odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
+  # odomTopic: "odometry"                   # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
 
@@ -47,12 +49,6 @@ lis_slam:
   lidarFrame: "base_link"
   odometryFrame: "odom"
   mapFrame: "map"
-
-  # GPS Settings
-  useImuHeadingInitialization: false          # if using GPS data, set to "true"
-  useGpsElevation: false                      # if GPS elevation is bad, set to "false"
-  gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data
-  poseCovThreshold: 25.0                      # m^2, threshold for using GPS data
 
   # Sensor Settings
   N_SCAN:  64                                 # number of lidar channel (i.e., 16, 32, 64, 128)
@@ -62,6 +58,11 @@ lis_slam:
   lidarMinRange: 1.0                         # default: 1.0, minimum lidar range to be used
   lidarMaxRange: 70.0                        # 70.0      # default: 1000.0, maximum lidar range to be used
 
+  # GPS Settings
+  useImuHeadingInitialization: false          # if using GPS data, set to "true"
+  useGpsElevation: false                      # if GPS elevation is bad, set to "false"
+  gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data
+  poseCovThreshold: 25.0                      # m^2, threshold for using GPS data
 
   # IMU Settings
   imuAccNoise: 3.9939570888238808e-03
@@ -103,7 +104,6 @@ lis_slam:
   edgeFeatureMinValidNum: 10
   surfFeatureMinValidNum: 100
 
-
   # robot motion constraint (in case you are using a 2D robot)
   z_tollerance: 1000                            # meters
   rotation_tollerance: 1000                     # radians
@@ -115,31 +115,25 @@ lis_slam:
   # voxel filter paprams
   odometrySurfLeafSize: 0.4                     # default: 0.4 - outdoor, 0.2 - indoor
   mappingCornerLeafSize: 0.2                    # default: 0.2 - outdoor, 0.1 - indoor
-  mappingSurfLeafSize: 0.4                      # default: 0.4 - outdoor, 0.2 - indoor        
-  
-  #新增 submap voxel filter 
-  subMapCornerLeafSize: 0.2                    
-  subMapSurfLeafSize: 0.4   
-  subMapLeafSize: 0.5     
+  mappingSurfLeafSize: 0.4                      # default: 0.4 - outdoor, 0.2 - indoor          
 
   # Surrounding map
-  surroundingkeyframeAddingDistThreshold:  1.0         # 1.0   # meters, regulate keyframe adding threshold
-  surroundingkeyframeAddingAngleThreshold:   0.2       # 0.2   # radians, regulate keyframe adding threshold
   surroundingKeyframeDensity: 2.0                      # meters, downsample surrounding keyframe poses   
   surroundingKeyframeSearchRadius:  20.0               # 50.0         # meters, within n meters scan-to-map optimization (when loop closure disabled)
-
 
   #新增 make Submap
   keyFrameMiniDistance: 1.2  # 0.2-indoor    1.2 kitti 
   keyFrameMiniYaw : 0.4      # 0.2-indoor    0.4-kitti
 
+  #新增 submap voxel filter 
+  subMapCornerLeafSize: 0.2                    
+  subMapSurfLeafSize: 0.4   
+  subMapLeafSize: 0.5   
+
   subMapYawMax: 0.9          # 0.6-indoor    0.9outdoor
   subMapFramesSize: 20       # 10
   subMapMaxTime: 3.0         # 3.0
   subMapTraMax: 50.0
-
-  subMapOptmizationDistanceThresh: 1.2   # 1.5   1.3       
-  subMapOptmizationYawThresh: 0.20       # radians  0.4-indoor    0.25-outdoor
 
   subMapOptmizationFirstSize: 2    #5
 
@@ -156,21 +150,11 @@ lis_slam:
   
   historyKeyframeFitnessScore: 1.3             # 0.3  # 0.7  # icp threshold, the smaller the better alignment
 
-  #新增
-  distanceKeyframeThresh: 15.0
-  accumDistanceIndexThresh: 10
-  historyAccumDistanceIndexThresh: 5
-  distanceFromLastIndexThresh: 3
-
-  loopClosureCornerLeafSize: 0.2                    
-  loopClosureSurfLeafSize: 0.4  
-
 
   # Visualization
   globalMapVisualizationSearchRadius: 1000.0    # meters, global map visualization radius
   globalMapVisualizationPoseDensity: 10.0       # meters, global map visualization keyframe density
   globalMapVisualizationLeafSize: 1.0           # meters, global map visualization cloud density
-
 
 
 

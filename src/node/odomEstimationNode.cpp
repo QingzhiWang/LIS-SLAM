@@ -96,8 +96,8 @@ class OdomEstimationNode : public ParamServer
 
 		pubKeyFrameInfo = nh.advertise<lis_slam::cloud_info>("lis_slam/odom_estimation/cloud_info", 10);
 
-		pubLaserOdometryGlobal = nh.advertise<nav_msgs::Odometry>("lis_slam/odom_estimation/odometry", 10);
-		pubLaserOdometryIncremental = nh.advertise<nav_msgs::Odometry>("lis_slam/odom_estimation/odometry_incremental", 10);
+		pubLaserOdometryGlobal = nh.advertise<nav_msgs::Odometry>(odomTopic + "/front", 200);
+		pubLaserOdometryIncremental = nh.advertise<nav_msgs::Odometry>(odomTopic + "/front_incremental", 200);
 
 		pubKeyFrameId = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/odom_estimation/keyframe_id", 10);
 
@@ -187,15 +187,23 @@ class OdomEstimationNode : public ParamServer
 		scan2SubMapOptimization();
 		publishOdometry();
 
-		calculateTranslation();
-		if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
-			abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
-			abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) 
+		if(saveTrajectory)
 		{
 			saveKeyFrames();
-			// publishOdometry();
 			publishCloudInfo();
 			publishCloud(&pubKeyFrameId, cloudKeyPoses3D, timeLaserInfoStamp, mapFrame);
+		}
+		else
+		{
+			calculateTranslation();
+			if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
+				abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
+				abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) 
+			{
+				saveKeyFrames();
+				publishCloudInfo();
+				publishCloud(&pubKeyFrameId, cloudKeyPoses3D, timeLaserInfoStamp, mapFrame);
+			}
 		}
 
 		end = std::chrono::system_clock::now();

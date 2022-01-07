@@ -107,7 +107,7 @@ using namespace std;
   # 40 ---- road
   # 44 ---- parking
   # 48 ---- sideWalk
-  
+
   # 50 ---- building
   # 51 ---- fence
   
@@ -238,8 +238,10 @@ class ParamServer {
 	bool useImu;
 
 	std::string PROJECT_PATH;
-	std::string RESULT_PATH;
 	std::string MODEL_PATH;
+
+	bool saveTrajectory;
+	std::string RESULT_PATH;
 
 	// Topics
 	string pointCloudTopic;
@@ -309,8 +311,6 @@ class ParamServer {
 	double mappingProcessInterval;
 
 	// Surrounding map
-	float surroundingkeyframeAddingDistThreshold;
-	float surroundingkeyframeAddingAngleThreshold;
 	float surroundingKeyframeDensity;
 	float surroundingKeyframeSearchRadius;
 
@@ -323,14 +323,6 @@ class ParamServer {
 	int historyKeyframeSearchNum;
 	float historyKeyframeFitnessScore;
 
-	//新增
-	float distanceKeyframeThresh;
-	int accumDistanceIndexThresh;
-	int historyAccumDistanceIndexThresh;
-	int distanceFromLastIndexThresh;
-
-	float loopClosureCornerLeafSize;
-	float loopClosureSurfLeafSize;
 
 	//新增 make Submap
 	int subMapFramesSize;
@@ -339,9 +331,6 @@ class ParamServer {
 	float subMapMaxTime;
 	float subMapTraMax;
 	float keyFrameMiniYaw;
-
-	float subMapOptmizationDistanceThresh;
-	float subMapOptmizationYawThresh;
 
 	int subMapOptmizationFirstSize;
 
@@ -361,10 +350,11 @@ class ParamServer {
 
 		nh.param<std::string>("lis_slam/PROJECT_PATH", PROJECT_PATH,
 							"/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/");
-
+		nh.param<std::string>("lis_slam/MODEL_PATH", MODEL_PATH, "./");
+		
+		nh.param<bool>("lis_slam/saveTrajectory", saveTrajectory, false);
 		nh.param<std::string>("lis_slam/RESULT_PATH", RESULT_PATH,
 							"./assets/trajectory/test_pred.txt");
-		nh.param<std::string>("lis_slam/MODEL_PATH", MODEL_PATH, "./");
 
 		nh.param<std::string>("lis_slam/pointCloudTopic", pointCloudTopic, "points_raw");
 		nh.param<std::string>("lis_slam/imuTopic", imuTopic, "imu_correct");
@@ -425,8 +415,6 @@ class ParamServer {
 		nh.param<int>("lis_slam/numberOfCores", numberOfCores, 2);
 		nh.param<double>("lis_slam/mappingProcessInterval", mappingProcessInterval, 0.15);
 
-		nh.param<float>("lis_slam/surroundingkeyframeAddingDistThreshold", surroundingkeyframeAddingDistThreshold, 1.0);
-		nh.param<float>("lis_slam/surroundingkeyframeAddingAngleThreshold", surroundingkeyframeAddingAngleThreshold, 0.2);
 		nh.param<float>("lis_slam/surroundingKeyframeDensity", surroundingKeyframeDensity, 1.0);
 		nh.param<float>("lis_slam/surroundingKeyframeSearchRadius", surroundingKeyframeSearchRadius, 50.0);
 
@@ -438,15 +426,6 @@ class ParamServer {
 		nh.param<int>("lis_slam/historyKeyframeSearchNum", historyKeyframeSearchNum, 25);
 		nh.param<float>("lis_slam/historyKeyframeFitnessScore", historyKeyframeFitnessScore, 0.3);
 
-		//新增
-		nh.param<float>("lis_slam/distanceKeyframeThresh", distanceKeyframeThresh, 15.0);
-		nh.param<int>("lis_slam/accumDistanceIndexThresh", accumDistanceIndexThresh, 10);
-		nh.param<int>("lis_slam/historyAccumDistanceIndexThresh", historyAccumDistanceIndexThresh, 5);
-		nh.param<int>("lis_slam/distanceFromLastIndexThresh", distanceFromLastIndexThresh, 3);
-
-		nh.param<float>("lis_slam/loopClosureCornerLeafSize", loopClosureCornerLeafSize, 0.2);
-		nh.param<float>("lis_slam/loopClosureSurfLeafSize", loopClosureSurfLeafSize, 0.5);
-
 		//新增subMapMaxTime
 		nh.param<float>("lis_slam/subMapMaxTime", subMapMaxTime, 2.0);
 		nh.param<int>("lis_slam/subMapFramesSize", subMapFramesSize, 10);
@@ -455,9 +434,6 @@ class ParamServer {
 
 		nh.param<float>("lis_slam/keyFrameMiniDistance", keyFrameMiniDistance, 0.1);
 		nh.param<float>("lis_slam/keyFrameMiniYaw", keyFrameMiniYaw, 0.2);
-
-		nh.param<float>("lis_slam/subMapOptmizationDistanceThresh", subMapOptmizationDistanceThresh, 0.2);
-		nh.param<float>("lis_slam/subMapOptmizationYawThresh", subMapOptmizationYawThresh, 0.5);
 
 		nh.param<int>("lis_slam/subMapOptmizationFirstSize", subMapOptmizationFirstSize, 5);
 

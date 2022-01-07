@@ -67,6 +67,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
  public:
     ros::Subscriber subCloud;
     ros::Subscriber subIMU;
+	ros::Subscriber subOdom
 
 	ros::Publisher pubCloudRegisteredRaw;
     
@@ -89,9 +90,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     std::mutex seMtx;
     std::mutex imuMtx;
+    std::mutex odomMtx;
     std::deque<lis_slam::semantic_info> seInfoQueue;
     std::deque<sensor_msgs::Imu> imuQueOpt;
     std::deque<sensor_msgs::Imu> imuQueImu;
+    std::deque<nav_msgs::Odometry> odomQueue;
 
     lis_slam::semantic_info cloudInfo;
     
@@ -135,13 +138,13 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     ros::Time timeLaserInfoStamp;
     ros::Time timeSubMapInfoStamp;
-    double timeLaserInfoCur;
+    double timeLaserInfoCur = -1;
 
     float transformTobeSubMapped[6];
-    float afterMapOptmizationPoses[6];
     float transPredictionMapped[6];
 
-    Eigen::Affine3f transDelta;
+	Eigen::Affine3f transBef;
+	Eigen::Affine3f transBef2Aft = Eigen::Affine3f::Identity();
     
     float transformCurFrame2Submap[6];
     float transformCurSubmap[6];
@@ -217,21 +220,17 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					 gtsam::Point3(extTrans.x(), extTrans.y(), extTrans.z()));
 
 
-	Eigen::Affine3f lidarOdomAffine;
-	Eigen::Affine3f imuOdomAffineFront;
-	Eigen::Affine3f imuOdomAffineBack;
-
 	tf::TransformListener tfListener;
 	tf::StampedTransform lidar2Baselink;
 
-	double lidarOdomTime = -1;
 	deque<nav_msgs::Odometry> imuOdomQueue;
 	
+	ros::Publisher pubKeyframeIMUOdometry;
 	ros::Publisher pubImuOdometry;
-	ros::Publisher pubImuPath;
-	ros::Publisher pubOdometry;
-	
-	ros::Publisher pubIMUPreOdometry;
+
+	ros::Publisher pubLidarPath;
+	ros::Publisher pubLidarOdometry;
+	ros::Publisher pubLidarIMUOdometry;
 	
 	
 	// ---- test publisher ----  
@@ -242,13 +241,14 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     
     SubMapOdometryNode() 
     {
-        subCloud = nh.subscribe<lis_slam::semantic_info>( "lis_slam/semantic_fusion/semantic_info", 10, &SubMapOdometryNode::semanticInfoHandler, this, ros::TransportHints().tcpNoDelay());
+        subCloud = nh.subscribe<lis_slam::semantic_info>( "lis_slam/semantic_fusion/semantic_info", 200, &SubMapOdometryNode::semanticInfoHandler, this, ros::TransportHints().tcpNoDelay());
         subIMU   = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &SubMapOdometryNode::imuHandler, this, ros::TransportHints().tcpNoDelay());
+        subOdom   = nh.subscribe<nav_msgs::Odometry>(odomTopic + "/front", 200, &SubMapOdometryNode::odomHandler, this, ros::TransportHints().tcpNoDelay());
         
-        pubKeyFrameOdometryGlobal      = nh.advertise<nav_msgs::Odometry> ("lis_slam/make_submap/odometry", 1);
-        pubKeyFrameOdometryIncremental = nh.advertise<nav_msgs::Odometry> ("lis_slam/make_submap/odometry_incremental", 1);
+        pubKeyFrameOdometryGlobal      = nh.advertise<nav_msgs::Odometry> (odomTopic + "/keyframe", 200);
+        pubKeyFrameOdometryIncremental = nh.advertise<nav_msgs::Odometry> (odomTopic + "/keyframe_incremental", 200);
       
-        pubKeyFramePoseGlobal = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/trajectory", 1);
+        pubKeyFramePoseGlobal = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/keyframe_id", 1);
         pubKeyFramePath       = nh.advertise<nav_msgs::Path>("lis_slam/make_submap/keyframe_path", 1);
 
         pubCloudRegisteredRaw = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/registered_raw", 1);
@@ -263,12 +263,13 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         pubISC  = nh.advertise<sensor_msgs::Image>("global_descriptor_isc", 100);
         pubSSC  = nh.advertise<sensor_msgs::Image>("global_descriptor_ssc", 100);
         
-
-		pubImuOdometry = nh.advertise<nav_msgs::Odometry>(odomTopic + "_incremental", 2000);
-    	pubImuPath = nh.advertise<nav_msgs::Path>("lis_slam/imu/path", 1);
-  		pubOdometry = nh.advertise<nav_msgs::Odometry>(odomTopic, 2000);
+  		pubKeyframeIMUOdometry = nh.advertise<nav_msgs::Odometry>(odomTopic + "/keyframe_imu", 2000);
+		pubImuOdometry         = nh.advertise<nav_msgs::Odometry>(odomTopic + "/imu", 2000);
+    	
+		pubLidarPath        = nh.advertise<nav_msgs::Path>("lis_slam/make_submap/lidar_path", 1);
+  		pubLidarOdometry    = nh.advertise<nav_msgs::Odometry>(odomTopic + "/lidar", 2000);
+  		pubLidarIMUOdometry = nh.advertise<nav_msgs::Odometry>(odomTopic + "/lidar_imu", 2000);
   
-  		pubIMUPreOdometry = nh.advertise<nav_msgs::Odometry>("lis_slam/pre_odometry", 2000);
   		
         pubTest1 = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/test_1", 1);
         pubTest2 = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/test_2", 1);
@@ -299,7 +300,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         for (int i = 0; i < 6; ++i)
         {
             transformTobeSubMapped[i] = 0;
-            afterMapOptmizationPoses[i] = 0;
             transPredictionMapped[i]=0.0;
             
             transformCurFrame2Submap[i] = 0;
@@ -468,9 +468,37 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		// cout << "CurrentState IMU roll pitch yaw: " << endl;
 		// cout << "roll: " << lidarPose.rotation().roll() << ", pitch: " << lidarPose.rotation().pitch() << ", yaw: " << lidarPose.rotation().yaw() << endl << endl;
 
+    }
+
+
+	void odomHandler(const nav_msgs::Odometry::ConstPtr &msgIn )
+	{
+        std::lock_guard<std::mutex> lock(odomMtx);
+        odomQueue.push_back(*msgIn);
+
+		if(timeLaserInfoCur == -1 || keyFramePoses3D->points.size() <= 0) 
+			return;
+
+		nav_msgs::Odometry thisOdom = odomQueue.front();
+		odomQueue.pop_front();
+
+		Eigen::Affine3f odomAffine = odom2affine(thisOdom);
+        Eigen::Affine3f lidarOdomAffine = transBef2Aft * odomAffine;
+
+        float x, y, z, roll, pitch, yaw;
+        pcl::getTranslationAndEulerAngles(lidarOdomAffine, x, y, z, roll, pitch, yaw);
+
+        // publish latest odometry
+        nav_msgs::Odometry laserOdometry = thisOdom;
+        laserOdometry.pose.pose.position.x = x;
+        laserOdometry.pose.pose.position.y = y;
+        laserOdometry.pose.pose.position.z = z;
+        laserOdometry.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw);
+        pubOdometry.publish(laserOdometry);
+
+		double lidarOdomTime = thisOdom.header.stamp.toSec();
 
 		// get latest odometry (at current IMU stamp)
-		if (lidarOdomTime == -1) return;
 		while (!imuOdomQueue.empty()) {
 		if (imuOdomQueue.front().header.stamp.toSec() <= lidarOdomTime)
 			imuOdomQueue.pop_front();
@@ -480,8 +508,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 		Eigen::Affine3f imuOdomAffineFront = odom2affine(imuOdomQueue.front());
 		Eigen::Affine3f imuOdomAffineBack = odom2affine(imuOdomQueue.back());
-		Eigen::Affine3f imuOdomAffineIncre =
-			imuOdomAffineFront.inverse() * imuOdomAffineBack;
+		Eigen::Affine3f imuOdomAffineIncre = imuOdomAffineFront.inverse() * imuOdomAffineBack;
 		Eigen::Affine3f imuOdomAffineLast = lidarOdomAffine * imuOdomAffineIncre;
 		float x, y, z, roll, pitch, yaw;
 		pcl::getTranslationAndEulerAngles(imuOdomAffineLast, x, y, z, roll, pitch, yaw);
@@ -493,7 +520,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		laserOdometry.pose.pose.position.z = z;
 		laserOdometry.pose.pose.orientation =
 			tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw);
-		pubOdometry.publish(laserOdometry);
+		pubLidarOdometry.publish(laserOdometry);
 
 		// publish IMU path
 		static nav_msgs::Path imuPath;
@@ -508,13 +535,14 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 			imuPath.poses.push_back(pose_stamped);
 			while (!imuPath.poses.empty() && imuPath.poses.front().header.stamp.toSec() < lidarOdomTime - 0.1)
 				imuPath.poses.erase(imuPath.poses.begin());
-			if (pubImuPath.getNumSubscribers() != 0) {
+			if (pubLidarPath.getNumSubscribers() != 0) {
 				imuPath.header.stamp = imuOdomQueue.back().header.stamp;
 				imuPath.header.frame_id = odometryFrame;
-				pubImuPath.publish(imuPath);
+				pubLidarPath.publish(imuPath);
 			}
 		}
-    }
+		
+	}
 
 
     /*****************************
@@ -894,7 +922,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             ROS_WARN("MakeSubmap: cloudInfo.odomAvailable == true!");
             Eigen::Affine3f transBack = pcl::getTransformation(cloudInfo.initialGuessX,    cloudInfo.initialGuessY,     cloudInfo.initialGuessZ, 
                                                                cloudInfo.initialGuessRoll, cloudInfo.initialGuessPitch, cloudInfo.initialGuessYaw);
-            if (lastImuPreTransAvailable == false) {
+            
+			transBef = transBack;
+
+			if (lastImuPreTransAvailable == false) {
                 lastImuPreTransformation = transBack;
                 lastImuPreTransAvailable = true;
             } else {
@@ -1308,7 +1339,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         // ICP Settings
         static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> icp;
-        icp.setMaxCorrespondenceDistance(historyKeyframeSearchRadius * 2);
+        icp.setMaxCorrespondenceDistance(30);
         icp.setMaximumIterations(40);
         icp.setTransformationEpsilon(1e-6);
         icp.setEuclideanFitnessEpsilon(1e-6);
@@ -1853,6 +1884,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         transformTobeSubMapped[5] = constraintTransformation(transformTobeSubMapped[5], z_tollerance);
 
         incrementalOdometryAffineBack = trans2Affine3f(transformTobeSubMapped);
+
+		transBef2Aft = incrementalOdometryAffineBack * transBef.inverse();
     }
 
 
@@ -2055,7 +2088,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		odometry.pose.pose.orientation.z = curlidarPose.rotation().toQuaternion().z();
 		odometry.pose.pose.orientation.w = curlidarPose.rotation().toQuaternion().w();
 
-		pubIMUPreOdometry.publish(odometry);
+		pubKeyframeIMUOdometry.publish(odometry);
 
 		ROS_WARN("timeLaserInfoStamp: %f, lastImuT_opt: %f.", timeLaserInfoStamp.toSec(), lastImuT_opt);
 		
@@ -2066,8 +2099,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		// transformTobeSubMapped[1] = curlidarPose.rotation().pitch();
 		// transformTobeSubMapped[2] = curlidarPose.rotation().yaw();
 
-		// lidarOdomAffine = odom2affine(*odomMsg);
-		// lidarOdomTime = odomMsg->header.stamp.toSec();
 	}
 
 
@@ -2103,10 +2134,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                                                                                          transformTobeSubMapped[1], 
                                                                                          transformTobeSubMapped[2]);
         pubKeyFrameOdometryGlobal.publish(laserOdometryROS);
-
-		// lidarOdomAffine update
-		// lidarOdomAffine = odom2affine(laserOdometryROS);
-		// lidarOdomTime = laserOdometryROS.header.stamp.toSec();
 
         // Publish TF
         static tf::TransformBroadcaster br;
@@ -2291,7 +2318,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         // ICP Settings
         static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> icp;
-        icp.setMaxCorrespondenceDistance(historyKeyframeSearchRadius * 2);
+        icp.setMaxCorrespondenceDistance(30);
         icp.setMaximumIterations(40);
         icp.setTransformationEpsilon(1e-6);
         icp.setEuclideanFitnessEpsilon(1e-6);
@@ -2450,9 +2477,12 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
     ros::Publisher pubCloudMap;
 
-    ros::Publisher pubSubMapOdometryGlobal;
-    
+    ros::Publisher pubSubMapId;
     ros::Publisher pubSubMapConstraintEdge;
+
+    ros::Publisher pubSubMapOdometryGlobal;
+    ros::Publisher pubOdometryGlobal;
+    
     
     void allocateMemory() {}
 
@@ -2461,10 +2491,13 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         subGPS = nh.subscribe<nav_msgs::Odometry>(gpsTopic, 2000, &SubMapOptmizationNode::gpsHandler, this, ros::TransportHints().tcpNoDelay());
         
         pubCloudMap = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/mapping/map_global", 1);
-        
-        pubSubMapOdometryGlobal = nh.advertise<nav_msgs::Odometry>("lis_slam/mapping/submap_odometry", 1);
-        
+                
+        pubSubMapId = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/mapping/submap_id", 1);
         pubSubMapConstraintEdge = nh.advertise<visualization_msgs::MarkerArray>("lis_slam/mapping/submap_constraints", 1);
+        
+		pubSubmapOdometryGlobal = nh.advertise<nav_msgs::Odometry> (odomTopic + "/submap", 200);
+		pubOdometryGlobal = nh.advertise<nav_msgs::Odometry> (odomTopic + "/fusion", 200);
+        
 
         allocateMemory();
     }

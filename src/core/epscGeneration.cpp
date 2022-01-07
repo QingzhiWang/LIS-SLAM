@@ -471,7 +471,7 @@ cv::Mat EPSCGeneration::calculateSEPSC(const pcl::PointCloud<PointXYZIL>::Ptr fi
 		
 		if (ring_id >= rings || ring_id < 0) continue;
 		if (sector_id >= sectors || sector_id < 0) continue;
-		if (UsingLableMap[label] == 40) {
+		if (UsingLableMap[label] == 40 || UsingLableMap[label] == 50) {
 			psc.at<unsigned char>(ring_id, sector_id)++;
 			//   std::cout << "psc.at(" << ring_id << ", " << sector_id << "): " << (int)psc.at<unsigned char>(ring_id, sector_id) << "\t";
 		} else if (UsingLableMap[label] == 81) {
