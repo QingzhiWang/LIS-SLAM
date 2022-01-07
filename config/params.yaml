@@ -71,7 +71,7 @@ lis_slam:
   imuGravity: 9.80511
   imuRPYWeight: 0.01
 
-  # Extrinsics (lidar -> IMU)
+  # Extrinsics (IMU -> lidar)
   # extrinsicTrans: [0.0, 0.0, 0.0]
   # extrinsicRot: [-1, 0, 0,
   #                 0, 1, 0,

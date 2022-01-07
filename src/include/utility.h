@@ -402,7 +402,8 @@ class ParamServer {
 		extRot = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extRotV.data(), 3, 3);
 		extRPY = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extRPYV.data(), 3, 3);
 		extTrans = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extTransV.data(), 3, 1);
-		extQRPY = Eigen::Quaterniond(extRPY);
+		// extQRPY = Eigen::Quaterniond(extRPY);
+		extQRPY = Eigen::Quaterniond(extRPY.inverse());
 
 		nh.param<float>("lis_slam/edgeThreshold", edgeThreshold, 0.1);
 		nh.param<float>("lis_slam/surfThreshold", surfThreshold, 0.1);
@@ -494,7 +495,8 @@ class ParamServer {
 		// rotate roll pitch yaw
 		Eigen::Quaterniond q_from(imu_in.orientation.w, imu_in.orientation.x,
 								imu_in.orientation.y, imu_in.orientation.z);
-		Eigen::Quaterniond q_final = q_from * extQRPY;
+		// Eigen::Quaterniond q_final = q_from * extQRPY;
+		Eigen::Quaterniond q_final = extQRPY * q_from;
 		imu_out.orientation.x = q_final.x();
 		imu_out.orientation.y = q_final.y();
 		imu_out.orientation.z = q_final.z();

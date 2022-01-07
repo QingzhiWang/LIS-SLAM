@@ -202,10 +202,17 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 	int key = 1;
 
-	gtsam::Pose3 imu2Lidar =
+	// gtsam::Pose3 imu2Lidar =
+	// 	gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0),
+	// 				 gtsam::Point3(-extTrans.x(), -extTrans.y(), -extTrans.z()));
+	// gtsam::Pose3 lidar2Imu =
+	// 	gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0),
+	// 				 gtsam::Point3(extTrans.x(), extTrans.y(), extTrans.z()));
+
+	gtsam::Pose3 lidar2Imu =
 		gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0),
 					 gtsam::Point3(-extTrans.x(), -extTrans.y(), -extTrans.z()));
-	gtsam::Pose3 lidar2Imu =
+	gtsam::Pose3 imu2Lidar =
 		gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0),
 					 gtsam::Point3(extTrans.x(), extTrans.y(), extTrans.z()));
 
@@ -324,10 +331,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		p->integrationCovariance = gtsam::Matrix33::Identity(3, 3) * pow(1e-4, 2);  // error committed in integrating position from velocities
 		gtsam::imuBias::ConstantBias prior_imu_bias((gtsam::Vector(6) << 0, 0, 0, 0, 0, 0).finished());;  // assume zero initial bias
 
-		// priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas(
-		// 	(gtsam::Vector(6) << 1e-4, 1e-4, 1e-5, 1e-3, 1e-3, 1e-5).finished());  // rad,rad,rad,m, m, m
-		priorPoseNoise  = gtsam::noiseModel::Diagonal::Sigmas(
-			(gtsam::Vector(6)<< 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1).finished()); // rad,rad,rad,m, m, m
+		priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas(
+			(gtsam::Vector(6) << 1e-1, 1e-1, 1e-2, 1e-3, 1e-3, 1e-3).finished());  // rad,rad,rad,m, m, m
+		// priorPoseNoise  = gtsam::noiseModel::Diagonal::Sigmas(
+		// 	(gtsam::Vector(6)<< 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1).finished()); // rad,rad,rad,m, m, m
 		priorVelNoise = gtsam::noiseModel::Isotropic::Sigma(3, 1e4);  // m/s
 		priorBiasNoise = gtsam::noiseModel::Isotropic::Sigma(6, 1e-3);  // 1e-2 ~ 1e-3 seems to be good
 		correctionNoise = gtsam::noiseModel::Isotropic::Sigma(6, 1);  // meter
@@ -449,7 +456,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 	    imuOdomQueue.push_back(odometry);
 
 
-		cout << std::setprecision(6);
+		// cout << std::setprecision(6);
 		// cout << "CurrentState IMU velocity: " << endl;
 		// cout << "x: " << odometry.twist.twist.linear.x <<
 		//       ", y: " << odometry.twist.twist.linear.y <<
@@ -2049,6 +2056,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		odometry.pose.pose.orientation.w = curlidarPose.rotation().toQuaternion().w();
 
 		pubIMUPreOdometry.publish(odometry);
+
+		ROS_WARN("timeLaserInfoStamp: %f, lastImuT_opt: %f.", timeLaserInfoStamp.toSec(), lastImuT_opt);
 		
 		// transformTobeSubMapped[3] = curlidarPose.translation().x();
 		// transformTobeSubMapped[4] = curlidarPose.translation().y();
