@@ -265,8 +265,8 @@ class OdomEstimationNode : public ParamServer
 			transformTobeMapped[1] = cloudInfo.imuPitchInit;
 			transformTobeMapped[2] = cloudInfo.imuYawInit;
 
-			// if (!useImuHeadingInitialization)
-			//     transformTobeMapped[2] = 0;
+			if (!useImuHeadingInitialization)
+			    transformTobeMapped[2] = 0;
 
 			lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);  // save imu before return;
 			firstTransAvailable = true;
@@ -421,11 +421,13 @@ class OdomEstimationNode : public ParamServer
 	{
 		keyFrameInfo = cloudInfo;
 
-		// keyFrameInfo.cloud_deskewed = cloudInfo.cloud_deskewed;
-		// keyFrameInfo.cloud_corner = cloudInfo.cloud_corner;
-		// keyFrameInfo.cloud_surface = cloudInfo.cloud_surface;
-
 		keyFrameInfo.header.stamp = timeLaserInfoStamp;
+
+		keyFrameInfo.imuRollInit = cloudInfo.imuRollInit;
+		keyFrameInfo.imuPitchInit = cloudInfo.imuPitchInit;
+		keyFrameInfo.imuYawInit = cloudInfo.imuYawInit;
+
+		keyFrameInfo.imuAvailable = cloudInfo.imuAvailable;
 
 		sensor_msgs::PointCloud2 tempCloud;
 
@@ -445,6 +447,8 @@ class OdomEstimationNode : public ParamServer
 		keyFrameInfo.initialGuessRoll = transformTobeMapped[0];
 		keyFrameInfo.initialGuessPitch = transformTobeMapped[1];
 		keyFrameInfo.initialGuessYaw = transformTobeMapped[2];
+
+		keyFrameInfo.odomAvailable = true;
 
 		pubKeyFrameInfo.publish(keyFrameInfo);
 	}

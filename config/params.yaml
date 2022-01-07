@@ -3,7 +3,6 @@
 # Author of  EPSC-LOAM : QZ Wang  
 # Email wangqingzhi27@outlook.com
 
-
 lis_slam:
   useImu: true       # If using IMU data, set to "true" 
   loopClosureEnableFlag: true
@@ -11,34 +10,35 @@ lis_slam:
   PROJECT_PATH: "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/"
   RESULT_PATH: "../assets/trajectory/00_pred_loop.txt"
   MODEL_PATH: "/home/wqz/AWorkSpace/darknet53"
+
   # Export settings
-  savePCD: false                              # https://github.com/TixiaoShan/LIO-SAM/issues/3
-  savePCDDirectory: "../assets/MyNoLoop/kitti_00/"        # in your home folder, starts and ends with "/". Warning: the code deletes "LOAM" folder then recreates it. See "mapOptimization" for implementation
+  savePCD: false                                       
+  savePCDDirectory: "../assets/MyNoLoop/kitti_00/"     # in your home folder, starts and ends with "/".
 
 
-  useOdometryPitchPrediction: true   #  在结构性较强时可使用前端里程计pitch预测值
+  useOdometryPitchPrediction: true              # 在结构性较强时可使用前端里程计pitch预测值
 
   # Topics   velodyne_points  points_raw
-  pointCloudTopic: "points_raw"               # Point cloud data
-  imuTopic: "imu_raw"                         # IMU data
-  odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
-  gpsTopic: "/odometry/navsat"                   # GPS odometry topic from navsat, see module_navsat.launch file
+  pointCloudTopic: "points_raw"                 # Point cloud data
+  imuTopic: "imu_raw"                           # IMU data
+  odomTopic: "odometry/imu"                     # IMU pre-preintegration odometry, same frequency as IMU
+  gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
   
   # Topics kitti(RAW)
-  # pointCloudTopic: "/kitti/velo/pointcloud"               # Point cloud data
-  # imuTopic: "/kitti/oxts/imu"                         # IMU data
+  # pointCloudTopic: "/kitti/velo/pointcloud"   # Point cloud data
+  # imuTopic: "/kitti/oxts/imu"                 # IMU data
   # odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
-  # gpsTopic: "odometry/gps"                   # GPS odometry topic from navsat, see module_navsat.launch file
+  # gpsTopic: "odometry/gps"                    # GPS odometry topic from navsat, see module_navsat.launch file
  
   #CQU
-  # pointCloudTopic: "rslidar_points"               # Point cloud data
-  # imuTopic: "imu/data"                         # IMU data
+  # pointCloudTopic: "rslidar_points"           # Point cloud data
+  # imuTopic: "imu/data"                        # IMU data
   # odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "odometry/gpsz"  
 
   # Topics  HCLT/KITTI(odometry)
-  # pointCloudTopic: "/velodyne_points"               # Point cloud data
-  # imuTopic: "/imu/data"                         # IMU data
+  # pointCloudTopic: "/velodyne_points"         # Point cloud data
+  # imuTopic: "/imu/data"                       # IMU data
   # odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
@@ -49,18 +49,18 @@ lis_slam:
   mapFrame: "map"
 
   # GPS Settings
-  useImuHeadingInitialization: false           # if using GPS data, set to "true"
+  useImuHeadingInitialization: false          # if using GPS data, set to "true"
   useGpsElevation: false                      # if GPS elevation is bad, set to "false"
   gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data
   poseCovThreshold: 25.0                      # m^2, threshold for using GPS data
 
   # Sensor Settings
-  N_SCAN:  64                            # number of lidar channel (i.e., 16, 32, 64, 128)
+  N_SCAN:  64                                 # number of lidar channel (i.e., 16, 32, 64, 128)
   Horizon_SCAN: 1800                          # lidar horizontal resolution (Velodyne:1800, Ouster:512,1024,2048)
   
   downsampleRate: 1                          # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1 
-  lidarMinRange: 1.0                          # default: 1.0, minimum lidar range to be used
-  lidarMaxRange: 70.0                 #70.0      # default: 1000.0, maximum lidar range to be used
+  lidarMinRange: 1.0                         # default: 1.0, minimum lidar range to be used
+  lidarMaxRange: 70.0                        # 70.0      # default: 1000.0, maximum lidar range to be used
 
 
   # IMU Settings
@@ -115,7 +115,7 @@ lis_slam:
   # voxel filter paprams
   odometrySurfLeafSize: 0.4                     # default: 0.4 - outdoor, 0.2 - indoor
   mappingCornerLeafSize: 0.2                    # default: 0.2 - outdoor, 0.1 - indoor
-  mappingSurfLeafSize: 0.4                   # default: 0.4 - outdoor, 0.2 - indoor        
+  mappingSurfLeafSize: 0.4                      # default: 0.4 - outdoor, 0.2 - indoor        
   
   #新增 submap voxel filter 
   subMapCornerLeafSize: 0.2                    
@@ -123,27 +123,25 @@ lis_slam:
   subMapLeafSize: 0.5     
 
   # Surrounding map
-  surroundingkeyframeAddingDistThreshold:  1.0         #1.0   # meters, regulate keyframe adding threshold
-  surroundingkeyframeAddingAngleThreshold:   0.2   #0.2  # radians, regulate keyframe adding threshold
-  surroundingKeyframeDensity: 2.0               # meters, downsample surrounding keyframe poses   
-  surroundingKeyframeSearchRadius:  20.0       #50.0         # meters, within n meters scan-to-map optimization (when loop closure disabled)
+  surroundingkeyframeAddingDistThreshold:  1.0         # 1.0   # meters, regulate keyframe adding threshold
+  surroundingkeyframeAddingAngleThreshold:   0.2       # 0.2   # radians, regulate keyframe adding threshold
+  surroundingKeyframeDensity: 2.0                      # meters, downsample surrounding keyframe poses   
+  surroundingKeyframeSearchRadius:  20.0               # 50.0         # meters, within n meters scan-to-map optimization (when loop closure disabled)
 
 
   #新增 make Submap
-  keyFrameMiniDistance: 1.2  #0.2 kitti 1.2
-  keyFrameMiniYaw : 0.4  # 0.2-indoor    0.4-kitti
+  keyFrameMiniDistance: 1.2  # 0.2-indoor    1.2 kitti 
+  keyFrameMiniYaw : 0.4      # 0.2-indoor    0.4-kitti
 
-  subMapYawMax: 0.9  # 0.6-indoor    0.9outdoor
-  subMapFramesSize: 20  #10
-  subMapMaxTime: 3.0  #3.0
+  subMapYawMax: 0.9          # 0.6-indoor    0.9outdoor
+  subMapFramesSize: 20       # 10
+  subMapMaxTime: 3.0         # 3.0
   subMapTraMax: 50.0
 
-  subMapOptmizationDistanceThresh: 1.2   #1.5   1.3       
-  subMapOptmizationYawThresh: 0.20  #  radians  0.4-indoor    0.25-outdoor
+  subMapOptmizationDistanceThresh: 1.2   # 1.5   1.3       
+  subMapOptmizationYawThresh: 0.20       # radians  0.4-indoor    0.25-outdoor
 
-  subMapOptmizationFirstSize: 2   #5
-
-
+  subMapOptmizationFirstSize: 2    #5
 
   # subMapOptmizationWeights: 0.3  #0.3
   odometerAndOptimizedDistanceDifference: 1.02 # meters
@@ -151,12 +149,12 @@ lis_slam:
 
   # Loop closure
   loopClosureFrequency: 0.5                    # 0.5Hz, regulate loop closure constraint add frequency
-  surroundingKeyframeSize: 50                   # submap size (when loop closure enabled)
-  historyKeyframeSearchRadius: 15.0      #15.0       # meters, key frame that is within n meters from current pose will be considerd for loop closure
-  historyKeyframeSearchTimeDiff: 30.0     #30.0     # seconds, key frame that is n seconds older will be considered for loop closure
-  historyKeyframeSearchNum: 25         #25        # number of hostory key frames will be fused into a submap for loop closure
+  surroundingKeyframeSize: 50                  # submap size (when loop closure enabled)
+  historyKeyframeSearchRadius: 15.0            # 15.0       # meters, key frame that is within n meters from current pose will be considerd for loop closure
+  historyKeyframeSearchTimeDiff: 30.0          # 30.0     # seconds, key frame that is n seconds older will be considered for loop closure
+  historyKeyframeSearchNum: 25                 # 25        # number of hostory key frames will be fused into a submap for loop closure
   
-  historyKeyframeFitnessScore: 1.3     #0.3  #0.7  # icp threshold, the smaller the better alignment
+  historyKeyframeFitnessScore: 1.3             # 0.3  # 0.7  # icp threshold, the smaller the better alignment
 
   #新增
   distanceKeyframeThresh: 15.0

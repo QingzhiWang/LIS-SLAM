@@ -205,6 +205,30 @@ using_label:
   18: 81     # "pole"
   19: 81     # "traffic-sign"
 
+
+label_sorce:
+  1: 0.8     # "car" There is a probability of dynamic objects
+  2: 0.6     # "bicycle" to "car"
+  3: 0.5     # "motorcycle" to "car"
+  4: 0.8     # "truck" to "car"
+  5: 0.5     # "other-vehicle" to "car"
+  6: 0.5     # "person" to "car"
+  7: 0.5     # "bicyclist" to "car"
+  8: 0.5     # "motorcyclist" to "car"
+  9: 1.0     # "road"
+  10: 1.0     # "parking"
+  11: 1.0     # "sidewalk"
+  12: 0.5     # "other-ground" to "vegetation"
+  13: 1.2     # "building"
+  14: 1.2     # "fence"
+  15: 0.5     # "vegetation" Not Used
+  16: 1.5     # "trunk"
+  17: 0.5     # "terrain" to "vegetation"
+  18: 1.5     # "pole"
+  19: 1.5     # "traffic-sign"
+
+
+
   # 10: 10     # "car" There is a probability of dynamic objects
   # 11: 10     # "bicycle" to "car"
   # 15: 10     # "motorcycle" to "car"

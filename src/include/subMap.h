@@ -946,7 +946,7 @@ public:
                       << std::endl;
         }  
         // local_map->append_feature(*last_target_cblock, true);
-        local_map->append_feature(semantic_dynamic, semantic_pole, semantic_ground, semantic_outlier);
+        local_map->append_feature(semantic_dynamic, semantic_pole, semantic_ground, semantic_building, semantic_outlier);
         
         local_map->submap_size++;
         local_map->keyframe_id_in_submap.push_back(last_target_cblock->keyframe_id);
@@ -1006,22 +1006,24 @@ public:
 
         std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
 
-        ROS_WARN("localMap last_target_cblock->optimized_pose : [%f, %f, %f, %f, %f, %f]",
-                last_target_cblock->optimized_pose.roll, last_target_cblock->optimized_pose.pitch, last_target_cblock->optimized_pose.yaw,
-                last_target_cblock->optimized_pose.x, last_target_cblock->optimized_pose.y, last_target_cblock->optimized_pose.z);
-
         typename pcl::PointCloud<PointT>::Ptr  semantic_dynamic(new pcl::PointCloud<PointT>);
         typename pcl::PointCloud<PointT>::Ptr  semantic_pole(new pcl::PointCloud<PointT>);
         typename pcl::PointCloud<PointT>::Ptr  semantic_ground(new pcl::PointCloud<PointT>);
         typename pcl::PointCloud<PointT>::Ptr  semantic_building(new pcl::PointCloud<PointT>);
         typename pcl::PointCloud<PointT>::Ptr  semantic_outlier(new pcl::PointCloud<PointT>);
 
-        *semantic_dynamic = *transformPointCloud(last_target_cblock->semantic_dynamic_down, &last_target_cblock->optimized_pose);
-        *semantic_pole = *transformPointCloud(last_target_cblock->semantic_pole_down, &last_target_cblock->optimized_pose);
-        *semantic_ground = *transformPointCloud(last_target_cblock->semantic_ground_down, &last_target_cblock->optimized_pose);
-        *semantic_building = *transformPointCloud(last_target_cblock->semantic_building_down, &last_target_cblock->optimized_pose);
-        *semantic_outlier = *transformPointCloud(last_target_cblock->semantic_outlier_down, &last_target_cblock->optimized_pose);
+        // *semantic_dynamic = *transformPointCloud(last_target_cblock->semantic_dynamic_down, &last_target_cblock->optimized_pose);
+        // *semantic_pole = *transformPointCloud(last_target_cblock->semantic_pole_down, &last_target_cblock->optimized_pose);
+        // *semantic_ground = *transformPointCloud(last_target_cblock->semantic_ground_down, &last_target_cblock->optimized_pose);
+        // *semantic_building = *transformPointCloud(last_target_cblock->semantic_building_down, &last_target_cblock->optimized_pose);
+        // // *semantic_outlier = *transformPointCloud(last_target_cblock->semantic_outlier_down, &last_target_cblock->optimized_pose);
         
+		*semantic_dynamic = *transformPointCloud(last_target_cblock->semantic_dynamic, &last_target_cblock->optimized_pose);
+        *semantic_pole = *transformPointCloud(last_target_cblock->semantic_pole, &last_target_cblock->optimized_pose);
+        *semantic_ground = *transformPointCloud(last_target_cblock->semantic_ground, &last_target_cblock->optimized_pose);
+        *semantic_building = *transformPointCloud(last_target_cblock->semantic_building, &last_target_cblock->optimized_pose);
+        // *semantic_outlier = *transformPointCloud(last_target_cblock->semantic_outlier, &last_target_cblock->optimized_pose);
+       
 		dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, (float)(dynamic_dist_thre_min + 0.1));
         if (map_based_dynamic_removal_on && local_map->feature_point_num > max_num_pts / 5)
         {
@@ -1043,7 +1045,7 @@ public:
             //                                       dynamic_removal_center_radius, dynamic_dist_thre_min, dynamic_dist_thre_max, near_dist_thre);
 
         }  
-        local_map->append_feature(semantic_dynamic, semantic_pole, semantic_ground, semantic_outlier);
+        local_map->append_feature(semantic_dynamic, semantic_pole, semantic_ground, semantic_building, semantic_outlier);
 
         local_map->feature_point_num = local_map->submap_dynamic->points.size() + 
                                        local_map->submap_pole->points.size() + 

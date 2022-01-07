@@ -193,6 +193,7 @@ public:
 	void publishCloudInfo() 
 	{
 		semanticInfo.header = cloudHeader;
+
 		semanticInfo.imuAvailable = cloudInfo.imuAvailable;
 		semanticInfo.odomAvailable = cloudInfo.odomAvailable;
 		
@@ -210,8 +211,8 @@ public:
 		semanticInfo.cloud_corner = cloudInfo.cloud_corner;
 		semanticInfo.cloud_surface = cloudInfo.cloud_surface;
 
-
 		sensor_msgs::PointCloud2 tempCloud;
+		
 		pcl::toROSMsg(*semanticRGBCloudOut, tempCloud);
 		tempCloud.header.stamp = cloudHeader.stamp;
 		tempCloud.header.frame_id = lidarFrame;

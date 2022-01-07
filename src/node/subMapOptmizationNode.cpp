@@ -25,11 +25,11 @@
 
 #define USING_SINGLE_TARGET false
 #define USING_SUBMAP_TARGET false
-#define USING_SLIDING_TARGET false
-#define USING_MULTI_KEYFRAME_TARGET true
+#define USING_SLIDING_TARGET true
+#define USING_MULTI_KEYFRAME_TARGET false
 
-#define USING_SEMANTIC_FEATURE false
-#define USING_LOAM_FEATURE true
+#define USING_SEMANTIC_FEATURE true
+#define USING_LOAM_FEATURE false
 
 
 
@@ -449,7 +449,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 	    imuOdomQueue.push_back(odometry);
 
 
-		// cout << std::setprecision(6);
+		cout << std::setprecision(6);
 		// cout << "CurrentState IMU velocity: " << endl;
 		// cout << "x: " << odometry.twist.twist.linear.x <<
 		//       ", y: " << odometry.twist.twist.linear.y <<
@@ -571,12 +571,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 										dynamic_dist_thre_max, near_dist_thre);
 					#endif
 
-                    // ROS_WARN("USING_SINGLE_TARGET !");  
-                    // pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
-                    // pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
-                    // *laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
-                    // *laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
-
                     subMapFirstFlag=false;
                     continue;
                 }
@@ -663,14 +657,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 				IMUPreintegration();
                 ROS_WARN("Now (IMUPreintegration) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
-                // bool judge_new_submap(float &accu_tran, float &accu_rot, int &accu_frame,
-                //                       float max_accu_tran = 30.0, 
-                //                       float max_accu_rot = 90.0, 
-                //                       int max_accu_frame = 150);
-                //      << "Submap division criterion is: \n"
-                //      << "1. Frame Number <=  max_accu_frame"
-                //      << "2. Translation <=  max_accu_tran"
-                //      << "3. Rotation <=  max_accu_rot"
                 calculateTranslation();
                 float accu_tran = std::max(transformCurFrame2Submap[3], transformCurFrame2Submap[4]); 
                 float accu_rot = transformCurFrame2Submap[2];
@@ -786,15 +772,15 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         pcl::fromROSMsg(cloudInfo.cloud_corner, *currentKeyFrame->cloud_corner);
         pcl::fromROSMsg(cloudInfo.cloud_surface, *currentKeyFrame->cloud_surface);     
 
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_raw, currentKeyFrame->semantic_raw_down, subMapSurfLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, subMapCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, subMapCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, subMapCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, subMapCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, subMapSurfLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_raw, currentKeyFrame->semantic_raw_down, 0.4);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.2);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, 0.05);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.6);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.4);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.5);
         
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, subMapCornerLeafSize);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, subMapSurfLeafSize);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.2);
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, 0.4);
         
         //calculate bbx (local)
         // this->get_cloud_bbx(currentKeyFrame->semantic_raw, currentKeyFrame->local_bound);
@@ -876,9 +862,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             transformTobeSubMapped[0] = cloudInfo.imuRollInit;
             transformTobeSubMapped[1] = cloudInfo.imuPitchInit;
             transformTobeSubMapped[2] = cloudInfo.imuYawInit;
-        
-            // if (!useImuHeadingInitialization)
-            //     transformTobeSubMapped[2] = 0;
+			
+            if (!useImuHeadingInitialization)
+                transformTobeSubMapped[2] = 0;
 
             lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit); // save imu before return;
             firstTransAvailable = true;
@@ -1530,10 +1516,17 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
                     float s = 1 - 0.9 * fabs(ld2);
 
+					float w = 2.0 - LabelSorce[laserCloudCornerLastDS->points[i].label];
+
+                    // coeff.x = w * s * la;
+                    // coeff.y = w * s * lb;
+                    // coeff.z = w * s * lc;
+                    // coeff.intensity = w * s * ld2;
+
                     coeff.x = s * la;
                     coeff.y = s * lb;
                     coeff.z = s * lc;
-                    coeff.intensity = s * ld2;
+                    coeff.intensity = w * s * ld2;
 
                     if (s > 0.1) {
                         laserCloudOriCornerVec[i] = pointOri;
@@ -1647,10 +1640,17 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     float s = 1 - 0.9 * fabs(pd2) / sqrt(sqrt(pointSel.x * pointSel.x
                             + pointSel.y * pointSel.y + pointSel.z * pointSel.z));
 
-                    coeff.x = s * pa;
+					float w = 2.0 - LabelSorce[laserCloudSurfLastDS->points[i].label];
+
+                    // coeff.x = w * s * pa;
+                    // coeff.y = w * s * pb;
+                    // coeff.z = w * s * pc;
+                    // coeff.intensity = w * s * pd2;
+                    
+					coeff.x = s * pa;
                     coeff.y = s * pb;
                     coeff.z = s * pc;
-                    coeff.intensity = s * pd2;
+                    coeff.intensity = w * s * pd2;
 
                     if (s > 0.1) {
                         laserCloudOriSurfVec[i] = pointOri;
@@ -1818,28 +1818,28 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     void transformUpdate()
     {
-        if (cloudInfo.imuAvailable == true)
-        {
-            if (std::abs(cloudInfo.imuPitchInit) < 1.4)
-            {
-                double imuWeight = imuRPYWeight;
-                tf::Quaternion imuQuaternion;
-                tf::Quaternion transformQuaternion;
-                double rollMid, pitchMid, yawMid;
+        // if (cloudInfo.imuAvailable == true)
+        // {
+        //     if (std::abs(cloudInfo.imuPitchInit) < 1.4)
+        //     {
+        //         double imuWeight = imuRPYWeight;
+        //         tf::Quaternion imuQuaternion;
+        //         tf::Quaternion transformQuaternion;
+        //         double rollMid, pitchMid, yawMid;
 
-                // slerp roll
-                transformQuaternion.setRPY(transformTobeSubMapped[0], 0, 0);
-                imuQuaternion.setRPY(cloudInfo.imuRollInit, 0, 0);
-                tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
-                transformTobeSubMapped[0] = rollMid;
+        //         // slerp roll
+        //         transformQuaternion.setRPY(transformTobeSubMapped[0], 0, 0);
+        //         imuQuaternion.setRPY(cloudInfo.imuRollInit, 0, 0);
+        //         tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
+        //         transformTobeSubMapped[0] = rollMid;
 
-                // slerp pitch
-                transformQuaternion.setRPY(0, transformTobeSubMapped[1], 0);
-                imuQuaternion.setRPY(0, cloudInfo.imuPitchInit, 0);
-                tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
-                transformTobeSubMapped[1] = pitchMid;
-            }
-        }
+        //         // slerp pitch
+        //         transformQuaternion.setRPY(0, transformTobeSubMapped[1], 0);
+        //         imuQuaternion.setRPY(0, cloudInfo.imuPitchInit, 0);
+        //         tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
+        //         transformTobeSubMapped[1] = pitchMid;
+        //     }
+        // }
 
         transformTobeSubMapped[0] = constraintTransformation(transformTobeSubMapped[0], rotation_tollerance);
         transformTobeSubMapped[1] = constraintTransformation(transformTobeSubMapped[1], rotation_tollerance);

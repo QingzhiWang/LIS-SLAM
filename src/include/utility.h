@@ -136,6 +136,8 @@ class SemanticLabelParam {
 	std::map<uint32_t, color> Argmax2RGB;
 
 	std::map<uint32_t, uint32_t> UsingLableMap;
+	std::map<uint32_t, float> LabelSorce;
+
 	SemanticLabelParam() {
 		nodeH.param<std::string>("lis_slam/PROJECT_PATH", PROJECT_PATH, "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/");
 		// Try to get the config file as well 
@@ -205,6 +207,23 @@ class SemanticLabelParam {
 		for (it = using_class.begin(); it != using_class.end(); ++it) {
 			int key = it->first.as<int>();  // <- key
 			UsingLableMap[key] = using_class[key].as<unsigned int>();
+		}
+
+
+		YAML::Node sorce;
+		try {
+			sorce = label_yaml["label_sorce"];
+		} catch (YAML::Exception &ex) {
+			std::cerr << "Can't open one the label dictionary from cfg in " + yaml_path << std::endl;
+			throw ex;
+		}
+
+		// get the number of classes
+		UsingSize = sorce.size();
+
+		for (it = sorce.begin(); it != sorce.end(); ++it) {
+			int key = it->first.as<int>();  // <- key
+			LabelSorce[key] = sorce[key].as<float>();
 		}
 	}
 };
@@ -347,8 +366,7 @@ class ParamServer {
 							"./assets/trajectory/test_pred.txt");
 		nh.param<std::string>("lis_slam/MODEL_PATH", MODEL_PATH, "./");
 
-		nh.param<std::string>("lis_slam/pointCloudTopic", pointCloudTopic,
-							"points_raw");
+		nh.param<std::string>("lis_slam/pointCloudTopic", pointCloudTopic, "points_raw");
 		nh.param<std::string>("lis_slam/imuTopic", imuTopic, "imu_correct");
 		nh.param<std::string>("lis_slam/odomTopic", odomTopic, "odometry/imu");
 		nh.param<std::string>("lis_slam/gpsTopic", gpsTopic, "odometry/gps");
@@ -357,15 +375,13 @@ class ParamServer {
 		nh.param<std::string>("lis_slam/odometryFrame", odometryFrame, "odom");
 		nh.param<std::string>("lis_slam/mapFrame", mapFrame, "map");
 
-		nh.param<bool>("lis_slam/useImuHeadingInitialization",
-					useImuHeadingInitialization, false);
+		nh.param<bool>("lis_slam/useImuHeadingInitialization", useImuHeadingInitialization, false);
 		nh.param<bool>("lis_slam/useGpsElevation", useGpsElevation, false);
 		nh.param<float>("lis_slam/gpsCovThreshold", gpsCovThreshold, 2.0);
 		nh.param<float>("lis_slam/poseCovThreshold", poseCovThreshold, 25.0);
 
 		nh.param<bool>("lis_slam/savePCD", savePCD, false);
-		nh.param<std::string>("lis_slam/savePCDDirectory", savePCDDirectory,
-							"/Downloads/LOAM/");
+		nh.param<std::string>("lis_slam/savePCDDirectory", savePCDDirectory, "/Downloads/LOAM/");
 
 		nh.param<int>("lis_slam/N_SCAN", N_SCAN, 16);
 		nh.param<int>("lis_slam/Horizon_SCAN", Horizon_SCAN, 1800);
@@ -380,30 +396,21 @@ class ParamServer {
 		nh.param<float>("lis_slam/imuGyrBiasN", imuGyrBiasN, 0.00003);
 		nh.param<float>("lis_slam/imuGravity", imuGravity, 9.80511);
 		nh.param<float>("lis_slam/imuRPYWeight", imuRPYWeight, 0.01);
-		nh.param<vector<double>>("lis_slam/extrinsicRot", extRotV,
-								vector<double>());
-		nh.param<vector<double>>("lis_slam/extrinsicRPY", extRPYV,
-								vector<double>());
-		nh.param<vector<double>>("lis_slam/extrinsicTrans", extTransV,
-								vector<double>());
-		extRot = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
-			extRotV.data(), 3, 3);
-		extRPY = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
-			extRPYV.data(), 3, 3);
-		extTrans = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(
-			extTransV.data(), 3, 1);
+		nh.param<vector<double>>("lis_slam/extrinsicRot", extRotV, vector<double>());
+		nh.param<vector<double>>("lis_slam/extrinsicRPY", extRPYV, vector<double>());
+		nh.param<vector<double>>("lis_slam/extrinsicTrans", extTransV, vector<double>());
+		extRot = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extRotV.data(), 3, 3);
+		extRPY = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extRPYV.data(), 3, 3);
+		extTrans = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extTransV.data(), 3, 1);
 		extQRPY = Eigen::Quaterniond(extRPY);
 
 		nh.param<float>("lis_slam/edgeThreshold", edgeThreshold, 0.1);
 		nh.param<float>("lis_slam/surfThreshold", surfThreshold, 0.1);
-		nh.param<int>("lis_slam/edgeFeatureMinValidNum", edgeFeatureMinValidNum,
-					10);
-		nh.param<int>("lis_slam/surfFeatureMinValidNum", surfFeatureMinValidNum,
-					100);
+		nh.param<int>("lis_slam/edgeFeatureMinValidNum", edgeFeatureMinValidNum, 10);
+		nh.param<int>("lis_slam/surfFeatureMinValidNum", surfFeatureMinValidNum, 100);
 
 		nh.param<float>("lis_slam/odometrySurfLeafSize", odometrySurfLeafSize, 0.2);
-		nh.param<float>("lis_slam/mappingCornerLeafSize", mappingCornerLeafSize,
-						0.2);
+		nh.param<float>("lis_slam/mappingCornerLeafSize", mappingCornerLeafSize, 0.2);
 		nh.param<float>("lis_slam/mappingSurfLeafSize", mappingSurfLeafSize, 0.2);
 
 		//新增 submap voxel filter
@@ -412,50 +419,32 @@ class ParamServer {
 		nh.param<float>("lis_slam/subMapLeafSize", subMapLeafSize, 0.4);
 
 		nh.param<float>("lis_slam/z_tollerance", z_tollerance, FLT_MAX);
-		nh.param<float>("lis_slam/rotation_tollerance", rotation_tollerance,
-						FLT_MAX);
+		nh.param<float>("lis_slam/rotation_tollerance", rotation_tollerance, FLT_MAX);
 
 		nh.param<int>("lis_slam/numberOfCores", numberOfCores, 2);
-		nh.param<double>("lis_slam/mappingProcessInterval", mappingProcessInterval,
-						0.15);
+		nh.param<double>("lis_slam/mappingProcessInterval", mappingProcessInterval, 0.15);
 
-		nh.param<float>("lis_slam/surroundingkeyframeAddingDistThreshold",
-						surroundingkeyframeAddingDistThreshold, 1.0);
-		nh.param<float>("lis_slam/surroundingkeyframeAddingAngleThreshold",
-						surroundingkeyframeAddingAngleThreshold, 0.2);
-		nh.param<float>("lis_slam/surroundingKeyframeDensity",
-						surroundingKeyframeDensity, 1.0);
-		nh.param<float>("lis_slam/surroundingKeyframeSearchRadius",
-						surroundingKeyframeSearchRadius, 50.0);
+		nh.param<float>("lis_slam/surroundingkeyframeAddingDistThreshold", surroundingkeyframeAddingDistThreshold, 1.0);
+		nh.param<float>("lis_slam/surroundingkeyframeAddingAngleThreshold", surroundingkeyframeAddingAngleThreshold, 0.2);
+		nh.param<float>("lis_slam/surroundingKeyframeDensity", surroundingKeyframeDensity, 1.0);
+		nh.param<float>("lis_slam/surroundingKeyframeSearchRadius", surroundingKeyframeSearchRadius, 50.0);
 
-		nh.param<bool>("lis_slam/loopClosureEnableFlag", loopClosureEnableFlag,
-					false);
+		nh.param<bool>("lis_slam/loopClosureEnableFlag", loopClosureEnableFlag, false);
 		nh.param<float>("lis_slam/loopClosureFrequency", loopClosureFrequency, 1.0);
-		nh.param<int>("lis_slam/surroundingKeyframeSize", surroundingKeyframeSize,
-					50);
-		nh.param<float>("lis_slam/historyKeyframeSearchRadius",
-						historyKeyframeSearchRadius, 10.0);
-		nh.param<float>("lis_slam/historyKeyframeSearchTimeDiff",
-						historyKeyframeSearchTimeDiff, 30.0);
-		nh.param<int>("lis_slam/historyKeyframeSearchNum", historyKeyframeSearchNum,
-					25);
-		nh.param<float>("lis_slam/historyKeyframeFitnessScore",
-						historyKeyframeFitnessScore, 0.3);
+		nh.param<int>("lis_slam/surroundingKeyframeSize", surroundingKeyframeSize, 50);
+		nh.param<float>("lis_slam/historyKeyframeSearchRadius", historyKeyframeSearchRadius, 10.0);
+		nh.param<float>("lis_slam/historyKeyframeSearchTimeDiff", historyKeyframeSearchTimeDiff, 30.0);
+		nh.param<int>("lis_slam/historyKeyframeSearchNum", historyKeyframeSearchNum, 25);
+		nh.param<float>("lis_slam/historyKeyframeFitnessScore", historyKeyframeFitnessScore, 0.3);
 
 		//新增
-		nh.param<float>("lis_slam/distanceKeyframeThresh", distanceKeyframeThresh,
-						15.0);
-		nh.param<int>("lis_slam/accumDistanceIndexThresh", accumDistanceIndexThresh,
-					10);
-		nh.param<int>("lis_slam/historyAccumDistanceIndexThresh",
-					historyAccumDistanceIndexThresh, 5);
-		nh.param<int>("lis_slam/distanceFromLastIndexThresh",
-					distanceFromLastIndexThresh, 3);
+		nh.param<float>("lis_slam/distanceKeyframeThresh", distanceKeyframeThresh, 15.0);
+		nh.param<int>("lis_slam/accumDistanceIndexThresh", accumDistanceIndexThresh, 10);
+		nh.param<int>("lis_slam/historyAccumDistanceIndexThresh", historyAccumDistanceIndexThresh, 5);
+		nh.param<int>("lis_slam/distanceFromLastIndexThresh", distanceFromLastIndexThresh, 3);
 
-		nh.param<float>("lis_slam/loopClosureCornerLeafSize",
-						loopClosureCornerLeafSize, 0.2);
-		nh.param<float>("lis_slam/loopClosureSurfLeafSize", loopClosureSurfLeafSize,
-						0.5);
+		nh.param<float>("lis_slam/loopClosureCornerLeafSize", loopClosureCornerLeafSize, 0.2);
+		nh.param<float>("lis_slam/loopClosureSurfLeafSize", loopClosureSurfLeafSize, 0.5);
 
 		//新增subMapMaxTime
 		nh.param<float>("lis_slam/subMapMaxTime", subMapMaxTime, 2.0);
@@ -466,30 +455,20 @@ class ParamServer {
 		nh.param<float>("lis_slam/keyFrameMiniDistance", keyFrameMiniDistance, 0.1);
 		nh.param<float>("lis_slam/keyFrameMiniYaw", keyFrameMiniYaw, 0.2);
 
-		nh.param<float>("lis_slam/subMapOptmizationDistanceThresh",
-						subMapOptmizationDistanceThresh, 0.2);
-		nh.param<float>("lis_slam/subMapOptmizationYawThresh",
-						subMapOptmizationYawThresh, 0.5);
+		nh.param<float>("lis_slam/subMapOptmizationDistanceThresh", subMapOptmizationDistanceThresh, 0.2);
+		nh.param<float>("lis_slam/subMapOptmizationYawThresh", subMapOptmizationYawThresh, 0.5);
 
-		nh.param<int>("lis_slam/subMapOptmizationFirstSize",
-					subMapOptmizationFirstSize, 5);
+		nh.param<int>("lis_slam/subMapOptmizationFirstSize", subMapOptmizationFirstSize, 5);
 
-		nh.param<float>("lis_slam/subMapOptmizationWeights",
-						subMapOptmizationWeights, 0.5);
-		nh.param<float>("lis_slam/odometerAndOptimizedDistanceDifference",
-						odometerAndOptimizedDistanceDifference, 0.2);
-		nh.param<float>("lis_slam/odometerAndOptimizedAngleDifference",
-						odometerAndOptimizedAngleDifference, 0.25);
+		nh.param<float>("lis_slam/subMapOptmizationWeights", subMapOptmizationWeights, 0.5);
+		nh.param<float>("lis_slam/odometerAndOptimizedDistanceDifference", odometerAndOptimizedDistanceDifference, 0.2);
+		nh.param<float>("lis_slam/odometerAndOptimizedAngleDifference", odometerAndOptimizedAngleDifference, 0.25);
 
-		nh.param<bool>("lis_slam/useOdometryPitchPrediction",
-					useOdometryPitchPrediction, true);
+		nh.param<bool>("lis_slam/useOdometryPitchPrediction", useOdometryPitchPrediction, true);
 
-		nh.param<float>("lis_slam/globalMapVisualizationSearchRadius",
-						globalMapVisualizationSearchRadius, 1e3);
-		nh.param<float>("lis_slam/globalMapVisualizationPoseDensity",
-						globalMapVisualizationPoseDensity, 10.0);
-		nh.param<float>("lis_slam/globalMapVisualizationLeafSize",
-						globalMapVisualizationLeafSize, 1.0);
+		nh.param<float>("lis_slam/globalMapVisualizationSearchRadius", globalMapVisualizationSearchRadius, 1e3);
+		nh.param<float>("lis_slam/globalMapVisualizationPoseDensity", globalMapVisualizationPoseDensity, 10.0);
+		nh.param<float>("lis_slam/globalMapVisualizationLeafSize", globalMapVisualizationLeafSize, 1.0);
 
 		usleep(100);
 	}
