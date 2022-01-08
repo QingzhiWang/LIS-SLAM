@@ -122,8 +122,8 @@ lis_slam:
   surroundingKeyframeSearchRadius:  20.0               # 50.0         # meters, within n meters scan-to-map optimization (when loop closure disabled)
 
   #新增 make Submap
-  keyFrameMiniDistance: 1.2  # 0.2-indoor    1.2 kitti 
-  keyFrameMiniYaw : 0.4      # 0.2-indoor    0.4-kitti
+  keyFrameMiniDistance: 1.5  # 0.2-indoor    1.2 kitti 
+  keyFrameMiniYaw : 0.5      # 0.2-indoor    0.4-kitti
 
   #新增 submap voxel filter 
   subMapCornerLeafSize: 0.2                    

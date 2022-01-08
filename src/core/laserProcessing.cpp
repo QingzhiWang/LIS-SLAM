@@ -687,7 +687,7 @@ void LaserProcessing ::extractFeatures()
 			{
 				if (cloudLabel[k] <= 0) 
 				{
-				surfaceCloudScan->push_back(extractedCloud->points[k]);
+					surfaceCloudScan->push_back(extractedCloud->points[k]);
 				}
 			}
 		}

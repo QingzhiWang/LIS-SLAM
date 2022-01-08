@@ -67,7 +67,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
  public:
     ros::Subscriber subCloud;
     ros::Subscriber subIMU;
-	ros::Subscriber subOdom
+	ros::Subscriber subOdom;
 
 	ros::Publisher pubCloudRegisteredRaw;
     
@@ -201,7 +201,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 	gtsam::NonlinearFactorGraph graphFactors;
 	gtsam::Values graphValues;
 
-	const double delta_t = 0;
+	const double delta_t = 0.05;
 
 	int key = 1;
 
@@ -223,6 +223,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 	tf::TransformListener tfListener;
 	tf::StampedTransform lidar2Baselink;
 
+    std::mutex imuOdomMtx;
 	deque<nav_msgs::Odometry> imuOdomQueue;
 	
 	ros::Publisher pubKeyframeIMUOdometry;
@@ -437,6 +438,12 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     	gtsam::Pose3 imuPose = gtsam::Pose3(currentState.quaternion(), currentState.position());
     	gtsam::Pose3 lidarPose = imuPose.compose(imu2Lidar);
 
+		// Eigen::Quaterniond quaternion(lidarPose.rotation().toQuaternion().w(),
+		// 							  lidarPose.rotation().toQuaternion().x(),
+		// 							  lidarPose.rotation().toQuaternion().y(),
+		// 							  lidarPose.rotation().toQuaternion().z());	
+		// quaternion.normalized();
+
 		odometry.pose.pose.position.x = lidarPose.translation().x();
 		odometry.pose.pose.position.y = lidarPose.translation().y();
 		odometry.pose.pose.position.z = lidarPose.translation().z();
@@ -444,6 +451,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		odometry.pose.pose.orientation.y = lidarPose.rotation().toQuaternion().y();
 		odometry.pose.pose.orientation.z = lidarPose.rotation().toQuaternion().z();
 		odometry.pose.pose.orientation.w = lidarPose.rotation().toQuaternion().w();
+
+		// odometry.pose.pose.orientation.x = quaternion.x();
+		// odometry.pose.pose.orientation.y = quaternion.y();
+		// odometry.pose.pose.orientation.z = quaternion.z();
+		// odometry.pose.pose.orientation.w = quaternion.w();
 
 		odometry.twist.twist.linear.x = currentState.velocity().x();
 		odometry.twist.twist.linear.y = currentState.velocity().y();
@@ -453,6 +465,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		odometry.twist.twist.angular.z = thisImu.angular_velocity.z + prevBiasOdom.gyroscope().z();
 		pubImuOdometry.publish(odometry);
 
+
+        std::lock_guard<std::mutex> lock1(imuOdomMtx);
 	    imuOdomQueue.push_back(odometry);
 
 
@@ -482,6 +496,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		nav_msgs::Odometry thisOdom = odomQueue.front();
 		odomQueue.pop_front();
 
+		ROS_WARN("debug1");
+
 		Eigen::Affine3f odomAffine = odom2affine(thisOdom);
         Eigen::Affine3f lidarOdomAffine = transBef2Aft * odomAffine;
 
@@ -494,53 +510,56 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         laserOdometry.pose.pose.position.y = y;
         laserOdometry.pose.pose.position.z = z;
         laserOdometry.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw);
-        pubOdometry.publish(laserOdometry);
+        pubLidarOdometry.publish(laserOdometry);
 
-		double lidarOdomTime = thisOdom.header.stamp.toSec();
+		// double lidarOdomTime = thisOdom.header.stamp.toSec();
 
-		// get latest odometry (at current IMU stamp)
-		while (!imuOdomQueue.empty()) {
-		if (imuOdomQueue.front().header.stamp.toSec() <= lidarOdomTime)
-			imuOdomQueue.pop_front();
-		else
-			break;
-		}
+        // std::lock_guard<std::mutex> lock1(imuOdomMtx);
+		// // get latest odometry (at current IMU stamp)
+		// while (!imuOdomQueue.empty()) {
+		// if (imuOdomQueue.front().header.stamp.toSec() <= lidarOdomTime)
+		// 	imuOdomQueue.pop_front();
+		// else
+		// 	break;
+		// }
 
-		Eigen::Affine3f imuOdomAffineFront = odom2affine(imuOdomQueue.front());
-		Eigen::Affine3f imuOdomAffineBack = odom2affine(imuOdomQueue.back());
-		Eigen::Affine3f imuOdomAffineIncre = imuOdomAffineFront.inverse() * imuOdomAffineBack;
-		Eigen::Affine3f imuOdomAffineLast = lidarOdomAffine * imuOdomAffineIncre;
-		float x, y, z, roll, pitch, yaw;
-		pcl::getTranslationAndEulerAngles(imuOdomAffineLast, x, y, z, roll, pitch, yaw);
+		// ROS_WARN("debug2");
+
+		// Eigen::Affine3f imuOdomAffineFront = odom2affine(imuOdomQueue.front());
+		// Eigen::Affine3f imuOdomAffineBack = odom2affine(imuOdomQueue.back());
+		// Eigen::Affine3f imuOdomAffineIncre = imuOdomAffineFront.inverse() * imuOdomAffineBack;
+		// Eigen::Affine3f imuOdomAffineLast = lidarOdomAffine * imuOdomAffineIncre;
+		// pcl::getTranslationAndEulerAngles(imuOdomAffineLast, x, y, z, roll, pitch, yaw);
 		
-		// publish latest odometry
-		nav_msgs::Odometry laserOdometry = imuOdomQueue.back();
-		laserOdometry.pose.pose.position.x = x;
-		laserOdometry.pose.pose.position.y = y;
-		laserOdometry.pose.pose.position.z = z;
-		laserOdometry.pose.pose.orientation =
-			tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw);
-		pubLidarOdometry.publish(laserOdometry);
+		// // publish latest odometry
+		// nav_msgs::Odometry laserIMUOdometry = imuOdomQueue.back();
+		// laserIMUOdometry.pose.pose.position.x = x;
+		// laserIMUOdometry.pose.pose.position.y = y;
+		// laserIMUOdometry.pose.pose.position.z = z;
+		// laserIMUOdometry.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw);
+		// pubLidarIMUOdometry.publish(laserIMUOdometry);
 
-		// publish IMU path
-		static nav_msgs::Path imuPath;
-		static double last_path_time = -1;
-		imuTime = imuOdomQueue.back().header.stamp.toSec();
-		if (imuTime - last_path_time > 0.1) {
-			last_path_time = imuTime;
-			geometry_msgs::PoseStamped pose_stamped;
-			pose_stamped.header.stamp = imuOdomQueue.back().header.stamp;
-			pose_stamped.header.frame_id = odometryFrame;
-			pose_stamped.pose = laserOdometry.pose.pose;
-			imuPath.poses.push_back(pose_stamped);
-			while (!imuPath.poses.empty() && imuPath.poses.front().header.stamp.toSec() < lidarOdomTime - 0.1)
-				imuPath.poses.erase(imuPath.poses.begin());
-			if (pubLidarPath.getNumSubscribers() != 0) {
-				imuPath.header.stamp = imuOdomQueue.back().header.stamp;
-				imuPath.header.frame_id = odometryFrame;
-				pubLidarPath.publish(imuPath);
-			}
-		}
+		// ROS_WARN("debug3");
+
+		// // publish IMU path
+		// static nav_msgs::Path imuPath;
+		// static double last_path_time = -1;
+		// double imuTime = imuOdomQueue.back().header.stamp.toSec();
+		// if (imuTime - last_path_time > 0.1) {
+		// 	last_path_time = imuTime;
+		// 	geometry_msgs::PoseStamped pose_stamped;
+		// 	pose_stamped.header.stamp = imuOdomQueue.back().header.stamp;
+		// 	pose_stamped.header.frame_id = odometryFrame;
+		// 	pose_stamped.pose = laserOdometry.pose.pose;
+		// 	imuPath.poses.push_back(pose_stamped);
+		// 	while (!imuPath.poses.empty() && imuPath.poses.front().header.stamp.toSec() < lidarOdomTime - 0.1)
+		// 		imuPath.poses.erase(imuPath.poses.begin());
+		// 	if (pubLidarPath.getNumSubscribers() != 0) {
+		// 		imuPath.header.stamp = imuOdomQueue.back().header.stamp;
+		// 		imuPath.header.frame_id = odometryFrame;
+		// 		pubLidarPath.publish(imuPath);
+		// 	}
+		// }
 		
 	}
 
@@ -2495,7 +2514,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         pubSubMapId = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/mapping/submap_id", 1);
         pubSubMapConstraintEdge = nh.advertise<visualization_msgs::MarkerArray>("lis_slam/mapping/submap_constraints", 1);
         
-		pubSubmapOdometryGlobal = nh.advertise<nav_msgs::Odometry> (odomTopic + "/submap", 200);
+		pubSubMapOdometryGlobal = nh.advertise<nav_msgs::Odometry> (odomTopic + "/submap", 200);
 		pubOdometryGlobal = nh.advertise<nav_msgs::Odometry> (odomTopic + "/fusion", 200);
         
 
