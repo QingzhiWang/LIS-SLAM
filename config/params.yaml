@@ -148,7 +148,7 @@ lis_slam:
   historyKeyframeSearchTimeDiff: 30.0          # 30.0     # seconds, key frame that is n seconds older will be considered for loop closure
   historyKeyframeSearchNum: 25                 # 25        # number of hostory key frames will be fused into a submap for loop closure
   
-  historyKeyframeFitnessScore: 1.3             # 0.3  # 0.7  # icp threshold, the smaller the better alignment
+  historyKeyframeFitnessScore: 0.5             # 0.3  # 0.7  # icp threshold, the smaller the better alignment
 
 
   # Visualization
