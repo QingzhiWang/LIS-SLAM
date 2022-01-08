@@ -30,3 +30,6 @@ sensor_msgs/PointCloud2 semantic_building
 # extracted corner surface feature
 sensor_msgs/PointCloud2 cloud_corner    
 sensor_msgs/PointCloud2 cloud_surface
+
+sensor_msgs/PointCloud2 cloud_corner_sharp    
+sensor_msgs/PointCloud2 cloud_surface_sharp

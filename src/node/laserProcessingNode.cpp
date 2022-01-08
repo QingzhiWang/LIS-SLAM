@@ -28,6 +28,8 @@ class LaserProcessingNode : public ParamServer
 	ros::Publisher pubRawPoints;
 	ros::Publisher pubCornerPoints;
 	ros::Publisher pubSurfacePoints;
+	ros::Publisher pubSharpCornerPoints;
+	ros::Publisher pubSharpSurfacePoints;
 
 	double total_time = 0;
 	int total_frame = 0;
@@ -50,6 +52,8 @@ class LaserProcessingNode : public ParamServer
 		pubRawPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_deskewed", 10);
 		pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_corner", 10);
 		pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_surface", 10);
+		pubSharpCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_corner_sharp", 10);
+		pubSharpSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_surface_sharp", 10);
 	}
 
 	~LaserProcessingNode() {}
@@ -128,6 +132,9 @@ class LaserProcessingNode : public ParamServer
 				pubRawPoints.publish(cloudInfoOut.cloud_deskewed);
 				pubCornerPoints.publish(cloudInfoOut.cloud_corner);
 				pubSurfacePoints.publish(cloudInfoOut.cloud_surface);
+				pubSharpCornerPoints.publish(cloudInfoOut.cloud_corner_sharp);
+				pubSharpSurfacePoints.publish(cloudInfoOut.cloud_surface_sharp);
+
 			}
 		}
 		// sleep 2 ms every time

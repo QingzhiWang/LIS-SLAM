@@ -102,6 +102,8 @@ private:
 
     pcl::PointCloud<PointXYZIRT>::Ptr cornerCloud;
     pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloud;
+    pcl::PointCloud<PointXYZIRT>::Ptr sharpCornerCloud;
+    pcl::PointCloud<PointXYZIRT>::Ptr SharpSurfaceCloud;
 
     double *imuTime = new double[queueLength];
     double *imuRotX = new double[queueLength];

@@ -5,16 +5,15 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Feature Cloud1
         - /Semantic Cloud1
         - /Odometry1
         - /Odometry1/lidar1/Shape1
         - /Odometry1/lidar_imu1/Shape1
-        - /Path1
         - /Submap1
-        - /Mapping1
         - /Mapping1/Map (global)1/Autocompute Value Bounds1
-        - /EPSC1
         - /Test1
+        - /Test1/test11
       Splitter Ratio: 0.6264045238494873
     Tree Height: 472
   - Class: rviz/Selection
@@ -163,8 +162,64 @@ Visualization Manager:
           Axis: Z
           Channel Name: intensity
           Class: rviz/PointCloud2
-          Color: 0; 255; 0
+          Color: 0; 0; 0
           Color Transformer: FlatColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: Sharp Edge Feature
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 5
+          Size (m): 0.10000000149011612
+          Style: Flat Squares
+          Topic: /lis_slam/laser_process/cloud_corner_sharp
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: ring
+          Class: rviz/PointCloud2
+          Color: 92; 53; 102
+          Color Transformer: FlatColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: Sharp Plannar Feature
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 5
+          Size (m): 0.10000000149011612
+          Style: Flat Squares
+          Topic: /lis_slam/laser_process/cloud_surface_sharp
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 0; 255; 0
+          Color Transformer: Intensity
           Decay Time: 0
           Enabled: true
           Invert Rainbow: false
@@ -174,7 +229,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
-          Size (Pixels): 5
+          Size (Pixels): 7
           Size (m): 0.009999999776482582
           Style: Points
           Topic: /lis_slam/laser_process/cloud_corner
@@ -192,9 +247,9 @@ Visualization Manager:
           Channel Name: intensity
           Class: rviz/PointCloud2
           Color: 255; 85; 255
-          Color Transformer: FlatColor
+          Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -202,14 +257,14 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
-          Size (Pixels): 3
+          Size (Pixels): 2
           Size (m): 0.009999999776482582
           Style: Points
           Topic: /lis_slam/laser_process/cloud_surface
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
       Enabled: false
       Name: Feature Cloud
     - Class: rviz/Group
@@ -427,7 +482,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: false
-          Enabled: true
+          Enabled: false
           Keep: 3000
           Name: lidar
           Position Tolerance: 0.10000000149011612
@@ -443,7 +498,7 @@ Visualization Manager:
             Value: Arrow
           Topic: /odometry/lidar
           Unreliable: false
-          Value: true
+          Value: false
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -903,7 +958,7 @@ Visualization Manager:
       Name: EPSC
     - Class: rviz/Group
       Displays:
-        - Alpha: 0.4000000059604645
+        - Alpha: 0.800000011920929
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 10
@@ -976,21 +1031,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0.1549999862909317
-      Class: rviz/TopDownOrtho
+      Class: rviz/Orbit
+      Distance: 105.83139038085938
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: 12.61345386505127
+        Y: 2.7684788703918457
+        Z: -1.7046927213668823
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 12.442480087280273
+      Pitch: 1.5697963237762451
       Target Frame: base_link
-      Value: TopDownOrtho (rviz)
-      X: 55.724430084228516
-      Y: -14.852926254272461
+      Value: Orbit (rviz)
+      Yaw: 4.946825981140137
     Saved: ~
 Window Geometry:
   Displays:

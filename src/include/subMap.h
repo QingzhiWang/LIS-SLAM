@@ -937,13 +937,13 @@ public:
             //     }
             // }
 
-            std::cout << "Feature point number of last frame after dynamic removal (Ori | Removal): " << std::endl 
-                      <<  "Dynamic: [" << last_target_cblock->semantic_dynamic_down->points.size() << " | " << semantic_dynamic->points.size() << "]." << std::endl 
-                      <<  "Pole: [" << last_target_cblock->semantic_pole_down->points.size() << " | " << semantic_pole->points.size() << "]." << std::endl 
-                      <<  "Ground: [" << last_target_cblock->semantic_ground_down->points.size() << " | " << semantic_ground->points.size() << "]." << std::endl 
-                      <<  "Building: [" << last_target_cblock->semantic_building_down->points.size() << " | " << semantic_building->points.size() << "]." << std::endl 
-                      <<  "Outlier: [" << last_target_cblock->semantic_outlier_down->points.size() << " | " << semantic_outlier->points.size() << "]." << std::endl 
-                      << std::endl;
+            // std::cout << "Feature point number of last frame after dynamic removal (Ori | Removal): " << std::endl 
+            //           <<  "Dynamic: [" << last_target_cblock->semantic_dynamic_down->points.size() << " | " << semantic_dynamic->points.size() << "]." << std::endl 
+            //           <<  "Pole: [" << last_target_cblock->semantic_pole_down->points.size() << " | " << semantic_pole->points.size() << "]." << std::endl 
+            //           <<  "Ground: [" << last_target_cblock->semantic_ground_down->points.size() << " | " << semantic_ground->points.size() << "]." << std::endl 
+            //           <<  "Building: [" << last_target_cblock->semantic_building_down->points.size() << " | " << semantic_building->points.size() << "]." << std::endl 
+            //           <<  "Outlier: [" << last_target_cblock->semantic_outlier_down->points.size() << " | " << semantic_outlier->points.size() << "]." << std::endl 
+            //           << std::endl;
         }  
         // local_map->append_feature(*last_target_cblock, true);
         local_map->append_feature(semantic_dynamic, semantic_pole, semantic_ground, semantic_building, semantic_outlier);

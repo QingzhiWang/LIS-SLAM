@@ -590,7 +590,8 @@ void EPSCGeneration::loopDetection(
 	std::cout << "pc_filtered_surf size : " << pc_filtered_surf->size() << std::endl;
 	std::cout << "pc_filtered_semantic size : " << pc_filtered_semantic->size() << std::endl;
 
-  	Eigen::Vector3d current_t(odom(0, 3), odom(1, 3),odom(2, 3));
+  	// Eigen::Vector3d current_t(odom(0, 3), odom(1, 3), odom(2, 3));
+  	Eigen::Vector3d current_t(odom(0, 3), odom(1, 3), 0.0);
 
 	// dont change push_back sequence
 	if (travelDistanceArr.size() == 0) {

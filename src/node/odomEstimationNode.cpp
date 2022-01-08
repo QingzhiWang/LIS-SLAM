@@ -7,6 +7,10 @@
 #include "lis_slam/cloud_info.h"
 #include "utility.h"
 
+#define USING_SUBMAP_TARGET false
+#define USING_MULTI_FRAME_TARGET true
+
+
 class OdomEstimationNode : public ParamServer 
 {
  public:
@@ -23,20 +27,16 @@ class OdomEstimationNode : public ParamServer
 	lis_slam::cloud_info cloudInfo;
 	lis_slam::cloud_info keyFrameInfo;
 
-	std::mutex mtx;
-
-	std::deque<lis_slam::cloud_info> cloudInfoQueue;
-
 	pcl::PointCloud<PointType>::Ptr laserCloudCornerLast;  // corner feature set from odoOptimization
 	pcl::PointCloud<PointType>::Ptr laserCloudSurfLast;  // surf feature set from odoOptimization
-	pcl::PointCloud<PointType>::Ptr laserCloudCornerLastDS;  // downsampled corner featuer set from odoOptimization
-	pcl::PointCloud<PointType>::Ptr laserCloudSurfLastDS;  // downsampled surf featuer set from odoOptimization
+	pcl::PointCloud<PointType>::Ptr laserCloudSharpCornerLast;  
+	pcl::PointCloud<PointType>::Ptr laserCloudSharpSurfLast;  
 
 	pcl::VoxelGrid<PointType> downSizeFilterCorner;
 	pcl::VoxelGrid<PointType> downSizeFilterSurf;
 
-	int laserCloudCornerLastDSNum = 0;
-	int laserCloudSurfLastDSNum = 0;
+	int laserCloudSharpCornerLastNum = 0;
+	int laserCloudSharpSurfLastNum = 0;
 
 	pcl::PointCloud<PointType>::Ptr laserCloudOri;
 	pcl::PointCloud<PointType>::Ptr coeffSel;
@@ -81,6 +81,9 @@ class OdomEstimationNode : public ParamServer
 	pcl::PointCloud<PointType>::Ptr laserCloudCornerFromMapDS;
 	pcl::PointCloud<PointType>::Ptr laserCloudSurfFromMapDS;
 
+	std::vector<pcl::PointCloud<PointType>::Ptr> laserCloudSurfVec;
+	std::vector<pcl::PointCloud<PointType>::Ptr> laserCloudCornerVec;
+
 	pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerFromMap;
 	pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfFromMap;
 
@@ -113,8 +116,8 @@ class OdomEstimationNode : public ParamServer
 	{
 		laserCloudCornerLast.reset(new pcl::PointCloud<PointType>());
 		laserCloudSurfLast.reset(new pcl::PointCloud<PointType>());
-		laserCloudCornerLastDS.reset(new pcl::PointCloud<PointType>());
-		laserCloudSurfLastDS.reset(new pcl::PointCloud<PointType>());
+		laserCloudSharpCornerLast.reset(new pcl::PointCloud<PointType>());
+		laserCloudSharpSurfLast.reset(new pcl::PointCloud<PointType>());
 
 		laserCloudOri.reset(new pcl::PointCloud<PointType>());
 		coeffSel.reset(new pcl::PointCloud<PointType>());
@@ -153,29 +156,22 @@ class OdomEstimationNode : public ParamServer
 		kdtreeSurroundingKeyPoses.reset(new pcl::KdTreeFLANN<PointType>());
 	}
 
+
 	void laserCloudInfoHandler(const lis_slam::cloud_infoConstPtr &msgIn) 
 	{
-		// std::lock_guard<std::mutex> lock(mtx);
-		// cloudInfoQueue.push_back(*msgIn);
-
 		std::chrono::time_point<std::chrono::system_clock> start, end;
 		start = std::chrono::system_clock::now();
 
 		cloudInfo = *msgIn;
 
-		// extract time stamp
 		timeLaserInfoStamp = cloudInfo.header.stamp;
 		timeLaserInfoCur = timeLaserInfoStamp.toSec();
-
-		pcl::fromROSMsg(cloudInfo.cloud_corner, *laserCloudCornerLast);
-		pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSurfLast);
-
-		// Downsample cloud from current scan
-		downsampleCurrentScan();
+		
 		updateInitialGuess();
 
 		if (FirstFlag) 
 		{
+			currentCloudInit();
 			saveKeyFrames();
 			publishOdometry();
 			publishCloudInfo();
@@ -183,7 +179,38 @@ class OdomEstimationNode : public ParamServer
 			return;
 		}
 
-		extractSurroundingKeyFrames();
+		#if USING_MULTI_FRAME_TARGET
+			laserCloudCornerFromMapDS->clear();
+			laserCloudSurfFromMapDS->clear();
+
+			pcl::PointCloud<PointType>::Ptr tmpSurf( new pcl::PointCloud<PointType>());
+			pcl::PointCloud<PointType>::Ptr tmpCorner( new pcl::PointCloud<PointType>());
+			pcl::copyPointCloud(*laserCloudSurfLast,    *tmpSurf);
+			pcl::copyPointCloud(*laserCloudCornerLast,    *tmpCorner);
+
+			*tmpSurf = *transformPointCloud(tmpSurf, &cloudKeyPoses6D->back());
+			*tmpCorner = *transformPointCloud(tmpCorner, &cloudKeyPoses6D->back());
+
+			laserCloudSurfVec.push_back(tmpSurf);
+			laserCloudCornerVec.push_back(tmpCorner);
+
+			while(laserCloudSurfVec.size() >= 5)
+			{
+				laserCloudSurfVec.erase(laserCloudSurfVec.begin());
+				laserCloudCornerVec.erase(laserCloudCornerVec.begin());
+			}
+			
+			for(int i = 0; i < laserCloudSurfVec.size(); i++){
+				*laserCloudCornerFromMapDS += *laserCloudCornerVec[i];
+				*laserCloudSurfFromMapDS += *laserCloudSurfVec[i];
+			}
+		#endif
+
+		#if USING_SUBMAP_TARGET
+			extractSurroundingKeyFrames();
+		#endif
+
+		currentCloudInit();
 		scan2SubMapOptimization();
 		publishOdometry();
 
@@ -216,6 +243,8 @@ class OdomEstimationNode : public ParamServer
 		ROS_INFO("Average odom estimation time %f ms", total_time / total_frame);
 	}
 
+
+
 	void pointAssociateToMap(PointType const *const pi, PointType *const po) 
 	{
 		po->x = transPointAssociateToMap(0, 0) * pi->x +
@@ -233,19 +262,27 @@ class OdomEstimationNode : public ParamServer
 		po->intensity = pi->intensity;
 	}
 
-	void downsampleCurrentScan() 
+	void currentCloudInit()
 	{
-		// Downsample cloud from current scan
-		laserCloudCornerLastDS->clear();
-		downSizeFilterCorner.setInputCloud(laserCloudCornerLast);
-		downSizeFilterCorner.filter(*laserCloudCornerLastDS);
-		laserCloudCornerLastDSNum = laserCloudCornerLastDS->size();
+		pcl::fromROSMsg(cloudInfo.cloud_corner, *laserCloudCornerLast);
+		pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSurfLast);
+		pcl::fromROSMsg(cloudInfo.cloud_corner_sharp, *laserCloudSharpCornerLast);
+		pcl::fromROSMsg(cloudInfo.cloud_surface_sharp, *laserCloudSharpSurfLast);
 
-		laserCloudSurfLastDS->clear();
-		downSizeFilterSurf.setInputCloud(laserCloudSurfLast);
-		downSizeFilterSurf.filter(*laserCloudSurfLastDS);
-		laserCloudSurfLastDSNum = laserCloudSurfLastDS->size();
+		// Downsample cloud from current scan
+		// laserCloudSharpCornerLast->clear();
+		// downSizeFilterCorner.setInputCloud(laserCloudCornerLast);
+		// downSizeFilterCorner.filter(*laserCloudSharpCornerLast);
+
+		// laserCloudSharpSurfLast->clear();
+		// downSizeFilterSurf.setInputCloud(laserCloudSurfLast);
+		// downSizeFilterSurf.filter(*laserCloudSharpSurfLast);
+
+		laserCloudSharpCornerLastNum = laserCloudSharpCornerLast->size();
+		laserCloudSharpSurfLastNum = laserCloudSharpSurfLast->size();
 	}
+
+
 
 	void calculateTranslation() 
 	{
@@ -268,7 +305,7 @@ class OdomEstimationNode : public ParamServer
 		// initialization
 		static bool firstTransAvailable = false;
 		if (firstTransAvailable == false) {
-			// ROS_WARN("MakeSubmap: firstTransAvailable!");
+			ROS_WARN("Front: firstTransAvailable!");
 			transformTobeMapped[0] = cloudInfo.imuRollInit;
 			transformTobeMapped[1] = cloudInfo.imuPitchInit;
 			transformTobeMapped[2] = cloudInfo.imuYawInit;
@@ -286,7 +323,7 @@ class OdomEstimationNode : public ParamServer
 		static Eigen::Affine3f lastImuPreTransformation;
 		if (cloudInfo.odomAvailable == true) 
 		{
-		// ROS_WARN("MakeSubmap: cloudInfo.odomAvailable == true!");
+		ROS_WARN("Front: cloudInfo.odomAvailable == true!");
 		Eigen::Affine3f transBack = pcl::getTransformation(cloudInfo.initialGuessX, cloudInfo.initialGuessY, cloudInfo.initialGuessZ, 
 														   cloudInfo.initialGuessRoll, cloudInfo.initialGuessPitch, cloudInfo.initialGuessYaw);
 			if (lastImuPreTransAvailable == false) {
@@ -313,34 +350,9 @@ class OdomEstimationNode : public ParamServer
 			}
 		}
 
-		// use imu incremental estimation for pose guess (only rotation)
-		if (cloudInfo.imuAvailable == true) 
-		{
-			// ROS_WARN("MakeSubmap: cloudInfo.imuAvailable == true!");
-			Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);
-
-			Eigen::Affine3f transIncre = lastImuTransformation.inverse() * transBack;
-
-			Eigen::Affine3f transTobe = trans2Affine3f(transformTobeMapped);
-			Eigen::Affine3f transFinal = transTobe * transIncre;
-
-			pcl::getTranslationAndEulerAngles(transFinal, 
-					transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
-					transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
-
-			// transPredictionMapped=trans2Affine3f(transformTobeMapped);
-			for (int i = 0; i < 6; ++i) 
-			{
-				transPredictionMapped[i] = transformTobeMapped[i];
-			}
-
-			lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);  // save imu before return;
-
-			return;
-		}
-
 		static float lastTransformTobeMapped[6] = {0.0};
-		if (cloudInfo.odomAvailable == false && cloudInfo.imuAvailable == false) 
+		// if (cloudInfo.odomAvailable == false && cloudInfo.imuAvailable == false) 
+		if (cloudInfo.odomAvailable == false) 
 		{
 			static bool first = false;
 			if (first == false) 
@@ -354,7 +366,7 @@ class OdomEstimationNode : public ParamServer
 				return;
 			}
 
-			// ROS_WARN("MakeSubmap: cloudInfo.imuAvailable == true!");
+			ROS_WARN("Front: cloudInfo.odomAvailable == false!");
 			Eigen::Affine3f transBack = pcl::getTransformation(
 					transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
 					transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
@@ -377,13 +389,35 @@ class OdomEstimationNode : public ParamServer
 					transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
 					transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
 
-			// ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[0] : %f",transformTobeMapped[0]); 
-			// ROS_WARN("cloudInfo.odomAvailable == true  : transformTobeMapped[1] : %f",transformTobeMapped[1]);
-			// ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[2] : %f",transformTobeMapped[2]); 
-			// ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[3] : %f",transformTobeMapped[3]);
-			// ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[4] : %f",transformTobeMapped[4]); 
-			// ROS_WARN("cloudInfo.odomAvailable == true : transformTobeMapped[5] : %f",transformTobeMapped[5]);
+			return;
 		}
+
+		// use imu incremental estimation for pose guess (only rotation)
+		if (cloudInfo.imuAvailable == true) 
+		{
+			ROS_WARN("Front: cloudInfo.imuAvailable == true!");
+			Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);
+
+			Eigen::Affine3f transIncre = lastImuTransformation.inverse() * transBack;
+
+			Eigen::Affine3f transTobe = trans2Affine3f(transformTobeMapped);
+			Eigen::Affine3f transFinal = transTobe * transIncre;
+
+			pcl::getTranslationAndEulerAngles(transFinal, 
+					transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
+					transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
+
+			// transPredictionMapped=trans2Affine3f(transformTobeMapped);
+			for (int i = 0; i < 6; ++i) 
+			{
+				transPredictionMapped[i] = transformTobeMapped[i];
+			}
+
+			lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);  // save imu before return;
+
+			return;
+		}
+
   	}
 
 	void saveKeyFrames() 
@@ -408,8 +442,8 @@ class OdomEstimationNode : public ParamServer
 
 		pcl::PointCloud<PointType>::Ptr thisCornerKeyFrame(new pcl::PointCloud<PointType>());
 		pcl::PointCloud<PointType>::Ptr thisSurfKeyFrame(new pcl::PointCloud<PointType>());
-		pcl::copyPointCloud(*laserCloudCornerLastDS, *thisCornerKeyFrame);
-		pcl::copyPointCloud(*laserCloudSurfLastDS, *thisSurfKeyFrame);
+		pcl::copyPointCloud(*laserCloudCornerLast, *thisCornerKeyFrame);
+		pcl::copyPointCloud(*laserCloudSurfLast, *thisSurfKeyFrame);
 
 		// save key frame cloud
 		cornerCloudKeyFrames.push_back(thisCornerKeyFrame);
@@ -449,6 +483,16 @@ class OdomEstimationNode : public ParamServer
 		tempCloud.header.frame_id = lidarFrame;
 		keyFrameInfo.cloud_surface = tempCloud;
 
+		pcl::toROSMsg(*laserCloudSharpCornerLast, tempCloud);
+		tempCloud.header.stamp = timeLaserInfoStamp;
+		tempCloud.header.frame_id = lidarFrame;
+		keyFrameInfo.cloud_corner_sharp = tempCloud;
+
+		pcl::toROSMsg(*laserCloudSharpSurfLast, tempCloud);
+		tempCloud.header.stamp = timeLaserInfoStamp;
+		tempCloud.header.frame_id = lidarFrame;
+		keyFrameInfo.cloud_surface_sharp = tempCloud;
+
 		keyFrameInfo.initialGuessX = transformTobeMapped[3];
 		keyFrameInfo.initialGuessY = transformTobeMapped[4];
 		keyFrameInfo.initialGuessZ = transformTobeMapped[5];
@@ -469,9 +513,8 @@ class OdomEstimationNode : public ParamServer
 
 		// // extract all the nearby key poses and downsample them
 		// kdtreeSurroundingKeyPoses->setInputCloud(cloudKeyPoses3D); // create
-		// kd-tree kdtreeSurroundingKeyPoses->radiusSearch(cloudKeyPoses3D->back(),
-		// (double)surroundingKeyframeSearchRadius, pointSearchInd,
-		// pointSearchSqDis); for (int i = 0; i < (int)pointSearchInd.size(); ++i)
+		// kd-tree kdtreeSurroundingKeyPoses->radiusSearch(cloudKeyPoses3D->back(), (double)surroundingKeyframeSearchRadius, pointSearchInd, pointSearchSqDis); 
+		// for (int i = 0; i < (int)pointSearchInd.size(); ++i)
 		// {
 		//     int id = pointSearchInd[i];
 		//     surroundingKeyPoses->push_back(cloudKeyPoses3D->points[id]);
@@ -480,8 +523,7 @@ class OdomEstimationNode : public ParamServer
 		// downSizeFilterSurroundingKeyPoses.setInputCloud(surroundingKeyPoses);
 		// downSizeFilterSurroundingKeyPoses.filter(*surroundingKeyPosesDS);
 
-		// also extract some latest key frames in case the robot rotates in one
-		// position
+		// also extract some latest key frames in case the robot rotates in one position
 		int numPoses = cloudKeyPoses3D->size();
 		for (int i = numPoses - 1; i >= 0; --i) 
 		{
@@ -535,9 +577,9 @@ class OdomEstimationNode : public ParamServer
 
 	void scan2SubMapOptimization() 
 	{
-		if (laserCloudCornerLastDSNum > edgeFeatureMinValidNum && laserCloudSurfLastDSNum > surfFeatureMinValidNum) 
+		if (laserCloudSharpCornerLastNum > edgeFeatureMinValidNum && laserCloudSharpSurfLastNum > surfFeatureMinValidNum) 
 		{
-			// ROS_INFO("laserCloudCornerLastDSNum: %d laserCloudSurfLastDSNum: %d .", laserCloudCornerLastDSNum, laserCloudSurfLastDSNum);
+			// ROS_INFO("laserCloudSharpCornerLastNum: %d laserCloudSharpSurfLastNum: %d .", laserCloudSharpCornerLastNum, laserCloudSharpSurfLastNum);
 
 			kdtreeCornerFromMap->setInputCloud(laserCloudCornerFromMapDS);
 			kdtreeSurfFromMap->setInputCloud(laserCloudSurfFromMapDS);
@@ -558,7 +600,7 @@ class OdomEstimationNode : public ParamServer
 
 			transformUpdate();
 		} else {
-			ROS_WARN( "Not enough features! Only %d edge and %d planar features available.", laserCloudCornerLastDSNum, laserCloudSurfLastDSNum);
+			ROS_WARN( "Not enough features! Only %d edge and %d planar features available.", laserCloudSharpCornerLastNum, laserCloudSharpSurfLastNum);
 		}
 	}
 
@@ -570,16 +612,18 @@ class OdomEstimationNode : public ParamServer
 	void cornerOptimization() 
 	{
 		updatePointAssociateToSubMap();
+		
+		int numSearch = 0;
 
 		// #pragma omp for
 		#pragma omp parallel for num_threads(numberOfCores)
-		for (int i = 0; i < laserCloudCornerLastDSNum; i++) 
+		for (int i = 0; i < laserCloudSharpCornerLastNum; i++) 
 		{
 			PointType pointOri, pointSel, coeff;
 			std::vector<int> pointSearchInd;
 			std::vector<float> pointSearchSqDis;
 
-			pointOri = laserCloudCornerLastDS->points[i];
+			pointOri = laserCloudSharpCornerLast->points[i];
 			pointAssociateToMap(&pointOri, &pointSel);
 
 			kdtreeCornerFromMap->nearestKSearch(pointSel, 5, pointSearchInd,
@@ -592,17 +636,12 @@ class OdomEstimationNode : public ParamServer
 			if (pointSearchSqDis[4] < 1.0) {
 				float cx = 0, cy = 0, cz = 0;
 				for (int j = 0; j < 5; j++) {
-					// cx += laserCloudCornerFromPreSubMapDS->points[pointSearchInd[j]].x;
-					// cy += laserCloudCornerFromPreSubMapDS->points[pointSearchInd[j]].y;
-					// cz += laserCloudCornerFromPreSubMapDS->points[pointSearchInd[j]].z;
 
 					cx += laserCloudCornerFromMapDS->points[pointSearchInd[j]].x;
 					cy += laserCloudCornerFromMapDS->points[pointSearchInd[j]].y;
 					cz += laserCloudCornerFromMapDS->points[pointSearchInd[j]].z;
 				}
-				cx /= 5;
-				cy /= 5;
-				cz /= 5;
+				cx /= 5; cy /= 5; cz /= 5;
 
 				float a11 = 0, a12 = 0, a13 = 0, a22 = 0, a23 = 0, a33 = 0;
 				for (int j = 0; j < 5; j++) 
@@ -613,19 +652,9 @@ class OdomEstimationNode : public ParamServer
 					ay = laserCloudCornerFromMapDS->points[pointSearchInd[j]].y - cy;
 					az = laserCloudCornerFromMapDS->points[pointSearchInd[j]].z - cz;
 
-					a11 += ax * ax;
-					a12 += ax * ay;
-					a13 += ax * az;
-					a22 += ay * ay;
-					a23 += ay * az;
-					a33 += az * az;
+					a11 += ax * ax; a12 += ax * ay; a13 += ax * az; a22 += ay * ay; a23 += ay * az; a33 += az * az;
 				}
-				a11 /= 5;
-				a12 /= 5;
-				a13 /= 5;
-				a22 /= 5;
-				a23 /= 5;
-				a33 /= 5;
+				a11 /= 5; a12 /= 5; a13 /= 5; a22 /= 5; a23 /= 5; a33 /= 5;
 
 				matA1.at<float>(0, 0) = a11;
 				matA1.at<float>(0, 1) = a12;
@@ -658,8 +687,7 @@ class OdomEstimationNode : public ParamServer
 										((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)) *
 										((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)));
 
-					float l12 = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) +
-									(z1 - z2) * (z1 - z2));
+					float l12 = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
 
 					float la = ((y1 - y2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1)) +
 								(z1 - z2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))) /
@@ -687,25 +715,31 @@ class OdomEstimationNode : public ParamServer
 						laserCloudOriCornerVec[i] = pointOri;
 						coeffSelCornerVec[i] = coeff;
 						laserCloudOriCornerFlag[i] = true;
+						
+						numSearch++;
 					}
 				}
 			}
 		}
+
+		// ROS_WARN("Corner numSearch: [%d / %d]", numSearch, laserCloudSharpCornerLastNum);
 	}
 
 	void surfOptimization() 
 	{
 		updatePointAssociateToSubMap();
+		
+		int numSearch = 0;
 
 		// #pragma omp for
 		#pragma omp parallel for num_threads(numberOfCores)
-		for (int i = 0; i < laserCloudSurfLastDSNum; i++) 
+		for (int i = 0; i < laserCloudSharpSurfLastNum; i++) 
 		{
 			PointType pointOri, pointSel, coeff;
 			std::vector<int> pointSearchInd;
 			std::vector<float> pointSearchSqDis;
 
-			pointOri = laserCloudSurfLastDS->points[i];
+			pointOri = laserCloudSharpSurfLast->points[i];
 			pointAssociateToMap(&pointOri, &pointSel);
 
 			kdtreeSurfFromMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
@@ -733,10 +767,7 @@ class OdomEstimationNode : public ParamServer
 				float pd = 1;
 
 				float ps = sqrt(pa * pa + pb * pb + pc * pc);
-				pa /= ps;
-				pb /= ps;
-				pc /= ps;
-				pd /= ps;
+				pa /= ps; pb /= ps; pc /= ps; pd /= ps;
 
 				bool planeValid = true;
 				for (int j = 0; j < 5; j++) {
@@ -752,9 +783,7 @@ class OdomEstimationNode : public ParamServer
 				if (planeValid) {
 					float pd2 = pa * pointSel.x + pb * pointSel.y + pc * pointSel.z + pd;
 
-					float s = 1 - 0.9 * fabs(pd2) / sqrt(sqrt(pointSel.x * pointSel.x +
-																pointSel.y * pointSel.y +
-																pointSel.z * pointSel.z));
+					float s = 1 - 0.9 * fabs(pd2) / sqrt(sqrt(pointSel.x * pointSel.x + pointSel.y * pointSel.y + pointSel.z * pointSel.z));
 
 					coeff.x = s * pa;
 					coeff.y = s * pb;
@@ -765,16 +794,21 @@ class OdomEstimationNode : public ParamServer
 						laserCloudOriSurfVec[i] = pointOri;
 						coeffSelSurfVec[i] = coeff;
 						laserCloudOriSurfFlag[i] = true;
+						
+						numSearch++;
 					}
 				}
 			}
 		}
+
+		// ROS_WARN("Surf numSearch: [%d / %d]", numSearch, laserCloudSharpSurfLastNum);
+
 	}
 
 	void combineOptimizationCoeffs() 
 	{
 		// combine corner coeffs
-		for (int i = 0; i < laserCloudCornerLastDSNum; ++i) 
+		for (int i = 0; i < laserCloudSharpCornerLastNum; ++i) 
 		{
 			if (laserCloudOriCornerFlag[i] == true) {
 				laserCloudOri->push_back(laserCloudOriCornerVec[i]);
@@ -782,7 +816,7 @@ class OdomEstimationNode : public ParamServer
 			}
 		}
 		// combine surf coeffs
-		for (int i = 0; i < laserCloudSurfLastDSNum; ++i) 
+		for (int i = 0; i < laserCloudSharpSurfLastNum; ++i) 
 		{
 			if (laserCloudOriSurfFlag[i] == true) {
 				laserCloudOri->push_back(laserCloudOriSurfVec[i]);
@@ -878,13 +912,13 @@ class OdomEstimationNode : public ParamServer
 			for (int i = 5; i >= 0; i--) 
 			{
 				if (matE.at<float>(0, i) < eignThre[i]) {
-				for (int j = 0; j < 6; j++) 
-				{
-					matV2.at<float>(i, j) = 0;
-				}
-				isDegenerate = true;
+					for (int j = 0; j < 6; j++) 
+					{
+						matV2.at<float>(i, j) = 0;
+					}
+					isDegenerate = true;
 				} else {
-				break;
+					break;
 				}
 			}
 			matP = matV.inv() * matV2;
@@ -910,8 +944,9 @@ class OdomEstimationNode : public ParamServer
 		float deltaT = sqrt(pow(matX.at<float>(3, 0) * 100, 2) +
 							pow(matX.at<float>(4, 0) * 100, 2) +
 							pow(matX.at<float>(5, 0) * 100, 2));
-
-		if (deltaR < 0.05 && deltaT < 0.05) {
+		
+		if (deltaR < 0.005 && deltaT < 0.05) {
+			ROS_WARN("Front ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
 			return true;  // converged
 		}
 		return false;  // keep optimizing
@@ -921,25 +956,25 @@ class OdomEstimationNode : public ParamServer
 	{
 		if (cloudInfo.imuAvailable == true) 
 		{
-		if (std::abs(cloudInfo.imuPitchInit) < 1.4) 
-		{
-			double imuWeight = imuRPYWeight;
-			tf::Quaternion imuQuaternion;
-			tf::Quaternion transformQuaternion;
-			double rollMid, pitchMid, yawMid;
+			if (std::abs(cloudInfo.imuPitchInit) < 1.4) 
+			{
+				double imuWeight = imuRPYWeight;
+				tf::Quaternion imuQuaternion;
+				tf::Quaternion transformQuaternion;
+				double rollMid, pitchMid, yawMid;
 
-			// slerp roll
-			transformQuaternion.setRPY(transformTobeMapped[0], 0, 0);
-			imuQuaternion.setRPY(cloudInfo.imuRollInit, 0, 0);
-			tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
-			transformTobeMapped[0] = rollMid;
+				// slerp roll
+				transformQuaternion.setRPY(transformTobeMapped[0], 0, 0);
+				imuQuaternion.setRPY(cloudInfo.imuRollInit, 0, 0);
+				tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
+				transformTobeMapped[0] = rollMid;
 
-			// slerp pitch
-			transformQuaternion.setRPY(0, transformTobeMapped[1], 0);
-			imuQuaternion.setRPY(0, cloudInfo.imuPitchInit, 0);
-			tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
-			transformTobeMapped[1] = pitchMid;
-		}
+				// slerp pitch
+				transformQuaternion.setRPY(0, transformTobeMapped[1], 0);
+				imuQuaternion.setRPY(0, cloudInfo.imuPitchInit, 0);
+				tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
+				transformTobeMapped[1] = pitchMid;
+			}
 		}
 
 		transformTobeMapped[0] = constraintTransformation(transformTobeMapped[0], rotation_tollerance);

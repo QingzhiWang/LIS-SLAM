@@ -172,6 +172,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     bool isDegenerate = false;
     Eigen::Matrix<float, 6, 6> matP;
 
+	float deltaR = 100;
+	float deltaT = 100;
+
 	// ---- IMUPreintegration start ----  
 	bool systemInitialized = false;
 
@@ -496,7 +499,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		nav_msgs::Odometry thisOdom = odomQueue.front();
 		odomQueue.pop_front();
 
-		ROS_WARN("debug1");
+		// ROS_WARN("debug1");
 
 		Eigen::Affine3f odomAffine = odom2affine(thisOdom);
         Eigen::Affine3f lidarOdomAffine = transBef2Aft * odomAffine;
@@ -630,7 +633,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 }
                 
 
-
                 #if USING_SINGLE_TARGET
                     pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
                     pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
@@ -713,8 +715,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
                 calculateTranslation();
                 float accu_tran = std::max(transformCurFrame2Submap[3], transformCurFrame2Submap[4]); 
-                float accu_rot = transformCurFrame2Submap[2];
-                if(judge_new_submap(accu_tran, accu_rot, curSubMapSize, subMapTraMax, subMapYawMax, subMapFramesSize))
+                float accu_rot = transformCurFrame2Submap[2]; 
+                if((deltaR > 0.003 && deltaT > 0.03) || judge_new_submap(accu_tran, accu_rot, curSubMapSize, subMapTraMax, subMapYawMax, subMapFramesSize))
                 {
                     ROS_WARN("Make %d submap  has %d  Frames !", subMapID, curSubMapSize);
                     
@@ -962,9 +964,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 }
 
                 lastImuPreTransformation = transBack;
-
-                lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit); // save imu before return;
-                return;
+        		
+				if (cloudInfo.imuAvailable == true)
+                	lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit); // save imu before return;
+                
+				return;
             }
         }
         // use imu incremental estimation for pose guess (only rotation)
@@ -1284,7 +1288,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		cloud_temp->points.insert(cloud_temp->points.end(), 
 								laserCloudSurfFromSubMap->points.begin(), 
 								laserCloudSurfFromSubMap->points.end());
-        std::cout << "cloud_temp size: " << cloud_temp->points.size() << std::endl;
         publishLabelCloud(&pubTest1, cloud_temp, timeLaserInfoStamp, lidarFrame);
 
     }
@@ -1310,8 +1313,12 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		bounds_t bbx_intersection;
         get_intersection_bbx(cur_keyframe->bound, localMap->bound, bbx_intersection, 10.0);
 		
-		// pcl::PointCloud<PointXYZIL>::Ptr cloud_temp(new pcl::PointCloud<PointXYZIL>);
-		// localMap->merge_feature_points(cloud_temp, false);
+
+        SubMapManager::voxel_downsample_pcl(localMap->submap_dynamic, localMap->submap_dynamic, 0.05);
+        // SubMapManager::voxel_downsample_pcl(localMap->submap_pole, localMap->submap_pole, 0.02);
+        SubMapManager::voxel_downsample_pcl(localMap->submap_ground, localMap->submap_ground, 0.2);
+        SubMapManager::voxel_downsample_pcl(localMap->submap_building, localMap->submap_building, 0.1);
+        SubMapManager::voxel_downsample_pcl(localMap->submap_outlier, localMap->submap_outlier, 0.5);
         
 		// Use the intersection bounding box to filter the outlier points
         bbx_filter(localMap->submap_dynamic, bbx_intersection);
@@ -1417,13 +1424,14 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     {
         if (laserCloudCornerLastDSNum > edgeFeatureMinValidNum && laserCloudSurfLastDSNum > surfFeatureMinValidNum)
         {
-            ROS_WARN("laserCloudCornerFromSubMap: %d laserCloudSurfFromSubMap: %d .", laserCloudCornerFromSubMap->points.size(), laserCloudSurfFromSubMap->points.size());
-            ROS_WARN("laserCloudCornerLastDSNum: %d laserCloudSurfLastDSNum: %d .", laserCloudCornerLastDSNum, laserCloudSurfLastDSNum);
+            // ROS_WARN("laserCloudCornerFromSubMap: %d laserCloudSurfFromSubMap: %d .", laserCloudCornerFromSubMap->points.size(), laserCloudSurfFromSubMap->points.size());
+            // ROS_WARN("laserCloudCornerLastDSNum: %d laserCloudSurfLastDSNum: %d .", laserCloudCornerLastDSNum, laserCloudSurfLastDSNum);
             
             kdtreeCornerFromSubMap->setInputCloud(laserCloudCornerFromSubMap);
             kdtreeSurfFromSubMap->setInputCloud(laserCloudSurfFromSubMap);
 
-            for (int iterCount = 0; iterCount < 30; iterCount++)   //30
+			int iterCount = 0;
+            for (; iterCount < 20; iterCount++)   //30
             {
                 laserCloudOri->clear();
                 coeffSel->clear();
@@ -1438,6 +1446,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     break;          
             }
 
+			ROS_WARN("iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
             transformUpdate();
 
         } else {
@@ -1596,7 +1605,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             }
         }
 
-		ROS_WARN("Corner numSearch: [%d / %d]", numSearch, laserCloudCornerLastDSNum);
+		// ROS_WARN("Corner numSearch: [%d / %d]", numSearch, laserCloudCornerLastDSNum);
 
     }
 
@@ -1720,7 +1729,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             }
         }
 
-		ROS_WARN("Surf numSearch: [%d / %d]", numSearch, laserCloudSurfLastDSNum);
+		// ROS_WARN("Surf numSearch: [%d / %d]", numSearch, laserCloudSurfLastDSNum);
 
     }
 
@@ -1858,16 +1867,14 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         transformTobeSubMapped[4] += matX.at<float>(4, 0);
         transformTobeSubMapped[5] += matX.at<float>(5, 0);
 
-        float deltaR = sqrt(
-                            pow(pcl::rad2deg(matX.at<float>(0, 0)), 2) +
-                            pow(pcl::rad2deg(matX.at<float>(1, 0)), 2) +
-                            pow(pcl::rad2deg(matX.at<float>(2, 0)), 2));
-        float deltaT = sqrt(
-                            pow(matX.at<float>(3, 0) * 100, 2) +
-                            pow(matX.at<float>(4, 0) * 100, 2) +
-                            pow(matX.at<float>(5, 0) * 100, 2));
+        deltaR = sqrt(pow(pcl::rad2deg(matX.at<float>(0, 0)), 2) +
+                      pow(pcl::rad2deg(matX.at<float>(1, 0)), 2) +
+                      pow(pcl::rad2deg(matX.at<float>(2, 0)), 2));
+        deltaT = sqrt(pow(matX.at<float>(3, 0) * 100, 2) +
+                      pow(matX.at<float>(4, 0) * 100, 2) +
+                      pow(matX.at<float>(5, 0) * 100, 2));
 
-        if (deltaR < 0.03 && deltaT < 0.03) {
+        if (deltaR < 0.003 && deltaT < 0.03) {
             return true; // converged
         }
         return false; // keep optimizing
@@ -1875,28 +1882,28 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     void transformUpdate()
     {
-        // if (cloudInfo.imuAvailable == true)
-        // {
-        //     if (std::abs(cloudInfo.imuPitchInit) < 1.4)
-        //     {
-        //         double imuWeight = imuRPYWeight;
-        //         tf::Quaternion imuQuaternion;
-        //         tf::Quaternion transformQuaternion;
-        //         double rollMid, pitchMid, yawMid;
+        if (cloudInfo.imuAvailable == true)
+        {
+            if (std::abs(cloudInfo.imuPitchInit) < 1.4)
+            {
+                double imuWeight = imuRPYWeight;
+                tf::Quaternion imuQuaternion;
+                tf::Quaternion transformQuaternion;
+                double rollMid, pitchMid, yawMid;
 
-        //         // slerp roll
-        //         transformQuaternion.setRPY(transformTobeSubMapped[0], 0, 0);
-        //         imuQuaternion.setRPY(cloudInfo.imuRollInit, 0, 0);
-        //         tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
-        //         transformTobeSubMapped[0] = rollMid;
+                // slerp roll
+                transformQuaternion.setRPY(transformTobeSubMapped[0], 0, 0);
+                imuQuaternion.setRPY(cloudInfo.imuRollInit, 0, 0);
+                tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
+                transformTobeSubMapped[0] = rollMid;
 
-        //         // slerp pitch
-        //         transformQuaternion.setRPY(0, transformTobeSubMapped[1], 0);
-        //         imuQuaternion.setRPY(0, cloudInfo.imuPitchInit, 0);
-        //         tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
-        //         transformTobeSubMapped[1] = pitchMid;
-        //     }
-        // }
+                // slerp pitch
+                transformQuaternion.setRPY(0, transformTobeSubMapped[1], 0);
+                imuQuaternion.setRPY(0, cloudInfo.imuPitchInit, 0);
+                tf::Matrix3x3(transformQuaternion.slerp(imuQuaternion, imuWeight)).getRPY(rollMid, pitchMid, yawMid);
+                transformTobeSubMapped[1] = pitchMid;
+            }
+        }
 
         transformTobeSubMapped[0] = constraintTransformation(transformTobeSubMapped[0], rotation_tollerance);
         transformTobeSubMapped[1] = constraintTransformation(transformTobeSubMapped[1], rotation_tollerance);
@@ -2109,7 +2116,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 		pubKeyframeIMUOdometry.publish(odometry);
 
-		ROS_WARN("timeLaserInfoStamp: %f, lastImuT_opt: %f.", timeLaserInfoStamp.toSec(), lastImuT_opt);
+		// ROS_WARN("timeLaserInfoStamp: %f, lastImuT_opt: %f.", timeLaserInfoStamp.toSec(), lastImuT_opt);
 		
 		// transformTobeSubMapped[3] = curlidarPose.translation().x();
 		// transformTobeSubMapped[4] = curlidarPose.translation().y();

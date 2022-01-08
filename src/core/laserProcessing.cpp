@@ -26,6 +26,8 @@ void LaserProcessing ::allocateMemory()
 
 	cornerCloud.reset(new pcl::PointCloud<PointXYZIRT>());
 	surfaceCloud.reset(new pcl::PointCloud<PointXYZIRT>());
+	sharpCornerCloud.reset(new pcl::PointCloud<PointXYZIRT>());
+	SharpSurfaceCloud.reset(new pcl::PointCloud<PointXYZIRT>());
 
 	fullCloud->points.resize(N_SCAN * Horizon_SCAN);
 
@@ -611,6 +613,8 @@ void LaserProcessing ::extractFeatures()
 {
 	cornerCloud->clear();
 	surfaceCloud->clear();
+	sharpCornerCloud->clear();
+	SharpSurfaceCloud->clear();
 
 	pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloudScan(new pcl::PointCloud<PointXYZIRT>());
 	pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloudScanDS(new pcl::PointCloud<PointXYZIRT>());
@@ -637,6 +641,8 @@ void LaserProcessing ::extractFeatures()
 					if (largestPickedNum <= 20) {
 						cloudLabel[ind] = 1;
 						cornerCloud->push_back(extractedCloud->points[ind]);
+						if(largestPickedNum <= 4)
+							sharpCornerCloud->push_back(extractedCloud->points[ind]);
 					} else {
 						break;
 					}
@@ -658,13 +664,19 @@ void LaserProcessing ::extractFeatures()
 				}
 			}
 
+			largestPickedNum = 0;
 			for (int k = sp; k <= ep; k++) 
 			{
 				int ind = cloudSmoothness[k].ind;
 				if (cloudNeighborPicked[ind] == 0 && cloudCurvature[ind] < surfThreshold) 
 				{
+					largestPickedNum++;
+
 					cloudLabel[ind] = -1;
 					cloudNeighborPicked[ind] = 1;
+
+					if(largestPickedNum <= 10)
+						SharpSurfaceCloud->push_back(extractedCloud->points[ind]);
 
 					for (int l = 1; l <= 5; l++) 
 					{
@@ -725,4 +737,14 @@ void LaserProcessing ::assignCouldInfo()
 	tempCloud.header.stamp = cloudHeader.stamp;
 	tempCloud.header.frame_id = lidarFrame;
 	cloudInfo.cloud_surface = tempCloud;
+
+	pcl::toROSMsg(*sharpCornerCloud, tempCloud);
+	tempCloud.header.stamp = cloudHeader.stamp;
+	tempCloud.header.frame_id = lidarFrame;
+	cloudInfo.cloud_corner_sharp = tempCloud;
+
+	pcl::toROSMsg(*SharpSurfaceCloud, tempCloud);
+	tempCloud.header.stamp = cloudHeader.stamp;
+	tempCloud.header.frame_id = lidarFrame;
+	cloudInfo.cloud_surface_sharp = tempCloud;
 }

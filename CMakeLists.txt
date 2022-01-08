@@ -85,7 +85,6 @@ add_message_files(
   FILES
   cloud_info.msg
   submap.msg
-  loop_info.msg
   semantic_info.msg
 )
 
