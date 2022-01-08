@@ -316,6 +316,8 @@ struct keyframe_t
         if (clone_cloud) {
             // clone point cloud (instead of pointer)
             *semantic_raw = *(in_keyframe.semantic_raw);
+            // pcl::copyPointCloud(*in_keyframe.semantic_raw,  *semantic_raw);
+
             *semantic_dynamic = *(in_keyframe.semantic_dynamic);
             *semantic_pole = *(in_keyframe.semantic_pole);
             *semantic_ground = *(in_keyframe.semantic_ground);

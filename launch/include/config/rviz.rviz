@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /links1
         - /Feature Cloud1
         - /Semantic Cloud1
         - /Odometry1
@@ -12,8 +13,8 @@ Panels:
         - /Odometry1/lidar_imu1/Shape1
         - /Submap1
         - /Mapping1/Map (global)1/Autocompute Value Bounds1
+        - /EPSC1
         - /Test1
-        - /Test1/test11
       Splitter Ratio: 0.6264045238494873
     Tree Height: 472
   - Class: rviz/Selection
@@ -75,7 +76,7 @@ Visualization Manager:
           Cell Size: 10
           Class: rviz/Grid
           Color: 160; 160; 164
-          Enabled: false
+          Enabled: true
           Line Style:
             Line Width: 0.029999999329447746
             Value: Lines
@@ -88,7 +89,7 @@ Visualization Manager:
           Plane: XY
           Plane Cell Count: 100
           Reference Frame: <Fixed Frame>
-          Value: false
+          Value: true
       Enabled: true
       Name: links
     - Class: rviz/Group
@@ -947,13 +948,13 @@ Visualization Manager:
           Unreliable: false
           Value: true
         - Class: rviz/MarkerArray
-          Enabled: false
+          Enabled: true
           Marker Topic: /lis_slam/mapping/loop_closure_constraints
           Name: Loop constraint
           Namespaces:
             {}
           Queue Size: 100
-          Value: false
+          Value: true
       Enabled: true
       Name: EPSC
     - Class: rviz/Group
@@ -970,7 +971,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -985,8 +986,8 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
-        - Alpha: 0.4000000059604645
+          Value: false
+        - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 10
@@ -998,7 +999,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1006,16 +1007,128 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
-          Size (Pixels): 1.5
+          Size (Pixels): 2
           Size (m): 0.10000000149011612
           Style: Points
           Topic: /lis_slam/make_submap/test_2
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
       Enabled: true
       Name: Test
+    - Alpha: 0.800000011920929
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: label
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: pre
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 1.5
+      Size (m): 0.10000000149011612
+      Style: Points
+      Topic: /Pre
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 0.800000011920929
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: label
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: cur
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 1.5
+      Size (m): 0.10000000149011612
+      Style: Points
+      Topic: /Cur
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 0.800000011920929
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: label
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: cur_loop
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 1.5
+      Size (m): 0.10000000149011612
+      Style: Points
+      Topic: /lis_slam/make_submap/test_1
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 0.800000011920929
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: label
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: cur_icp
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 1.5
+      Size (m): 0.10000000149011612
+      Style: Points
+      Topic: /CurICP
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -1032,25 +1145,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 105.83139038085938
+      Distance: 187.19668579101562
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 12.61345386505127
-        Y: 2.7684788703918457
-        Z: -1.7046927213668823
+        X: 1.5449910163879395
+        Y: 15.862821578979492
+        Z: -10.609447479248047
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.4447966814041138
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 4.946825981140137
+      Yaw: 5.023650169372559
     Saved: ~
 Window Geometry:
   Displays:

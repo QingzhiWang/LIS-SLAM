@@ -7,8 +7,8 @@
 #include "lis_slam/cloud_info.h"
 #include "utility.h"
 
-#define USING_SUBMAP_TARGET false
-#define USING_MULTI_FRAME_TARGET true
+#define USING_SUBMAP_TARGET true
+#define USING_MULTI_FRAME_TARGET false
 
 
 class OdomEstimationNode : public ParamServer 
@@ -194,7 +194,7 @@ class OdomEstimationNode : public ParamServer
 			laserCloudSurfVec.push_back(tmpSurf);
 			laserCloudCornerVec.push_back(tmpCorner);
 
-			while(laserCloudSurfVec.size() >= 5)
+			while(laserCloudSurfVec.size() >= 6)
 			{
 				laserCloudSurfVec.erase(laserCloudSurfVec.begin());
 				laserCloudCornerVec.erase(laserCloudCornerVec.begin());
@@ -527,7 +527,7 @@ class OdomEstimationNode : public ParamServer
 		int numPoses = cloudKeyPoses3D->size();
 		for (int i = numPoses - 1; i >= 0; --i) 
 		{
-			if (timeLaserInfoCur - cloudKeyPoses6D->points[i].time < 6.0)  // 10.0
+			if (timeLaserInfoCur - cloudKeyPoses6D->points[i].time < 5.0)  // 10.0
 				surroundingKeyPosesDS->points.push_back(cloudKeyPoses3D->points[i]);
 			else
 				break;
@@ -946,7 +946,7 @@ class OdomEstimationNode : public ParamServer
 							pow(matX.at<float>(5, 0) * 100, 2));
 		
 		if (deltaR < 0.005 && deltaT < 0.05) {
-			ROS_WARN("Front ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
+			// ROS_WARN("Front ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
 			return true;  // converged
 		}
 		return false;  // keep optimizing

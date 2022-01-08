@@ -100,7 +100,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     
     int keyFrameID = 0;
     int subMapID = 0;
-    std::deque<keyframe_Ptr> keyFrameQueue;
+    std::deque<int> keyFrameQueue;
     map<int, keyframe_Ptr> keyFrameInfo;
 
     keyframe_Ptr currentKeyFrame = keyframe_Ptr(new keyframe_t);
@@ -240,6 +240,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 	// ---- test publisher ----  
     ros::Publisher pubTest1;
     ros::Publisher pubTest2;
+    
+	ros::Publisher pubTestPre;
+    ros::Publisher pubTestCur;
+    ros::Publisher pubTestCurLoop;
+    ros::Publisher pubTestCurICP;
 
 
     
@@ -278,6 +283,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         pubTest1 = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/test_1", 1);
         pubTest2 = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/make_submap/test_2", 1);
         
+		pubTestPre = nh.advertise<sensor_msgs::PointCloud2>("Pre", 1);
+        pubTestCur = nh.advertise<sensor_msgs::PointCloud2>("Cur", 1);
+        pubTestCurLoop = nh.advertise<sensor_msgs::PointCloud2>("CurLoop", 1);
+        pubTestCurICP = nh.advertise<sensor_msgs::PointCloud2>("CurICP", 1);
 
         allocateMemory();
     }
@@ -716,7 +725,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 calculateTranslation();
                 float accu_tran = std::max(transformCurFrame2Submap[3], transformCurFrame2Submap[4]); 
                 float accu_rot = transformCurFrame2Submap[2]; 
-                if((deltaR > 0.003 && deltaT > 0.03) || judge_new_submap(accu_tran, accu_rot, curSubMapSize, subMapTraMax, subMapYawMax, subMapFramesSize))
+                if(deltaR > 0.003 || deltaT > 0.03 || judge_new_submap(accu_tran, accu_rot, curSubMapSize, subMapTraMax, subMapYawMax, subMapFramesSize))
                 {
                     ROS_WARN("Make %d submap  has %d  Frames !", subMapID, curSubMapSize);
                     
@@ -744,6 +753,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					ROS_WARN("Current SubMap Static Cloud Size: [%d, %d] .", currentSubMap->submap_pole->points.size(), currentSubMap->submap_ground->points.size());
 					pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
                     tmpCloud->points.insert(tmpCloud->points.end(), 
+											currentSubMap->submap_dynamic->points.begin(), 
+											currentSubMap->submap_dynamic->points.end());
+					tmpCloud->points.insert(tmpCloud->points.end(), 
 											currentSubMap->submap_pole->points.begin(), 
 											currentSubMap->submap_pole->points.end());
 					tmpCloud->points.insert(tmpCloud->points.end(), 
@@ -1093,7 +1105,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         keyframe_Ptr tmpKeyFrame;
         tmpKeyFrame = keyframe_Ptr(new keyframe_t(*currentKeyFrame, true));
-        keyFrameQueue.push_back(tmpKeyFrame);
+		keyFrameQueue.push_back(keyFrameID);
         keyFrameInfo.insert(std::make_pair(keyFrameID, tmpKeyFrame));
         
         // ROS_WARN("currentKeyFrame : relative_pose: [%f, %f, %f, %f, %f, %f]",
@@ -2244,14 +2256,25 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 			if (loopClosureEnableFlag == false) 
 			{
 				ros::spinOnce();
+				rate.sleep();
 				continue;
 			}
 
-			// rate.sleep();
+			rate.sleep();
 			ros::spinOnce();
 			if(!keyFrameQueue.empty())
 			{
-				keyframe_Ptr curKeyFramePtr = keyFrameQueue.front();
+				// keyframe_Ptr curKeyFramePtr = keyFrameQueue.front();;
+				int curKeyFrame = keyFrameQueue.front();
+				keyFrameQueue.pop_front();
+					
+				keyframe_Ptr curKeyFramePtr;
+				auto thisCurId = keyFrameInfo.find(curKeyFrame);
+        		if (thisCurId != keyFrameInfo.end()){
+        			curKeyFramePtr = keyFrameInfo[curKeyFrame];
+				}else{
+					continue;
+				}
 
 				auto t1 = ros::Time::now();
 
@@ -2260,13 +2283,14 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 						curKeyFramePtr->cloud_corner, curKeyFramePtr->cloud_surface,
 						curKeyFramePtr->semantic_raw, curPose);
 
-				int loopKeyCur = epscGen.current_frame_id;
+				int loopKeyCur = epscGen.current_frame_id + 1;
 				std::vector<int> loopKeyPre;
 				loopKeyPre.assign(epscGen.matched_frame_id.begin(),
 								  epscGen.matched_frame_id.end());
 				std::vector<Eigen::Affine3f> matched_init_transform;
 				matched_init_transform.assign(epscGen.matched_frame_transform.begin(),
 											  epscGen.matched_frame_transform.end());
+
 
 				cv_bridge::CvImage out_msg;
 				out_msg.header.frame_id = lidarFrame;
@@ -2303,8 +2327,12 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					ROS_WARN("loopKeyPre is empty !");
 					continue;
 				}
+
+				sort(loopKeyPre.begin(), loopKeyPre.end());
+				loopKeyPre.erase(unique(loopKeyPre.begin(), loopKeyPre.end()), loopKeyPre.end());
 				for (int i = 0; i < loopKeyPre.size(); i++) 
 				{
+					loopKeyPre[i] += 1;
 					std::cout << "loopKeyPre [" << i << "]:" << loopKeyPre[i] << std::endl;
 				}
 				
@@ -2316,7 +2344,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 				curKeyFramePtr->loop_container.push_back(bestMatched);											  
 
-				keyFrameQueue.pop_front();
 			}
 			
         }
@@ -2332,7 +2359,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         auto thisCurId = keyFrameInfo.find(loopKeyCur);
         if (thisCurId != keyFrameInfo.end()) {
             loopKeyCur = (int)keyFrameInfo[loopKeyCur]->keyframe_id;
-            *cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_raw;
+            *cureKeyframeCloud = *keyFrameInfo[loopKeyCur]->semantic_raw;
         } else {
             loopKeyCur = -1;
             ROS_WARN("LoopKeyCur do not find !");
@@ -2357,10 +2384,15 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         for (int i = 0; i < loopKeyPre.size(); i++) 
         {
+
+		publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
+
             // Align clouds
             pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
-            *tmpCloud += *transformPointCloud(cureKeyframeCloud, matched_init_transform[i]);
+            *tmpCloud = *transformPointCloud(cureKeyframeCloud, matched_init_transform[i]);
             icp.setInputSource(tmpCloud);
+
+		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
 
             auto thisPreId = keyFrameInfo.find(loopKeyPre[i]);
             if (thisPreId != keyFrameInfo.end()) {
@@ -2368,8 +2400,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 std::cout << "loopContainerHandler: loopKeyPre : " << PreID << std::endl;
 
                 prevKeyframeCloud->clear();
-                *tmpCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_raw;
+                *prevKeyframeCloud = *keyFrameInfo[loopKeyPre[i]]->semantic_raw;
                 icp.setInputTarget(prevKeyframeCloud);
+        	
+		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 
                 pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
                 icp.align(*unused_result);
@@ -2381,6 +2415,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 bestMatched = PreID;
                 bestID = i;
                 correctionLidarFrame = icp.getFinalTransformation();
+            
+		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
 
             } else {
                 bestMatched = -1;
@@ -2554,7 +2590,7 @@ int main(int argc, char **argv)
 
     SubMapOdometryNode SOD;
     std::thread make_submap_process(&SubMapOdometryNode::makeSubMapThread, &SOD);
-    // std::thread loop_closure_process(&SubMapOdometryNode::loopClosureThread, &SOD);
+    std::thread loop_closure_process(&SubMapOdometryNode::loopClosureThread, &SOD);
     
 
     // SubMapOptmizationNode SOP;
@@ -2568,7 +2604,7 @@ int main(int argc, char **argv)
     // ros::spin();
 
     make_submap_process.join();
-    // loop_closure_process.join();
+    loop_closure_process.join();
     
     // visualize_map_process.join();
     // submap_optmization_process.join();

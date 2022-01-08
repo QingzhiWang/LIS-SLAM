@@ -630,6 +630,7 @@ void EPSCGeneration::loopDetection(
 
 	cv::Mat ISC_cur, SC_cur, EPSC_cur, SEPSC_cur, SSC_cur;
 
+	// 
 	if (UsingISCFlag) {
 		ISC_cur = calculateISC(pc_filtered_semantic);
 	}
@@ -662,7 +663,6 @@ void EPSCGeneration::loopDetection(
 			float diff_x = 0;
 			float diff_y = 0;
 			cv::Mat before_dis = project(semanticPointCloud[i]);
-			// cv::Mat cur_dis = project(pc_filtered_semantic);
 			globalICP(before_dis, cur_dis, angle, diff_x, diff_y);
 			if (fabs(diff_x) > 5 || fabs(diff_y) > 5) {
 				diff_x = 0;
@@ -674,12 +674,13 @@ void EPSCGeneration::loopDetection(
 
 			// Eigen::Matrix4f transform = globalICP(_dis1, _dis2);;
 
-			pcl::PointCloud<PointXYZIL>::Ptr trans_cloud(new pcl::PointCloud<PointXYZIL>);
-			transformPointCloud(*pc_filtered_semantic, *trans_cloud, transform);
+			pcl::PointCloud<PointXYZIL>::Ptr trans_cloud_semantic(new pcl::PointCloud<PointXYZIL>);
+			transformPointCloud(*pc_filtered_semantic, *trans_cloud_semantic, transform);
 
 			if (UsingISCFlag) 
 			{
 				auto desc1 = ISCArr[i];
+				ISC_cur = calculateISC(trans_cloud_semantic);
 				auto score = calculateDistance(desc1, ISC_cur, angle);
 				std::cout << "ISC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_isc) 
@@ -693,6 +694,7 @@ void EPSCGeneration::loopDetection(
 			if (UsingSCFlag) 
 			{
 				auto desc1 = SCArr[i];
+				SC_cur = calculateSC(trans_cloud_semantic);
 				auto score = calculateDistance(desc1, SC_cur, angle);
 				std::cout << "SC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_sc) 
@@ -705,7 +707,14 @@ void EPSCGeneration::loopDetection(
 
 			if (UsingEPSCFlag) 
 			{
+				pcl::PointCloud<pcl::PointXYZI>::Ptr trans_cloud_corner(new pcl::PointCloud<pcl::PointXYZI>);
+				pcl::PointCloud<pcl::PointXYZI>::Ptr trans_cloud_surf(new pcl::PointCloud<pcl::PointXYZI>);
+			
+				transformPointCloud(*pc_filtered_corner, *trans_cloud_corner, transform);
+				transformPointCloud(*pc_filtered_surf, *trans_cloud_surf, transform);
+
 				auto desc1 = EPSCArr[i];
+				EPSC_cur = calculateEPSC(trans_cloud_corner, trans_cloud_surf);
 				auto score = calculateDistance(desc1, EPSC_cur, angle);
 				std::cout << "EPSC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_epsc) 
@@ -719,6 +728,7 @@ void EPSCGeneration::loopDetection(
 			if (UsingSEPSCFlag) 
 			{
 				auto desc1 = SEPSCArr[i];
+				SEPSC_cur = calculateSEPSC(trans_cloud_semantic);
 				auto score = calculateDistance(desc1, SEPSC_cur, angle);
 				std::cout << "SEPSC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_sepsc) 
@@ -732,6 +742,7 @@ void EPSCGeneration::loopDetection(
 			if (UsingSSCFlag) 
 			{
 				auto desc1 = SSCArr[i];
+				SSC_cur = calculateSSC(trans_cloud_semantic);
 				auto score = calculateLabelSim(desc1, SSC_cur);
 				std::cout << "SSC_score: " << score << std::endl;
 				if (score > LABEL_THRESHOLD && score > best_score_ssc) 
