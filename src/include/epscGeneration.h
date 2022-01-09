@@ -48,11 +48,8 @@ private:
 
 	std::vector<cv::Vec3b> color_projection;
 
-	std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cornerPointCloud;
-	std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> surfPointCloud;
-	std::vector<pcl::PointCloud<PointXYZIL>::Ptr> semanticPointCloud;
+	std::vector<cv::Mat> ProjectArr;
 
-	std::vector<Eigen::Vector3d> posArr;
 	std::vector<cv::Mat> ISCArr;
 	std::vector<cv::Mat> SCArr;
 	std::vector<cv::Mat> EPSCArr;
@@ -60,8 +57,9 @@ private:
 	std::vector<cv::Mat> SSCArr;
 	std::vector<cv::Mat> myDescriptorArr;
 
-
 	std::vector<double> travelDistanceArr;
+	std::vector<Eigen::Vector3d> posArr;
+
 
 	bool show = false;
 	std::shared_ptr<pcl::visualization::CloudViewer> viewer;

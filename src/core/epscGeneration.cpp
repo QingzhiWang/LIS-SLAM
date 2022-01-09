@@ -524,14 +524,14 @@ double EPSCGeneration::calculateLabelSim(cv::Mat &desc1, cv::Mat &desc2)
 	int valid_num = 0;
 	for (int p = 0; p < sectors; p++) {
 		for (int q = 0; q < rings; q++) {
-		if (desc1.at<unsigned char>(q, p) == 0 && desc2.at<unsigned char>(q, p) == 0) {
-			continue;
-		}
-		valid_num++;
+			if (desc1.at<unsigned char>(q, p) == 0 && desc2.at<unsigned char>(q, p) == 0) {
+				continue;
+			}
+			valid_num++;
 
-		if (desc1.at<unsigned char>(q, p) == desc2.at<unsigned char>(q, p)) {
-			similarity++;
-		}
+			if (desc1.at<unsigned char>(q, p) == desc2.at<unsigned char>(q, p)) {
+				similarity++;
+			}
 		}
 	}
 	// std::cout<<similarity<<std::endl;
@@ -578,6 +578,7 @@ void EPSCGeneration::loopDetection(
 	pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered_surf(new pcl::PointCloud<pcl::PointXYZI>());
 	pcl::PointCloud<PointXYZIL>::Ptr pc_filtered_semantic(new pcl::PointCloud<PointXYZIL>());
 
+	// 有问题！
 	// groundFilter(corner_pc, pc_filtered_corner);
 	// groundFilter(surf_pc, pc_filtered_surf);
 	// groundFilter(semantic_pc, pc_filtered_semantic);
@@ -603,6 +604,7 @@ void EPSCGeneration::loopDetection(
 
 	current_frame_id = posArr.size();
 	matched_frame_id.clear();
+	matched_frame_transform.clear();
 
 	int best_matched_id_isc = -1;
 	double best_score_isc = 0.0;
@@ -630,26 +632,6 @@ void EPSCGeneration::loopDetection(
 
 	cv::Mat ISC_cur, SC_cur, EPSC_cur, SEPSC_cur, SSC_cur;
 
-	// 
-	if (UsingISCFlag) {
-		ISC_cur = calculateISC(pc_filtered_semantic);
-	}
-
-	if (UsingSCFlag) {
-		SC_cur = calculateSC(pc_filtered_semantic);
-	}
-
-	if (UsingEPSCFlag) {
-		EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
-	}
-
-	if (UsingSEPSCFlag) {
-		SEPSC_cur = calculateSEPSC(pc_filtered_semantic);
-	}
-
-	if (UsingSSCFlag) {
-		SSC_cur = calculateSSC(pc_filtered_semantic);
-	}
 
   	cv::Mat cur_dis = project(pc_filtered_semantic);
 	for (int i = 0; i < (int)posArr.size(); i++) {
@@ -662,12 +644,14 @@ void EPSCGeneration::loopDetection(
 			double angle = 0;
 			float diff_x = 0;
 			float diff_y = 0;
-			cv::Mat before_dis = project(semanticPointCloud[i]);
+			// cv::Mat before_dis = project(semanticPointCloud[i]);
+			cv::Mat before_dis = ProjectArr[i];
 			globalICP(before_dis, cur_dis, angle, diff_x, diff_y);
 			if (fabs(diff_x) > 5 || fabs(diff_y) > 5) {
 				diff_x = 0;
 				diff_y = 0;
 			}
+
 			Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 			transform.translation() << diff_x, diff_y, 0;
 			transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ()));
@@ -681,13 +665,19 @@ void EPSCGeneration::loopDetection(
 			{
 				auto desc1 = ISCArr[i];
 				ISC_cur = calculateISC(trans_cloud_semantic);
-				auto score = calculateDistance(desc1, ISC_cur, angle);
+				double isc_angle = angle;
+				auto score = calculateDistance(desc1, ISC_cur, isc_angle);
 				std::cout << "ISC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_isc) 
 				{
 					best_score_isc = score;
 					best_matched_id_isc = i;
-					best_score_isc_transform = transform;
+
+					Eigen::Affine3f isc_transform = Eigen::Affine3f::Identity();
+					isc_transform.translation() << diff_x, diff_y, 0;
+					isc_transform.rotate(Eigen::AngleAxisf(isc_angle, Eigen::Vector3f::UnitZ()));
+
+					best_score_isc_transform = isc_transform;
 				}
 			}
 
@@ -695,13 +685,19 @@ void EPSCGeneration::loopDetection(
 			{
 				auto desc1 = SCArr[i];
 				SC_cur = calculateSC(trans_cloud_semantic);
-				auto score = calculateDistance(desc1, SC_cur, angle);
+				double sc_angle = angle;
+				auto score = calculateDistance(desc1, SC_cur, sc_angle);
 				std::cout << "SC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_sc) 
 				{
 					best_score_sc = score;
 					best_matched_id_sc = i;
-					best_score_sc_transform = transform;
+
+					Eigen::Affine3f sc_transform = Eigen::Affine3f::Identity();
+					sc_transform.translation() << diff_x, diff_y, 0;
+					sc_transform.rotate(Eigen::AngleAxisf(sc_angle, Eigen::Vector3f::UnitZ()));
+
+					best_score_sc_transform = sc_transform;
 				}
 			}
 
@@ -715,13 +711,19 @@ void EPSCGeneration::loopDetection(
 
 				auto desc1 = EPSCArr[i];
 				EPSC_cur = calculateEPSC(trans_cloud_corner, trans_cloud_surf);
-				auto score = calculateDistance(desc1, EPSC_cur, angle);
+				double epsc_angle = angle;
+				auto score = calculateDistance(desc1, EPSC_cur, epsc_angle);
 				std::cout << "EPSC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_epsc) 
 				{
 					best_score_epsc = score;
 					best_matched_id_epsc = i;
-					best_score_epsc_transform = transform;
+
+					Eigen::Affine3f epsc_transform = Eigen::Affine3f::Identity();
+					epsc_transform.translation() << diff_x, diff_y, 0;
+					epsc_transform.rotate(Eigen::AngleAxisf(epsc_angle, Eigen::Vector3f::UnitZ()));
+
+					best_score_epsc_transform = epsc_transform;
 				}
 			}
 
@@ -729,13 +731,19 @@ void EPSCGeneration::loopDetection(
 			{
 				auto desc1 = SEPSCArr[i];
 				SEPSC_cur = calculateSEPSC(trans_cloud_semantic);
-				auto score = calculateDistance(desc1, SEPSC_cur, angle);
+				double sepsc_angle = angle;
+				auto score = calculateDistance(desc1, SEPSC_cur, sepsc_angle);
 				std::cout << "SEPSC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_sepsc) 
 				{
 					best_score_sepsc = score;
 					best_matched_id_sepsc = i;
-					best_score_sepsc_transform = transform;
+										
+					Eigen::Affine3f sepsc_transform = Eigen::Affine3f::Identity();
+					sepsc_transform.translation() << diff_x, diff_y, 0;
+					sepsc_transform.rotate(Eigen::AngleAxisf(sepsc_angle, Eigen::Vector3f::UnitZ()));
+
+					best_score_sepsc_transform = sepsc_transform;
 				}
 			}
 
@@ -765,12 +773,13 @@ void EPSCGeneration::loopDetection(
 		}
 	}
 
+
 	posArr.push_back(current_t);
-	cornerPointCloud.push_back(pc_filtered_corner);
-	surfPointCloud.push_back(pc_filtered_surf);
-	semanticPointCloud.push_back(pc_filtered_semantic);
+	ProjectArr.push_back(cur_dis);
+
 	if (UsingISCFlag) 
 	{
+		ISC_cur = calculateISC(pc_filtered_semantic);
 		ISCArr.push_back(ISC_cur);
 		if (best_matched_id_isc != -1) 
 		{
@@ -783,6 +792,7 @@ void EPSCGeneration::loopDetection(
 
 	if (UsingSCFlag) 
 	{
+		SC_cur = calculateSC(pc_filtered_semantic);
 		SCArr.push_back(SC_cur);
 		if (best_matched_id_sc != -1) 
 		{
@@ -795,6 +805,7 @@ void EPSCGeneration::loopDetection(
 
 	if (UsingEPSCFlag) 
 	{
+		EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
 		EPSCArr.push_back(EPSC_cur);
 		if (best_matched_id_epsc != -1) 
 		{
@@ -807,6 +818,7 @@ void EPSCGeneration::loopDetection(
 
 	if (UsingSEPSCFlag) 
 	{
+		SEPSC_cur = calculateSEPSC(pc_filtered_semantic);
 		SEPSCArr.push_back(SEPSC_cur);
 		if (best_matched_id_sepsc != -1) 
 		{
@@ -817,17 +829,18 @@ void EPSCGeneration::loopDetection(
 		}
 	}
 
-  if (UsingSSCFlag) 
-  {
-    SSCArr.push_back(SSC_cur);
-    if (best_matched_id_ssc != -1) 
-    {
-      matched_frame_id.push_back(best_matched_id_ssc);
-      matched_frame_transform.push_back(best_score_ssc_transform);
-      ROS_WARN("SSC: received loop closure candidate: current: %d, history: %d, total_score: %f",
-                current_frame_id, best_matched_id_ssc, best_score_ssc);
-    }
-  }
+	if (UsingSSCFlag) 
+	{
+		SSC_cur = calculateSSC(pc_filtered_semantic);
+		SSCArr.push_back(SSC_cur);
+		if (best_matched_id_ssc != -1) 
+		{
+			matched_frame_id.push_back(best_matched_id_ssc);
+			matched_frame_transform.push_back(best_score_ssc_transform);
+			ROS_WARN("SSC: received loop closure candidate: current: %d, history: %d, total_score: %f",
+						current_frame_id, best_matched_id_ssc, best_score_ssc);
+		}
+	}
 
 	if (UsingPoseFlag) 
 	{
