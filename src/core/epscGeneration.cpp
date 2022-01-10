@@ -277,7 +277,7 @@ void EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2,
 	}
 }
 
-Eigen::Matrix4f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2) 
+Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2) 
 {
 	double similarity = 100000;
 	float angle = 0;
@@ -323,10 +323,11 @@ Eigen::Matrix4f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2)
 	icp.setInputTarget(cloud1);
 	pcl::PointCloud<pcl::PointXYZ> Final;
 	icp.align(Final);
-	auto trans = icp.getFinalTransformation();
+	Eigen::Affine3f trans;
+	trans = icp.getFinalTransformation();
 	Eigen::Affine3f trans1 = Eigen::Affine3f::Identity();
 	trans1.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ()));
-	return trans * trans1.matrix();
+	return trans * trans1;
 }
 
 cv::Mat EPSCGeneration::calculateSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud) 
@@ -640,23 +641,25 @@ void EPSCGeneration::loopDetection(
 		if (delta_travel_distance > SKIP_NEIBOUR_DISTANCE && pos_distance < delta_travel_distance * INFLATION_COVARIANCE) 
 		{
 			ROS_INFO("Matched_id: %d, delta_travel_distance: %f, pos_distance : %f", i, delta_travel_distance, pos_distance);
-
-			double angle = 0;
-			float diff_x = 0;
-			float diff_y = 0;
-			// cv::Mat before_dis = project(semanticPointCloud[i]);
+			
 			cv::Mat before_dis = ProjectArr[i];
-			globalICP(before_dis, cur_dis, angle, diff_x, diff_y);
-			if (fabs(diff_x) > 5 || fabs(diff_y) > 5) {
-				diff_x = 0;
-				diff_y = 0;
-			}
 
-			Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-			transform.translation() << diff_x, diff_y, 0;
-			transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ()));
+			// double angle = 0;
+			// float diff_x = 0;
+			// float diff_y = 0;
+			// globalICP(before_dis, cur_dis, angle, diff_x, diff_y);
+			// if (fabs(diff_x) > 5 || fabs(diff_y) > 5) {
+			// 	diff_x = 0;
+			// 	diff_y = 0;
+			// }
+			// Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+			// transform.translation() << diff_x, diff_y, 0;
+			// transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ()));
 
-			// Eigen::Matrix4f transform = globalICP(_dis1, _dis2);;
+			Eigen::Affine3f transform = globalICP(before_dis, cur_dis);
+			float diff_x, diff_y, diff_z;
+			float ROLL, PITCH, angle;
+			pcl::getTranslationAndEulerAngles(transform, diff_x, diff_y, diff_z, ROLL, PITCH, angle);
 
 			pcl::PointCloud<PointXYZIL>::Ptr trans_cloud_semantic(new pcl::PointCloud<PointXYZIL>);
 			transformPointCloud(*pc_filtered_semantic, *trans_cloud_semantic, transform);
@@ -921,99 +924,4 @@ cv::Mat EPSCGeneration::getLastSSCRGB()
 		auto color_image = getColorImage(SSCArr.back());
 		return color_image;
 	}
-}
-
-/***********************************
-    if(UsingISCFlag){
-
-    }
-
-    if(UsingSCFlag){
-
-    }
-
-    if(UsingEPSCFlag){
-
-    }
-
-    if(UsingSEPSCFlag){
-
-    }
-
-    if(UsingSSCFlag){
-
-    }
-
-    if(UsingPoseFlag){
-
-    }
-***********************************/
-
-double EPSCGeneration::getScore(pcl::PointCloud<PointXYZIL>::Ptr cloud1,
-                                pcl::PointCloud<PointXYZIL>::Ptr cloud2,
-                                double &angle, float &diff_x, float &diff_y) 
-{
-	angle = 0;
-	diff_x = 0;
-	diff_y = 0;
-	cv::Mat ssc_dis1 = project(cloud1);
-	cv::Mat ssc_dis2 = project(cloud2);
-	globalICP(ssc_dis1, ssc_dis2, angle, diff_x, diff_y);
-	if (fabs(diff_x) > 5 || fabs(diff_y) > 5) {
-		diff_x = 0;
-		diff_y = 0;
-	}
-	Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-	transform.translation() << diff_x, diff_y, 0;
-	transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ()));
-	pcl::PointCloud<PointXYZIL>::Ptr trans_cloud(new pcl::PointCloud<PointXYZIL>);
-	transformPointCloud(*cloud2, *trans_cloud, transform);
-	auto desc1 = calculateSSC(cloud1);
-	auto desc2 = calculateSSC(trans_cloud);
-	auto score = calculateLabelSim(desc1, desc2);
-	if (show) 
-	{
-		transform.translation() << diff_x, diff_y, 0;
-		transformPointCloud(*cloud2, *trans_cloud, transform);
-		auto color_cloud1 = getColorCloud(cloud1);
-		auto color_cloud2 = getColorCloud(trans_cloud);
-		*color_cloud2 += *color_cloud1;
-		viewer->showCloud(color_cloud2);
-		auto color_image1 = getColorImage(desc1);
-		cv::imshow("color image1", color_image1);
-		auto color_image2 = getColorImage(desc2);
-		cv::imshow("color image2", color_image2);
-		cv::waitKey(0);
-	}
-
-  	return score;
-}
-
-double EPSCGeneration::getScore(pcl::PointCloud<PointXYZIL>::Ptr cloud1,
-                                pcl::PointCloud<PointXYZIL>::Ptr cloud2,
-                                Eigen::Matrix4f &transform) 
-{
-	cv::Mat ssc_dis1 = project(cloud1);
-	cv::Mat ssc_dis2 = project(cloud2);
-	transform = globalICP(ssc_dis1, ssc_dis2);
-	pcl::PointCloud<PointXYZIL>::Ptr trans_cloud(new pcl::PointCloud<PointXYZIL>);
-	transformPointCloud(*cloud2, *trans_cloud, transform);
-	auto desc1 = calculateSSC(cloud1);
-	auto desc2 = calculateSSC(trans_cloud);
-	auto score = calculateLabelSim(desc1, desc2);
-	if (show) 
-	{
-		transform(2, 3) = 0.;
-		transformPointCloud(*cloud2, *trans_cloud, transform);
-		auto color_cloud1 = getColorCloud(cloud1);
-		auto color_cloud2 = getColorCloud(trans_cloud);
-		*color_cloud2 += *color_cloud1;
-		viewer->showCloud(color_cloud2);
-		auto color_image1 = getColorImage(desc1);
-		cv::imshow("color image1", color_image1);
-		auto color_image2 = getColorImage(desc2);
-		cv::imshow("color image2", color_image2);
-		cv::waitKey(0);
-	}
-	return score;
 }

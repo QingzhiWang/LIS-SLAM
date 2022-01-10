@@ -7,8 +7,8 @@
 #include "lis_slam/cloud_info.h"
 #include "utility.h"
 
-#define USING_SUBMAP_TARGET true
-#define USING_MULTI_FRAME_TARGET false
+#define USING_SUBMAP_TARGET false
+#define USING_MULTI_FRAME_TARGET true
 
 
 class OdomEstimationNode : public ParamServer 
@@ -182,28 +182,22 @@ class OdomEstimationNode : public ParamServer
 		#if USING_MULTI_FRAME_TARGET
 			laserCloudCornerFromMapDS->clear();
 			laserCloudSurfFromMapDS->clear();
-
-			pcl::PointCloud<PointType>::Ptr tmpSurf( new pcl::PointCloud<PointType>());
-			pcl::PointCloud<PointType>::Ptr tmpCorner( new pcl::PointCloud<PointType>());
-			pcl::copyPointCloud(*laserCloudSurfLast,    *tmpSurf);
-			pcl::copyPointCloud(*laserCloudCornerLast,    *tmpCorner);
-
-			*tmpSurf = *transformPointCloud(tmpSurf, &cloudKeyPoses6D->back());
-			*tmpCorner = *transformPointCloud(tmpCorner, &cloudKeyPoses6D->back());
-
-			laserCloudSurfVec.push_back(tmpSurf);
-			laserCloudCornerVec.push_back(tmpCorner);
-
-			while(laserCloudSurfVec.size() >= 6)
-			{
-				laserCloudSurfVec.erase(laserCloudSurfVec.begin());
-				laserCloudCornerVec.erase(laserCloudCornerVec.begin());
-			}
+			laserCloudCornerFromMap->clear();
+			laserCloudSurfFromMap->clear();
 			
-			for(int i = 0; i < laserCloudSurfVec.size(); i++){
-				*laserCloudCornerFromMapDS += *laserCloudCornerVec[i];
-				*laserCloudSurfFromMapDS += *laserCloudSurfVec[i];
+			for(int i = laserCloudSurfVec.size() - 1; i >= 0 ; i--){
+				*laserCloudCornerFromMap += *laserCloudCornerVec[i];
+				*laserCloudSurfFromMap += *laserCloudSurfVec[i];
 			}
+
+			downSizeFilterCorner.setInputCloud(laserCloudCornerFromMap);
+			downSizeFilterCorner.filter(*laserCloudCornerFromMapDS);
+			laserCloudCornerFromMapDSNum = laserCloudCornerFromMapDS->size();
+
+			downSizeFilterSurf.setInputCloud(laserCloudSurfFromMap);
+			downSizeFilterSurf.filter(*laserCloudSurfFromMapDS);
+			laserCloudSurfFromMapDSNum = laserCloudSurfFromMapDS->size();
+
 		#endif
 
 		#if USING_SUBMAP_TARGET
@@ -214,24 +208,16 @@ class OdomEstimationNode : public ParamServer
 		scan2SubMapOptimization();
 		publishOdometry();
 
-		if(saveTrajectory)
+		calculateTranslation();
+		if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
+			abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
+			abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) 
 		{
 			saveKeyFrames();
 			publishCloudInfo();
 			publishCloud(&pubKeyFrameId, cloudKeyPoses3D, timeLaserInfoStamp, mapFrame);
 		}
-		else
-		{
-			calculateTranslation();
-			if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
-				abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
-				abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) 
-			{
-				saveKeyFrames();
-				publishCloudInfo();
-				publishCloud(&pubKeyFrameId, cloudKeyPoses3D, timeLaserInfoStamp, mapFrame);
-			}
-		}
+	
 
 		end = std::chrono::system_clock::now();
 		std::chrono::duration<float> elapsed_seconds = end - start;
@@ -440,14 +426,34 @@ class OdomEstimationNode : public ParamServer
 		thisPose6D.time = timeLaserInfoCur;
 		cloudKeyPoses6D->points.push_back(thisPose6D);
 
-		pcl::PointCloud<PointType>::Ptr thisCornerKeyFrame(new pcl::PointCloud<PointType>());
-		pcl::PointCloud<PointType>::Ptr thisSurfKeyFrame(new pcl::PointCloud<PointType>());
-		pcl::copyPointCloud(*laserCloudCornerLast, *thisCornerKeyFrame);
-		pcl::copyPointCloud(*laserCloudSurfLast, *thisSurfKeyFrame);
+		#if USING_SUBMAP_TARGET
+			pcl::PointCloud<PointType>::Ptr thisCornerKeyFrame(new pcl::PointCloud<PointType>());
+			pcl::PointCloud<PointType>::Ptr thisSurfKeyFrame(new pcl::PointCloud<PointType>());
+			pcl::copyPointCloud(*laserCloudCornerLast, *thisCornerKeyFrame);
+			pcl::copyPointCloud(*laserCloudSurfLast, *thisSurfKeyFrame);
 
-		// save key frame cloud
-		cornerCloudKeyFrames.push_back(thisCornerKeyFrame);
-		surfCloudKeyFrames.push_back(thisSurfKeyFrame);
+			// save key frame cloud
+			cornerCloudKeyFrames.push_back(thisCornerKeyFrame);
+			surfCloudKeyFrames.push_back(thisSurfKeyFrame);
+		#endif
+
+		#if USING_MULTI_FRAME_TARGET
+
+			pcl::PointCloud<PointType>::Ptr tmpSurf( new pcl::PointCloud<PointType>());
+			pcl::PointCloud<PointType>::Ptr tmpCorner( new pcl::PointCloud<PointType>());
+
+			*tmpSurf = *transformPointCloud(laserCloudSurfLast, &thisPose6D);
+			*tmpCorner = *transformPointCloud(laserCloudCornerLast, &thisPose6D);
+
+			laserCloudSurfVec.push_back(tmpSurf);
+			laserCloudCornerVec.push_back(tmpCorner);
+
+			while(laserCloudSurfVec.size() >= 18)
+			{
+				laserCloudSurfVec.erase(laserCloudSurfVec.begin());
+				laserCloudCornerVec.erase(laserCloudCornerVec.begin());
+			}
+		#endif
 
 		transformPriFrame[0] = transformTobeMapped[0];
 		transformPriFrame[1] = transformTobeMapped[1];
@@ -571,7 +577,7 @@ class OdomEstimationNode : public ParamServer
 		laserCloudSurfFromMapDSNum = laserCloudSurfFromMapDS->size();
 
 		// clear map cache if too large
-		if (laserCloudMapContainer.size() > 1000) 
+		if (laserCloudMapContainer.size() > 100) 
 			laserCloudMapContainer.clear();
 	}
 

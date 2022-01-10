@@ -11,7 +11,7 @@
 // IF TRAVELLED DISTANCE IS LESS THAN THIS VALUE, SKIP FOR PLACE RECOGNTION
 #define SKIP_NEIBOUR_DISTANCE 20.0  // 20.0
 // how much error will odom generate per frame
-#define INFLATION_COVARIANCE 0.03  // 0.03
+#define INFLATION_COVARIANCE 0.02  // 0.03
 
 // define threshold for loop closure detection
 // #define GEOMETRY_THRESHOLD 0.55     // 0.67  0.57(--)
@@ -26,12 +26,12 @@ class EPSCGeneration : public SemanticLabelParam {
 private:  
 	std::vector<int> order_vec = {0,  0,  0,  0,  0,  0,  0,  0, 0,  10,
 									11, 12, 13, 15, 16, 14, 17, 9, 18, 19};
-	bool UsingISCFlag = true;
-	bool UsingSCFlag = true;
+	bool UsingISCFlag = false;
+	bool UsingSCFlag = false;
 	bool UsingPoseFlag = false;
 	bool UsingSEPSCFlag = true;
 	bool UsingEPSCFlag = true;
-	bool UsingSSCFlag = true;
+	bool UsingSSCFlag = false;
 
 	double max_dis = 70;
 	double min_dis = 3;
@@ -82,7 +82,7 @@ private:
 	cv::Mat project(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 
 	void globalICP(cv::Mat& isc_dis1, cv::Mat& isc_dis2, double& angle,float& diff_x, float& diff_y);
-	Eigen::Matrix4f globalICP(cv::Mat& ssc_dis1, cv::Mat& ssc_dis2);
+	Eigen::Affine3f globalICP(cv::Mat& ssc_dis1, cv::Mat& ssc_dis2);
 
 	cv::Mat calculateSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 	cv::Mat calculateISC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
