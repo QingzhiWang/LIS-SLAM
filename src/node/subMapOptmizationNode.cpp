@@ -1135,7 +1135,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     void saveSubMap()
     {
-		curSubMapSize = 0;
+		curSubMapSize = 1;
 		subMapID++;
 
         timeSubMapInfoStamp = timeLaserInfoStamp;
@@ -1166,7 +1166,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         tmpSubMap = submap_Ptr(new submap_t(*currentSubMap, true, true));
         subMapIndexQueue.push_back(subMapID);
         subMapInfo.insert(std::make_pair(subMapID, tmpSubMap));
-        // subMapInfo[subMapID] = tmpSubMap;
 
     }
 
