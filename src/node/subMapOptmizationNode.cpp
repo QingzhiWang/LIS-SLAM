@@ -726,7 +726,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             while (seInfoQueue.size() > 10) seInfoQueue.pop_front();
 
 			// 保存最后SubMAp
-			
+
 
 			ros::spinOnce();
         }
@@ -2465,6 +2465,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         // ICP Settings
         // static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
+        // static pcl::GeneralizedIterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
         // reg.setMaxCorrespondenceDistance(10);
         // reg.setMaximumIterations(30);
         // reg.setTransformationEpsilon(1e-6);

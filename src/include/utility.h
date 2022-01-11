@@ -31,6 +31,7 @@
 #include <pcl/range_image/range_image.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/ndt.h>
+#include <pcl/registration/gicp.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl_ros/transforms.h>
