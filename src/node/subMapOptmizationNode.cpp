@@ -2442,13 +2442,19 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         std::cout << "matching..." << std::flush;
         auto t1 = ros::Time::now();
 
+		static pcl::NormalDistributionsTransform<PointXYZIL, PointXYZIL> reg;
+		reg.setTransformationEpsilon(0.01); //为终止条件设置最小转换差异
+		reg.setStepSize(0.1); //为More-Thuente线搜索设置最大步长
+		reg.setResolution(1.0); //设置NDT网格结构的分辨率（VoxelGridCovariance）
+		reg.setMaximumIterations(35); //设置匹配迭代的最大次数
+
         // ICP Settings
-        static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> icp;
-        icp.setMaxCorrespondenceDistance(10);
-        icp.setMaximumIterations(30);
-        icp.setTransformationEpsilon(1e-6);
-        icp.setEuclideanFitnessEpsilon(1e-3);
-        icp.setRANSACIterations(0);
+        // static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
+        // reg.setMaxCorrespondenceDistance(10);
+        // reg.setMaximumIterations(30);
+        // reg.setTransformationEpsilon(1e-6);
+        // reg.setEuclideanFitnessEpsilon(1e-3);
+        // reg.setRANSACIterations(0);
 
         int bestID = -1;
         double bestScore = std::numeric_limits<double>::max();
@@ -2469,10 +2475,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_ground;
                 *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_building;
                 // *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_outlier;
-                icp.setInputTarget(prevKeyframeCloud);
+                reg.setInputTarget(prevKeyframeCloud);
 
 		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
-		publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 			
 				Eigen::Affine3f subMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->submap_pose_6D_optimized);
 				Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
@@ -2482,20 +2487,20 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 				// Align clouds
 				pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
 				*tmpCloud = *transformPointCloud(cureKeyframeCloud, key2PreSubMapTrans);
-				icp.setInputSource(tmpCloud);
+				reg.setInputSource(tmpCloud);
 
 		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
 
                 pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
-                icp.align(*unused_result);
+                reg.align(*unused_result);
 
-                double score = icp.getFitnessScore();
-                if (icp.hasConverged() == false || score > bestScore) 
+                double score = reg.getFitnessScore();
+                if (reg.hasConverged() == false || score > bestScore) 
                     continue;
                 bestScore = score;
                 bestMatched = loopSubMapPre[i];
                 bestID = i;
-                correctionLidarFrame = icp.getFinalTransformation();
+                correctionLidarFrame = reg.getFinalTransformation();
             
 		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
 
@@ -2512,11 +2517,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         std::cout << " done" << std::endl;
         std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
 
-        if (bestScore < 1.0) 
-        {
-			correctionKey2PreSubMap = correctionLidarFrame;
-            std::cout << "correctionKey2PreSubMap update !" << std::endl;
-        }
+        // if (bestScore < 1.0) 
+        // {
+		// 	correctionKey2PreSubMap = correctionLidarFrame;
+        //     std::cout << "correctionKey2PreSubMap update !" << std::endl;
+        // }
 
         if (bestScore > historyKeyframeFitnessScore) 
         {
@@ -2524,6 +2529,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             return false;
         }
         std::cout << "loop found!!" << std::endl;
+		
+		correctionKey2PreSubMap = correctionLidarFrame;
 
 		Eigen::Affine3f key2CurSubMapTrans;
 		int loopSubMapCur = -1;
@@ -2557,6 +2564,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         // add loop constriant
         loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
 
+		*cureKeyframeCloud = *transformPointCloud(cureKeyframeCloud, tCorrect);
+		publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
+
         return true;
     }
 
@@ -2583,12 +2593,12 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         auto t1 = ros::Time::now();
 
         // ICP Settings
-        static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> icp;
-        icp.setMaxCorrespondenceDistance(5);
-        icp.setMaximumIterations(30);
-        icp.setTransformationEpsilon(1e-6);
-        icp.setEuclideanFitnessEpsilon(1e-3);
-        icp.setRANSACIterations(0);
+        static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
+        reg.setMaxCorrespondenceDistance(5);
+        reg.setMaximumIterations(30);
+        reg.setTransformationEpsilon(1e-6);
+        reg.setEuclideanFitnessEpsilon(1e-3);
+        reg.setRANSACIterations(0);
 
         // int bestMatched = -1;
         int bestID = -1;
@@ -2603,7 +2613,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             // Align clouds
             pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
             *tmpCloud = *transformPointCloud(cureKeyframeCloud, matched_init_transform[i]);
-            icp.setInputSource(tmpCloud);
+            reg.setInputSource(tmpCloud);
 
 		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
 
@@ -2614,20 +2624,20 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
                 prevKeyframeCloud->clear();
                 *prevKeyframeCloud = *keyFrameInfo[loopKeyPre[i]]->semantic_raw;
-                icp.setInputTarget(prevKeyframeCloud);
+                reg.setInputTarget(prevKeyframeCloud);
         	
 		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 
                 pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
-                icp.align(*unused_result);
+                reg.align(*unused_result);
 
-                double score = icp.getFitnessScore();
-                if (icp.hasConverged() == false || score > bestScore) 
+                double score = reg.getFitnessScore();
+                if (reg.hasConverged() == false || score > bestScore) 
                     continue;
                 bestScore = score;
                 bestMatched = PreID;
                 bestID = i;
-                correctionLidarFrame = icp.getFinalTransformation();
+                correctionLidarFrame = reg.getFinalTransformation();
             
 		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
 
