@@ -15,7 +15,7 @@ Panels:
         - /Mapping1/Map (global)1/Autocompute Value Bounds1
         - /EPSC1
         - /EPSC1/Loop constraint1
-        - /EPSC1/Loop constraint1/Status1
+        - /EPSC1/Test Loop constraint1
         - /Test1
       Splitter Ratio: 0.6264045238494873
     Tree Height: 472
@@ -951,11 +951,23 @@ Visualization Manager:
           Value: true
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /lis_slam/mapping/loop_closure_constraints
+          Marker Topic: /lis_slam/make_submap/loop_closure_constraints
           Name: Loop constraint
           Namespaces:
-            {}
-          Queue Size: 100
+            loop_edges: true
+            loop_nodes: true
+            loop_nodes_id: true
+          Queue Size: 1
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /lis_slam/make_submap/loop_closure_constraints_test
+          Name: Test Loop constraint
+          Namespaces:
+            loop_edges: true
+            loop_nodes: true
+            loop_nodes_id: true
+          Queue Size: 1
           Value: true
       Enabled: true
       Name: EPSC
@@ -1085,7 +1097,7 @@ Visualization Manager:
           Color: 32; 74; 135
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1100,7 +1112,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 0.800000011920929
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -1113,7 +1125,7 @@ Visualization Manager:
           Color: 0; 0; 0
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1128,7 +1140,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
       Enabled: true
       Name: Test
   Enabled: true
@@ -1147,16 +1159,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 150.35733032226562
+      Distance: 97.66015625
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -35.41753387451172
-        Y: -5.081583023071289
-        Z: -9.917197227478027
+        X: -19.01610565185547
+        Y: -34.16566467285156
+        Z: 11.929410934448242
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -1165,7 +1177,7 @@ Visualization Manager:
       Pitch: 1.5697963237762451
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 1.4104725122451782
+      Yaw: 2.754999876022339
     Saved: ~
 Window Geometry:
   Displays:
