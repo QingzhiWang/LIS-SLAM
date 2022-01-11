@@ -53,7 +53,7 @@ vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseQueue;
 map<int, vector<Eigen::Affine3f>> keyFrame2SubMapPose;
 
 
-map<int, int> loopIndexContainerTest;
+multimap<int, int> loopIndexContainerTest;
 
 
 gtsam::Pose3 pclPointTogtsamPose3(PointTypePose thisPoint) {
@@ -147,10 +147,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     pcl::PointCloud<PointXYZIL>::Ptr laserCloudCornerFromSubMap;
     pcl::PointCloud<PointXYZIL>::Ptr laserCloudSurfFromSubMap;
-
-	std::vector<pcl::PointCloud<PointXYZIL>::Ptr> laserCloudSurfVec;
-	std::vector<pcl::PointCloud<PointXYZIL>::Ptr> laserCloudCornerVec;
-
 
     int laserCloudCornerLastDSNum = 0;
     int laserCloudSurfLastDSNum = 0;
@@ -630,18 +626,19 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 if(subMapFirstFlag)
                 {
                     currentCloudInit();
-                    saveKeyFrames();
-                    publishOdometry();
-                    publishKeyFrameCloud();
-                    
-                    fisrt_submap(currentSubMap, currentKeyFrame);
+					currentSubMapInit();
+                    saveKeyFrame();
+                    this->fisrt_submap(currentSubMap, currentKeyFrame);
+					
+					publishOdometry();
+                    publishKeyFrameCloud();			
 					
 					#if USING_SLIDING_TARGET
-						insert_local_map(localMap, currentKeyFrame, 
-										local_map_radius, max_num_pts, kept_vertex_num,
-										last_frame_reliable_radius, map_based_dynamic_removal_on,
-										dynamic_removal_center_radius, dynamic_dist_thre_min,
-										dynamic_dist_thre_max, near_dist_thre);
+						this->insert_local_map(localMap, currentKeyFrame, 
+								local_map_radius, max_num_pts, kept_vertex_num,
+								last_frame_reliable_radius, map_based_dynamic_removal_on,
+								dynamic_removal_center_radius, dynamic_dist_thre_min,
+								dynamic_dist_thre_max, near_dist_thre);
 					#endif
 
                     subMapFirstFlag=false;
@@ -649,74 +646,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     continue;
                 }
                 
-
-                #if USING_SINGLE_TARGET
-                    pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
-                    pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
-                    *laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
-                    *laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
-                #endif
-
-				#if USING_MULTI_KEYFRAME_TARGET
-					laserCloudCornerFromSubMap->clear();
-					laserCloudSurfFromSubMap->clear();
-
-					pcl::PointCloud<PointXYZIL>::Ptr tmpSurf( new pcl::PointCloud<PointXYZIL>());
-					pcl::PointCloud<PointXYZIL>::Ptr tmpCorner( new pcl::PointCloud<PointXYZIL>());
-					pcl::copyPointCloud(*laserCloudSurfLast,    *tmpSurf);
-                    pcl::copyPointCloud(*laserCloudCornerLast,    *tmpCorner);
-
-					*tmpSurf = *transformPointCloud(tmpSurf, &keyFramePoses6D->back());
-                    *tmpCorner = *transformPointCloud(tmpCorner, &keyFramePoses6D->back());
-
-					laserCloudSurfVec.push_back(tmpSurf);
-					laserCloudCornerVec.push_back(tmpCorner);
-
-					while(laserCloudSurfVec.size() >= 5)
-					{
-						laserCloudSurfVec.erase(laserCloudSurfVec.begin());
-						laserCloudCornerVec.erase(laserCloudCornerVec.begin());
-					}
-					
-					for(int i = 0; i < laserCloudSurfVec.size(); i++){
-						*laserCloudCornerFromSubMap += *laserCloudCornerVec[i];
-						*laserCloudSurfFromSubMap += *laserCloudSurfVec[i];
-					}
-					
-					pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
-					*tmpCloud += *laserCloudCornerFromSubMap;
-					*tmpCloud += *laserCloudSurfFromSubMap;
-					publishLabelCloud(&pubTest1, laserCloudSurfFromSubMap, timeLaserInfoStamp, odometryFrame);
-
-				#endif
-
-				#if USING_SLIDING_TARGET
-					PointTypePose  cur_pose = trans2PointTypePose(transformTobeSubMapped, keyFrameID, timeLaserInfoCur);
-    				extractLocalMapCloud(currentKeyFrame, cur_pose, false);
-                #endif
-
-                #if USING_SUBMAP_TARGET    
-					int target_submap_id = -1;
-					int target_keyframe_id = -1;
-					bool using_target_id = false;
-					PointTypePose  cur_pose = trans2PointTypePose(transformTobeSubMapped, keyFrameID, timeLaserInfoCur);
-					
-					extractSurroundingKeyFrames(cur_pose, target_submap_id, target_keyframe_id, using_target_id);
-					
-					auto it_ = subMapInfo.find(target_submap_id);
-					if(it_ != subMapInfo.end()){
-						extractSubMapCloud(currentKeyFrame, it_->second, cur_pose, false);
-					}else{
-						ROS_WARN("Dont extract Target Submap ID from Surrounding KeyFrames! ");  
-						ROS_WARN("USING_SINGLE_TARGET !");  
-						// @Todo
-						pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
-						pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
-						*laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
-						*laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
-					}
-                #endif
-
+				// 首先提取带匹配点云（注意：要在初始化当前帧点云前）
+				extractTargetCloud();
                 // ROS_WARN("Now (extractCloud) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
                 currentCloudInit();
@@ -738,21 +669,22 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     saveSubMap();
                     publishSubMapCloud();
                     
-                    saveKeyFrames();
-                    publishOdometry();
+					currentSubMapInit();
+                    saveKeyFrame();
+                    this->fisrt_submap(currentSubMap, currentKeyFrame);
+					
+					publishOdometry();
                     publishKeyFrameCloud();
-    
-                    fisrt_submap(currentSubMap, currentKeyFrame);
-                    
                 }else{
 
-                    saveKeyFrames();
-                    update_submap(currentSubMap, currentKeyFrame, 
-                                local_map_radius, max_num_pts, kept_vertex_num,
-                                last_frame_reliable_radius, map_based_dynamic_removal_on,
-                                dynamic_removal_center_radius, dynamic_dist_thre_min,
-                                dynamic_dist_thre_max, near_dist_thre);
-                    
+                    saveKeyFrame();
+                    this->insert_submap(currentSubMap, currentKeyFrame, 
+							local_map_radius, max_num_pts, kept_vertex_num,
+							last_frame_reliable_radius, map_based_dynamic_removal_on,
+							dynamic_removal_center_radius, dynamic_dist_thre_min,
+							dynamic_dist_thre_max, near_dist_thre);
+					subMapInfo[suMapID] = currentSubMap;
+
                     publishOdometry();
                     publishKeyFrameCloud();
                     
@@ -775,11 +707,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 }
 				
 				#if USING_SLIDING_TARGET
-					insert_local_map(localMap, currentKeyFrame, 
-									local_map_radius, max_num_pts, kept_vertex_num,
-									last_frame_reliable_radius, map_based_dynamic_removal_on,
-									dynamic_removal_center_radius, dynamic_dist_thre_min,
-									dynamic_dist_thre_max, near_dist_thre);
+					this->insert_local_map(localMap, currentKeyFrame, 
+							local_map_radius, max_num_pts, kept_vertex_num,
+							last_frame_reliable_radius, map_based_dynamic_removal_on,
+							dynamic_removal_center_radius, dynamic_dist_thre_min,
+							dynamic_dist_thre_max, near_dist_thre);
 				#endif
 
                 end = std::chrono::system_clock::now();
@@ -791,7 +723,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 ROS_WARN("Average make SubMap time %f ms", total_time / total_frame);
             }
 
-            while (seInfoQueue.size() > 6) seInfoQueue.pop_front();
+            while (seInfoQueue.size() > 10) seInfoQueue.pop_front();
+
+			// 保存最后SubMAp
+			
 
 			ros::spinOnce();
         }
@@ -1070,7 +1005,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     }
 
 
-    void saveKeyFrames()
+    void saveKeyFrame()
     {
 		curSubMapSize++;
 
@@ -1094,8 +1029,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         keyFramePosesIndex6D[keyFrameID] = point6d;
         keyFramePosesIndex3D[keyFrameID] = point3d;
-
-		keyframeInSubmapIndex.insert(std::make_pair(keyFrameID, subMapID));
+        
+		keyframeInSubmapIndex[keyFrameID] = subMapID;
 
         currentKeyFrame->keyframe_id = keyFrameID;
         currentKeyFrame->submap_id = subMapID;
@@ -1130,16 +1065,15 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
     }
 
-
-    void saveSubMap()
-    {
+	void currentSubMapInit()
+	{
         timeSubMapInfoStamp = timeLaserInfoStamp;
         double curSubMapTime = timeSubMapInfoStamp.toSec();
 
-        PointTypePose  point6d = trans2PointTypePose(transformCurSubmap, subMapID, curSubMapTime);
+        PointTypePose  point6d = trans2PointTypePose(transformTobeSubMapped, subMapID, curSubMapTime);
         subMapPose6D->points.push_back(point6d);      
             
-        PointType  point3d = trans2PointType(transformCurSubmap, subMapID);
+        PointType  point3d = trans2PointType(transformTobeSubMapped, subMapID);
         subMapPose3D->points.push_back(point3d);  
 
         subMapPosesIndex3D[subMapID] = point3d;
@@ -1157,16 +1091,96 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         transformCurSubmap[4]=transformTobeSubMapped[4];
         transformCurSubmap[5]=transformTobeSubMapped[5];
 
+        // subMapIndexQueue.push_back(subMapID);
+		subMapInfo[suMapID] = currentSubMap;
+	}
+
+
+    void saveSubMap()
+    {
         submap_Ptr tmpSubMap;
         tmpSubMap = submap_Ptr(new submap_t(*currentSubMap, true, true));
         subMapIndexQueue.push_back(subMapID);
-        subMapInfo.insert(std::make_pair(subMapID, tmpSubMap));
+		subMapInfo[suMapID] = currentSubMap;
 
 		curSubMapSize = 0;
 		subMapID++;
-
     }
 
+
+	void extractTargetCloud()
+	{
+		#if USING_SINGLE_TARGET
+			pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
+			pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
+			*laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
+			*laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
+		#endif
+
+		#if USING_MULTI_KEYFRAME_TARGET
+			static std::vector<pcl::PointCloud<PointXYZIL>::Ptr> laserCloudSurfVec;
+			static std::vector<pcl::PointCloud<PointXYZIL>::Ptr> laserCloudCornerVec;
+			
+			laserCloudCornerFromSubMap->clear();
+			laserCloudSurfFromSubMap->clear();
+
+			pcl::PointCloud<PointXYZIL>::Ptr tmpSurf( new pcl::PointCloud<PointXYZIL>());
+			pcl::PointCloud<PointXYZIL>::Ptr tmpCorner( new pcl::PointCloud<PointXYZIL>());
+			pcl::copyPointCloud(*laserCloudSurfLast,    *tmpSurf);
+			pcl::copyPointCloud(*laserCloudCornerLast,    *tmpCorner);
+
+			*tmpSurf = *transformPointCloud(tmpSurf, &keyFramePoses6D->back());
+			*tmpCorner = *transformPointCloud(tmpCorner, &keyFramePoses6D->back());
+
+			laserCloudSurfVec.push_back(tmpSurf);
+			laserCloudCornerVec.push_back(tmpCorner);
+
+			while(laserCloudSurfVec.size() >= 5)
+			{
+				laserCloudSurfVec.erase(laserCloudSurfVec.begin());
+				laserCloudCornerVec.erase(laserCloudCornerVec.begin());
+			}
+			
+			for(int i = 0; i < laserCloudSurfVec.size(); i++){
+				*laserCloudCornerFromSubMap += *laserCloudCornerVec[i];
+				*laserCloudSurfFromSubMap += *laserCloudSurfVec[i];
+			}
+			
+			pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+			*tmpCloud += *laserCloudCornerFromSubMap;
+			*tmpCloud += *laserCloudSurfFromSubMap;
+			publishLabelCloud(&pubTest1, laserCloudSurfFromSubMap, timeLaserInfoStamp, odometryFrame);
+
+		#endif
+
+		#if USING_SLIDING_TARGET
+			PointTypePose  cur_pose = trans2PointTypePose(transformTobeSubMapped, keyFrameID, timeLaserInfoCur);
+			extractSlidingCloud(currentKeyFrame, cur_pose, false);
+		#endif
+
+		#if USING_SUBMAP_TARGET    
+			int target_submap_id = -1;
+			int target_keyframe_id = -1;
+			bool using_target_id = false;
+			PointTypePose  cur_pose = trans2PointTypePose(transformTobeSubMapped, keyFrameID, timeLaserInfoCur);
+			
+			extractSurroundingKeyFrames(cur_pose, target_submap_id, target_keyframe_id, using_target_id);
+			
+			auto it_ = subMapInfo.find(target_submap_id);
+			if(it_ != subMapInfo.end()){
+				extractSubMapCloud(currentKeyFrame, it_->second, cur_pose, false);
+			}else{
+				ROS_WARN("Dont extract Target Submap ID from Surrounding KeyFrames! ");  
+				ROS_WARN("USING_SINGLE_TARGET !");  
+				// @Todo
+				pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
+				pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
+				*laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &keyFramePoses6D->back());
+				*laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &keyFramePoses6D->back());
+			}
+		#endif
+
+	}
 
 
     void extractSurroundingKeyFrames(PointTypePose &cur_pose, int &target_submap_id, 
@@ -1324,7 +1338,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     }
 
 
-    void extractLocalMapCloud(keyframe_Ptr &cur_keyframe, PointTypePose cur_pose, bool using_keyframe_pose = false)
+    void extractSlidingCloud(keyframe_Ptr &cur_keyframe, PointTypePose cur_pose, bool using_keyframe_pose = false)
     {	
         laserCloudCornerFromSubMap->clear();
         laserCloudSurfFromSubMap->clear();
@@ -2418,8 +2432,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 				visualizeLoopClosure();
 
-				curKeyFramePtr->loop_container.push_back(bestMatched);											  
+				curKeyFramePtr->loop_container.push_back(bestMatched);	
 
+				// curKeyFramePtr->free_all();										  
 			}
 
 			rate.sleep();
@@ -3153,7 +3168,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
      *****************************/
     void subMapOptmizationThread() 
 	{
-        ros::Rate rate(10);
+        ros::Rate rate(1);
         bool subMapFirstFlag = true;
 
 		while (ros::ok())
@@ -3175,23 +3190,25 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			{
 				/* code */
 				auto t1 = ros::Time::now();
-        		std::lock_guard<std::mutex> lock(subMapMtx);
 
 				curSubMapId = subMapIndexQueue.front();
-				subMapIndexQueue.pop_front();
 
 				auto thisCurId = subMapInfo.find(curSubMapId);
-        		if (thisCurId != subMapInfo.end()){
-        			curSubMapPtr = subMapInfo[curSubMapId];
-					if(curSubMapId != curSubMapPtr->submap_id)
+        		if (thisCurId != subMapInfo.end())
+				{
+					if(curSubMapId != thisCurId->second->submap_id)
 					{
 						ROS_WARN("subMapOptmizationThread -->> curSubMapId != submap_id!");
 						continue;
 					}
+        			curSubMapPtr = thisCurId->second;
+
 				}else{
 					ROS_WARN("subMapOptmizationThread -->> Dont find subMapInfo[%d]!", curSubMapId);
 					continue;
 				}
+
+				subMapIndexQueue.pop_front();
 
                 timeSubMapInfoStamp = curSubMapPtr->timeInfoStamp;
 
@@ -3618,19 +3635,37 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         if (loopIndexQueue.empty())
             return;
 
+		vector<pair<int, int>> tmpLoopIndexQueue;
+		vector<gtsam::Pose3> tmpLoopPoseQueue;
+		vector<gtsam::noiseModel::Diagonal::shared_ptr> tmpLoopNoiseQueue;
+
         for (int i = 0; i < (int)loopIndexQueue.size(); ++i)
         {
             int indexFrom = loopIndexQueue[i].first;
             int indexTo = loopIndexQueue[i].second;
             gtsam::Pose3 poseBetween = loopPoseQueue[i];
             gtsam::noiseModel::Diagonal::shared_ptr noiseBetween = loopNoiseQueue[i];
-            gtSAMgraph.add(BetweenFactor<Pose3>(indexFrom, indexTo, poseBetween, noiseBetween));
+
+			if(indexFrom > curSubMapId){
+				tmpLoopIndexQueue.push_back(loopIndexQueue[i]);
+				tmpLoopPoseQueue.push_back(loopPoseQueue[i]);
+				tmpLoopNoiseQueue.push_back(loopNoiseQueue[i]);
+			}else{
+            	gtSAMgraph.add(BetweenFactor<Pose3>(indexFrom, indexTo, poseBetween, noiseBetween));
+        		aLoopIsClosed = true;
+			}
         }
 
         loopIndexQueue.clear();
         loopPoseQueue.clear();
         loopNoiseQueue.clear();
-        aLoopIsClosed = true;
+
+        for (int i = 0; i < (int)tmpLoopIndexQueue.size(); ++i)
+        {
+			loopIndexQueue.push_back(tmpLoopIndexQueue[i]);
+			loopPoseQueue.push_back(tmpLoopPoseQueue[i]);
+			loopNoiseQueue.push_back(tmpLoopNoiseQueue[i]);
+        }		
 
         ROS_WARN("Finshed  addLoopFactor !");
     }

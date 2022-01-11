@@ -846,7 +846,7 @@ public:
     }
 
 
-    bool update_submap(
+    bool insert_submap(
             submap_Ptr &local_map, keyframe_Ptr &last_target_cblock,
             float local_map_radius = 80, 
             int max_num_pts = 20000, 
