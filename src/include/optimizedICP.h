@@ -7,6 +7,16 @@
 
 #include "common.h"
 
+#include <pcl/registration/ndt.h>
+#include <pcl/registration/gicp.h>
+#include <fast_gicp/gicp/fast_gicp.hpp>
+#include <fast_gicp/gicp/fast_gicp_st.hpp>
+#include <fast_gicp/gicp/fast_vgicp.hpp>
+
+#ifdef USE_VGICP_CUDA
+#include <fast_gicp/gicp/fast_vgicp_cuda.hpp>
+#endif
+
 class CloudData {
 public:
     using POINT = PointXYZIL;
@@ -53,6 +63,10 @@ private:
 
     pcl::KdTreeFLANN<CloudData::POINT>::Ptr kdtree_flann_ptr_;//In order to search
 };
+
+
+pcl::Registration<PointXYZIL, PointXYZIL>::Ptr select_registration_method(const string &registration_method);
+
 
 
 #endif //OPTIMIZED_ICP_H

@@ -25,12 +25,6 @@
 #include "subMap.h"
 #include "optimizedICP.h"
 
-#include <fast_gicp/gicp/fast_gicp.hpp>
-#include <fast_gicp/gicp/fast_vgicp.hpp>
-
-#ifdef USE_VGICP_CUDA
-#include <fast_gicp/gicp/fast_vgicp_cuda.hpp>
-#endif
 
 #define USING_SINGLE_TARGET false
 #define USING_SUBMAP_TARGET false
@@ -2597,42 +2591,22 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         std::cout << "matching..." << std::flush;
         auto t1 = ros::Time::now();
 
-		// static pcl::NormalDistributionsTransform<PointXYZIL, PointXYZIL> reg;
-		// reg.setTransformationEpsilon(0.01); //为终止条件设置最小转换差异
-		// reg.setStepSize(0.1); //为More-Thuente线搜索设置最大步长
-		// reg.setResolution(1.0); //设置NDT网格结构的分辨率（VoxelGridCovariance）
-		// reg.setMaximumIterations(35); //设置匹配迭代的最大次数
+		// static pcl::NormalDistributionsTransform<PointXYZIL, PointXYZIL>::Ptr reg(new pcl::NormalDistributionsTransform<PointXYZIL, PointXYZIL>());
+		// reg->setTransformationEpsilon(0.01); //为终止条件设置最小转换差异
+		// reg->setStepSize(0.1); //为More-Thuente线搜索设置最大步长
+		// reg->setResolution(1.0); //设置NDT网格结构的分辨率（VoxelGridCovariance）
+		// reg->setMaximumIterations(35); //设置匹配迭代的最大次数
 
         // ICP Settings
-        // static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
-        // static pcl::GeneralizedIterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
-        // reg.setMaxCorrespondenceDistance(10);
-        // reg.setMaximumIterations(30);
-        // reg.setTransformationEpsilon(1e-6);
-        // reg.setEuclideanFitnessEpsilon(1e-3);
-        // reg.setRANSACIterations(0);
-		
-		// static fast_gicp::FastGICP<PointXYZIL, PointXYZIL>::Ptr reg(new fast_gicp::FastGICP<PointXYZIL, PointXYZIL>());
-		// reg->setNumThreads(4);
-		// reg->setTransformationEpsilon(0.01));
-		// reg->setMaximumIterations(50);
-		// reg->setMaxCorrespondenceDistance(5);
-		// reg->setCorrespondenceRandomness(20);
+        static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL>::Ptr reg(new pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL>());
+        // static pcl::GeneralizedIterativeClosestPoint<PointXYZIL, PointXYZIL> reg(new pcl::GeneralizedIterativeClosestPoint<PointXYZIL, PointXYZIL>());
+        reg->setMaxCorrespondenceDistance(10);
+        reg->setMaximumIterations(30);
+        reg->setTransformationEpsilon(1e-6);
+        reg->setEuclideanFitnessEpsilon(1e-3);
+        reg->setRANSACIterations(0);
 
-		static fast_gicp::FastVGICP<PointXYZIL, PointXYZIL>::Ptr reg(new fast_gicp::FastVGICP<PointXYZIL, PointXYZIL>());
-		reg->setNumThreads(4);
-		reg->setResolution(1.0);
-		reg->setTransformationEpsilon(0.01);
-		reg->setMaximumIterations(50);
-		reg->setCorrespondenceRandomness(20);
-		
-	// #ifdef USE_VGICP_CUDA
-	// 	static fast_gicp::FastVGICPCuda<PointXYZIL, PointXYZIL>::Ptr reg(new fast_gicp::FastVGICPCuda<PointXYZIL, PointXYZIL>());
-	// 	reg->setResolution(1.0);
-	// 	reg->setTransformationEpsilon(0.01);
-	// 	reg->setMaximumIterations(50);
-	// 	reg->setCorrespondenceRandomness(20);
-	// #endif
+		// static pcl::Registration<PointXYZIL, PointXYZIL>::Ptr reg = select_registration_method("FAST_VGICP");
 
         int bestID = -1;
         double bestScore = std::numeric_limits<double>::max();
@@ -2653,7 +2627,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_ground;
                 *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_building;
                 // *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_outlier;
-                reg.setInputTarget(prevKeyframeCloud);
+                reg->setInputTarget(prevKeyframeCloud);
 
 		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 			
@@ -2665,22 +2639,22 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 				// Align clouds
 				pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
 				*tmpCloud = *transformPointCloud(cureKeyframeCloud, key2PreSubMapTrans);
-				reg.setInputSource(tmpCloud);
+				reg->setInputSource(tmpCloud);
 
 		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
 
                 pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
-                reg.align(*unused_result);
+                reg->align(*unused_result);
 		
 		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
 
-                double score = reg.getFitnessScore();
-                if (reg.hasConverged() == false || score > bestScore) 
+                double score = reg->getFitnessScore();
+                if (reg->hasConverged() == false || score > bestScore) 
                     continue;
                 bestScore = score;
                 bestMatched = loopSubMapPre[i];
                 bestID = i;
-                correctionLidarFrame = reg.getFinalTransformation();
+                correctionLidarFrame = reg->getFinalTransformation();
 
             } else {
                 bestMatched = -1;

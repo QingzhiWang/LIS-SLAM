@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   cv_bridge
   pcl_conversions
+  fast_gicp
   # rangenet_lib 
   # msgs
   message_generation
@@ -22,7 +23,6 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   geometry_msgs
   nav_msgs
-  fast_gicp
 )
 
 ## System dependencies are found with CMake's conventions
@@ -32,6 +32,10 @@ find_package(OpenCV REQUIRED QUIET)
 find_package(GTSAM REQUIRED QUIET)
 
 find_package(Boost REQUIRED COMPONENTS timer)
+
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 # find_package(rangenet_lib)
 
@@ -137,7 +141,7 @@ include_directories(
 	${catkin_INCLUDE_DIRS}
   	${OpenCV_INCLUDE_DIRS}
 	${GTSAM_INCLUDE_DIR}
- 	 ${YAML_CPP_INCLUDE_DIR}
+ 	${YAML_CPP_INCLUDE_DIR}
  	 # ${rangenet_lib_INCLUDE_DIRS}   ####
   	${rangenet_external_INCLUDE_DIRS}
   	${TENSORRT_INCLUDE_DIRS}   ####
