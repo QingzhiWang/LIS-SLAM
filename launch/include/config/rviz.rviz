@@ -954,9 +954,7 @@ Visualization Manager:
           Marker Topic: /lis_slam/make_submap/loop_closure_constraints
           Name: Loop constraint
           Namespaces:
-            loop_edges: true
-            loop_nodes: true
-            loop_nodes_id: true
+            {}
           Queue Size: 1
           Value: true
         - Class: rviz/MarkerArray
@@ -964,9 +962,7 @@ Visualization Manager:
           Marker Topic: /lis_slam/make_submap/loop_closure_constraints_test
           Name: Test Loop constraint
           Namespaces:
-            loop_edges: true
-            loop_nodes: true
-            loop_nodes_id: true
+            {}
           Queue Size: 1
           Value: true
       Enabled: true
@@ -985,7 +981,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1000,7 +996,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -1013,7 +1009,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1028,7 +1024,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 0.800000011920929
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -1159,16 +1155,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 97.66015625
+      Distance: 270.81927490234375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -19.01610565185547
-        Y: -34.16566467285156
-        Z: 11.929410934448242
+        X: -76.29912567138672
+        Y: 26.37615394592285
+        Z: 11.85352897644043
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

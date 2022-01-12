@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   geometry_msgs
   nav_msgs
+  fast_gicp
 )
 
 ## System dependencies are found with CMake's conventions
@@ -33,7 +34,6 @@ find_package(GTSAM REQUIRED QUIET)
 find_package(Boost REQUIRED COMPONENTS timer)
 
 # find_package(rangenet_lib)
-
 
 
 # libyaml-cpp (required)
@@ -80,6 +80,12 @@ if(NOT TENSORRT_FOUND)
 endif()
 
 
+find_library(VGICP_CUDA_FOUND NAMES fast_vgicp_cuda)
+message(STATUS "VGICP_CUDA_FOUND:" ${VGICP_CUDA_FOUND})
+if(VGICP_CUDA_FOUND)
+  add_definitions(-DUSE_VGICP_CUDA)
+endif()
+
 add_message_files(
   DIRECTORY msg
   FILES
@@ -103,6 +109,7 @@ catkin_package(
   INCLUDE_DIRS
     src/segnet 
     src/include
+	src/sophus
   LIBRARIES
     semantic_external
     semantic_lib
@@ -123,16 +130,17 @@ install(DIRECTORY cmake
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 include_directories(
-  src/segnet 
+  	src/segnet 
 	src/include
+	src/sophus
 	${PCL_INCLUDE_DIRS}
 	${catkin_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
+  	${OpenCV_INCLUDE_DIRS}
 	${GTSAM_INCLUDE_DIR}
-  ${YAML_CPP_INCLUDE_DIR}
-  # ${rangenet_lib_INCLUDE_DIRS}   ####
-  ${rangenet_external_INCLUDE_DIRS}
-  ${TENSORRT_INCLUDE_DIRS}   ####
+ 	 ${YAML_CPP_INCLUDE_DIR}
+ 	 # ${rangenet_lib_INCLUDE_DIRS}   ####
+  	${rangenet_external_INCLUDE_DIRS}
+  	${TENSORRT_INCLUDE_DIRS}   ####
 )
 
 # turn config file into flags (sets TENSORRT_FOUND and TORCH_FOUND)
@@ -211,7 +219,7 @@ target_compile_options(${PROJECT_NAME}_semanticFusion PRIVATE ${OpenMP_CXX_FLAGS
 target_link_libraries(${PROJECT_NAME}_semanticFusion ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} semantic_lib)
 
 # Loop Closure / Make SubMap / Mapping Optimization
-add_executable(${PROJECT_NAME}_subMapOptmization  src/node/subMapOptmizationNode.cpp src/core/epscGeneration.cpp src/core/common.cpp)
+add_executable(${PROJECT_NAME}_subMapOptmization  src/node/subMapOptmizationNode.cpp src/core/epscGeneration.cpp src/core/common.cpp src/core/optimizedICP.cpp)
 add_dependencies(${PROJECT_NAME}_subMapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_compile_options(${PROJECT_NAME}_subMapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME}_subMapOptmization ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} ${Boost_LIBRARIES} ${YAML_CPP_LIBRARIES} gtsam)

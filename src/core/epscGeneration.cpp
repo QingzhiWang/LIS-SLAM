@@ -43,7 +43,7 @@ void EPSCGeneration::init_color(void)
 
 void EPSCGeneration::print_param() 
 {
-	std::cout << "The EPSC parameters are:" << rings << std::endl;
+	std::cout << "The EPSC parameters are:" << std::endl;
 	std::cout << "number of rings:\t" << rings << std::endl;
 	std::cout << "number of sectors:\t" << sectors << std::endl;
 	std::cout << "maximum distance:\t" << max_dis << std::endl;

@@ -22,7 +22,7 @@ lis_slam:
 
   # Topics   velodyne_points  points_raw
   pointCloudTopic: "points_raw"                 # Point cloud data
-  imuTopic: "imu_raw"                           # IMU data
+  imuTopic: "imu_correct"                           # IMU data imu_correct imu_raw
   odomTopic: "odometry"                     # IMU pre-preintegration odometry, same frequency as IMU
   gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
   

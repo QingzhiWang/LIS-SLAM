@@ -18,10 +18,19 @@
 
 #include "lis_slam/semantic_info.h"
 
-#include "epscGeneration.h"
-#include "subMap.h"
 #include "utility.h"
 #include "common.h"
+
+#include "epscGeneration.h"
+#include "subMap.h"
+#include "optimizedICP.h"
+
+#include <fast_gicp/gicp/fast_gicp.hpp>
+#include <fast_gicp/gicp/fast_vgicp.hpp>
+
+#ifdef USE_VGICP_CUDA
+#include <fast_gicp/gicp/fast_vgicp_cuda.hpp>
+#endif
 
 #define USING_SINGLE_TARGET false
 #define USING_SUBMAP_TARGET false
@@ -683,7 +692,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 							last_frame_reliable_radius, map_based_dynamic_removal_on,
 							dynamic_removal_center_radius, dynamic_dist_thre_min,
 							dynamic_dist_thre_max, near_dist_thre);
-					subMapInfo[suMapID] = currentSubMap;
+					subMapInfo[subMapID] = currentSubMap;
 
                     publishOdometry();
                     publishKeyFrameCloud();
@@ -1092,7 +1101,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         transformCurSubmap[5]=transformTobeSubMapped[5];
 
         // subMapIndexQueue.push_back(subMapID);
-		subMapInfo[suMapID] = currentSubMap;
 	}
 
 
@@ -1101,7 +1109,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         submap_Ptr tmpSubMap;
         tmpSubMap = submap_Ptr(new submap_t(*currentSubMap, true, true));
         subMapIndexQueue.push_back(subMapID);
-		subMapInfo[suMapID] = currentSubMap;
+		subMapInfo[subMapID] = tmpSubMap;
 
 		curSubMapSize = 0;
 		subMapID++;
@@ -2444,6 +2452,138 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 
 
+    bool detectLoopClosureForSubMapICP(keyframe_Ptr cur_keyframe, int &loopKeyCur, vector<int> &loopSubMapPre, int &bestMatched) 
+    {
+        pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
+        pcl::PointCloud<PointXYZIL>::Ptr prevKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
+
+		*cureKeyframeCloud += *cur_keyframe->semantic_dynamic;
+		*cureKeyframeCloud += *cur_keyframe->semantic_pole;
+		*cureKeyframeCloud += *cur_keyframe->semantic_ground;
+		*cureKeyframeCloud += *cur_keyframe->semantic_building;
+
+        std::cout << "matching..." << std::flush;
+        auto t1 = ros::Time::now();
+		static OptimizedICPGN myICP(30, 10);
+
+
+        int bestID = -1;
+        double bestScore = std::numeric_limits<double>::max();
+		Eigen::Affine3f correctionLidarFrame;
+		Eigen::Affine3f key2PreSubMapTrans;
+        static Eigen::Affine3f correctionKey2PreSubMap = Eigen::Affine3f::Identity();
+
+        for (int i = 0; i < loopSubMapPre.size(); i++) 
+        {
+            auto thisPreId = subMapInfo.find(loopSubMapPre[i]);
+            if (thisPreId != subMapInfo.end()) 
+			{
+                std::cout << "loopContainerHandler: loopSubMapPre : " << loopSubMapPre[i] << std::endl;
+                
+				prevKeyframeCloud->clear();
+                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_dynamic;
+                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_pole;
+                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_ground;
+                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_building;
+                // *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_outlier;
+				myICP.SetTargetCloud(prevKeyframeCloud);
+
+		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
+			
+				Eigen::Affine3f subMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->submap_pose_6D_optimized);
+				Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
+				key2PreSubMapTrans = subMapTrans.inverse() * keyTrans;
+				key2PreSubMapTrans = correctionKey2PreSubMap * key2PreSubMapTrans;
+
+				// Align clouds
+				pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+				*tmpCloud = *transformPointCloud(cureKeyframeCloud, key2PreSubMapTrans);
+		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
+                
+				Eigen::Matrix4f predict_pose = Eigen::Matrix4f::Identity();
+				Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
+				pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
+				myICP.Match(cureKeyframeCloud, predict_pose, unused_result, result_pose);
+		
+		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
+
+                double score = myICP.GetFitnessScore();
+
+                if (myICP.HasConverged() == false || score > bestScore) 
+                    continue;
+                bestScore = score;
+                bestMatched = loopSubMapPre[i];
+                bestID = i;
+                correctionLidarFrame = result_pose;
+            
+            } else {
+                bestMatched = -1;
+                ROS_WARN("loopSubMapPre do not find !");
+            }
+        }
+
+        if (loopKeyCur == -1 || bestMatched == -1) 
+            return false;
+
+        auto t2 = ros::Time::now();
+        std::cout << " done" << std::endl;
+        std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
+
+        // if (bestScore < 1.0) 
+        // {
+		// 	correctionKey2PreSubMap = correctionLidarFrame;
+        //     std::cout << "correctionKey2PreSubMap update !" << std::endl;
+        // }
+
+        if (bestScore > historyKeyframeFitnessScore) 
+        {
+            std::cout << "loop not found..." << std::endl;
+            return false;
+        }
+        std::cout << "loop found!!" << std::endl;
+		
+		correctionKey2PreSubMap = correctionLidarFrame;
+
+		Eigen::Affine3f key2CurSubMapTrans;
+		int loopSubMapCur = -1;
+		auto it = keyframeInSubmapIndex.find(loopKeyCur);
+		if(it != keyframeInSubmapIndex.end()){
+			key2CurSubMapTrans = pclPointToAffine3f(cur_keyframe->relative_pose);
+			loopSubMapCur = cur_keyframe->submap_id;
+			std::cout << "Find loopSubMapCur: " << loopSubMapCur << " keyframeInSubmapIndex: " << keyframeInSubmapIndex[loopKeyCur] << std::endl;
+		}else{	
+			ROS_WARN("loopClosureThread -->> Dont find loopSubMapCur %d in keyframeInSubmapIndex !", loopSubMapCur);
+			return false;
+		}
+
+        float X, Y, Z, ROLL, PITCH, YAW;
+        Eigen::Affine3f tCorrect = correctionLidarFrame * key2PreSubMapTrans * key2CurSubMapTrans.inverse();  // pre-multiplying -> successive rotation about a fixed frame
+        pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
+        gtsam::Pose3 pose = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
+        gtsam::Vector Vector6(6);
+        float noiseScore = 0.01;
+        // float noiseScore = bestScore*0.01;
+        Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
+        noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
+
+        // Add pose constraint
+        // mtx.lock();
+        loopIndexQueue.push_back(make_pair(loopSubMapCur, bestMatched));
+        loopPoseQueue.push_back(pose);
+        loopNoiseQueue.push_back(constraintNoise);
+        // mtx.unlock();
+
+        // add loop constriant
+        loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
+
+		*cureKeyframeCloud = *transformPointCloud(cureKeyframeCloud, tCorrect);
+		publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
+
+        return true;
+    }
+
+
+
     bool detectLoopClosureForSubMap(keyframe_Ptr cur_keyframe, int &loopKeyCur, vector<int> &loopSubMapPre, int &bestMatched) 
     {
         pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
@@ -2457,11 +2597,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         std::cout << "matching..." << std::flush;
         auto t1 = ros::Time::now();
 
-		static pcl::NormalDistributionsTransform<PointXYZIL, PointXYZIL> reg;
-		reg.setTransformationEpsilon(0.01); //为终止条件设置最小转换差异
-		reg.setStepSize(0.1); //为More-Thuente线搜索设置最大步长
-		reg.setResolution(1.0); //设置NDT网格结构的分辨率（VoxelGridCovariance）
-		reg.setMaximumIterations(35); //设置匹配迭代的最大次数
+		// static pcl::NormalDistributionsTransform<PointXYZIL, PointXYZIL> reg;
+		// reg.setTransformationEpsilon(0.01); //为终止条件设置最小转换差异
+		// reg.setStepSize(0.1); //为More-Thuente线搜索设置最大步长
+		// reg.setResolution(1.0); //设置NDT网格结构的分辨率（VoxelGridCovariance）
+		// reg.setMaximumIterations(35); //设置匹配迭代的最大次数
 
         // ICP Settings
         // static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
@@ -2471,6 +2611,28 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         // reg.setTransformationEpsilon(1e-6);
         // reg.setEuclideanFitnessEpsilon(1e-3);
         // reg.setRANSACIterations(0);
+		
+		// static fast_gicp::FastGICP<PointXYZIL, PointXYZIL>::Ptr reg(new fast_gicp::FastGICP<PointXYZIL, PointXYZIL>());
+		// reg->setNumThreads(4);
+		// reg->setTransformationEpsilon(0.01));
+		// reg->setMaximumIterations(50);
+		// reg->setMaxCorrespondenceDistance(5);
+		// reg->setCorrespondenceRandomness(20);
+
+		static fast_gicp::FastVGICP<PointXYZIL, PointXYZIL>::Ptr reg(new fast_gicp::FastVGICP<PointXYZIL, PointXYZIL>());
+		reg->setNumThreads(4);
+		reg->setResolution(1.0);
+		reg->setTransformationEpsilon(0.01);
+		reg->setMaximumIterations(50);
+		reg->setCorrespondenceRandomness(20);
+		
+	// #ifdef USE_VGICP_CUDA
+	// 	static fast_gicp::FastVGICPCuda<PointXYZIL, PointXYZIL>::Ptr reg(new fast_gicp::FastVGICPCuda<PointXYZIL, PointXYZIL>());
+	// 	reg->setResolution(1.0);
+	// 	reg->setTransformationEpsilon(0.01);
+	// 	reg->setMaximumIterations(50);
+	// 	reg->setCorrespondenceRandomness(20);
+	// #endif
 
         int bestID = -1;
         double bestScore = std::numeric_limits<double>::max();
@@ -2509,6 +2671,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
                 pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
                 reg.align(*unused_result);
+		
+		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
 
                 double score = reg.getFitnessScore();
                 if (reg.hasConverged() == false || score > bestScore) 
@@ -2517,8 +2681,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 bestMatched = loopSubMapPre[i];
                 bestID = i;
                 correctionLidarFrame = reg.getFinalTransformation();
-            
-		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
 
             } else {
                 bestMatched = -1;
@@ -2709,10 +2871,10 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		
 		visualization_msgs::Marker markerNodeId;
         markerNodeId.header.frame_id = odometryFrame;
-        markerNodeId.header.stamp = timeLaserInfoStamp;
+        markerNodeId.header.stamp = ros::Time::now();
         markerNodeId.action = visualization_msgs::Marker::ADD;
         markerNodeId.type =  visualization_msgs::Marker::TEXT_VIEW_FACING;
-        markerNodeId.ns = "loop_nodes_id";
+        markerNodeId.ns = "test_loop_nodes_id";
         markerNodeId.id = 0;
         markerNodeId.pose.orientation.w = 1;
         markerNodeId.scale.z = 0.4; 
@@ -2811,7 +2973,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 		visualization_msgs::Marker markerNodeId;
         markerNodeId.header.frame_id = odometryFrame;
-        markerNodeId.header.stamp = timeLaserInfoStamp;
+        markerNodeId.header.stamp = ros::Time::now();
         markerNodeId.action = visualization_msgs::Marker::ADD;
         markerNodeId.type =  visualization_msgs::Marker::TEXT_VIEW_FACING;
         markerNodeId.ns = "loop_nodes_id";
@@ -4232,7 +4394,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
         visualization_msgs::Marker markerNodeId;
         markerNodeId.header.frame_id = odometryFrame;
-        markerNodeId.header.stamp = timeSubMapInfoStamp;
+        markerNodeId.header.stamp = ros::Time::now();
         markerNodeId.action = visualization_msgs::Marker::ADD;
         markerNodeId.type =  visualization_msgs::Marker::TEXT_VIEW_FACING;
         markerNodeId.ns = "submap_nodes_id";

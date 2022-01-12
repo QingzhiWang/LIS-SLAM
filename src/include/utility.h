@@ -29,6 +29,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/range_image/range_image.h>
+#include <pcl/registration/registration.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/ndt.h>
 #include <pcl/registration/gicp.h>
