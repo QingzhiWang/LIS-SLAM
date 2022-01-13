@@ -205,9 +205,14 @@ using_label:
   18: 81     # "pole"
   19: 81     # "traffic-sign"
 
+  # 10 ---- dynamic
+  # 40 ---- road（40） parking（44） sidewalk（44）
+  # 50 ---- building（50） fence（51）
+  # 81 ---- trunk（71） pole（80） traffic-sign（81）
+  # 70 ---- Have outlier
 
 label_sorce:
-  0: 1.0
+  0: 1.0     # no Label
   1: 0.8     # "car" There is a probability of dynamic objects
   2: 0.6     # "bicycle" to "car"
   3: 0.5     # "motorcycle" to "car"
