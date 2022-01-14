@@ -138,7 +138,8 @@ class CloudUtility
 		double max_x = -DBL_MAX;
 		double max_y = -DBL_MAX;
 		double max_z = -DBL_MAX;
-
+		
+		#pragma omp for
 		for (int i = 0; i < cloud->points.size(); i++)
 		{
 			if (min_x > cloud->points[i].x)

@@ -2,8 +2,8 @@
 // Created by meng on 2021/3/24.
 //
 
-#ifndef OPTIMIZED_ICP_H
-#define OPTIMIZED_ICP_H
+#ifndef REGISTRATION_H
+#define REGISTRATION_H
 
 #include "common.h"
 
@@ -16,6 +16,11 @@
 #ifdef USE_VGICP_CUDA
 #include <fast_gicp/gicp/fast_vgicp_cuda.hpp>
 #endif
+
+#include <teaser/ply_io.h>
+#include <teaser/registration.h>
+#include <teaser/certification.h>
+#include <teaser/matcher.h>
 
 class CloudData {
 public:
@@ -67,6 +72,16 @@ private:
 
 pcl::Registration<PointXYZIL, PointXYZIL>::Ptr select_registration_method(const string &registration_method);
 
+int coarse_reg_teaser(const pcl::PointCloud<PointXYZIL>::Ptr &target_pts,
+					  const pcl::PointCloud<PointXYZIL>::Ptr &source_pts,
+					  Eigen::Matrix4f &tran_mat, float noise_bound, int min_inlier_num);
 
+bool find_feature_correspondence_ncc(const pcl::PointCloud<PointXYZIL>::Ptr &target_kpts, 
+									 const pcl::PointCloud<PointXYZIL>::Ptr &source_kpts,
+									 pcl::PointCloud<PointXYZIL>::Ptr &target_corrs, 
+									 pcl::PointCloud<PointXYZIL>::Ptr &source_corrs,
+									 bool fixed_num_corr, 
+									 int corr_num, 
+									 bool reciprocal_on);
 
-#endif //OPTIMIZED_ICP_H
+#endif //REGISTRATION_H
