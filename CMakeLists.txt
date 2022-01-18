@@ -6,8 +6,7 @@ set(CMAKE_CXX_FLAGS "-std=c++17")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g -pthread")
 set(CMAKE_CXX_STANDARD 14)
 
-## Find catkin macros and libraries
-## is used, also find other catkin packages
+## Find catkin macros and libraries is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
 	tf
 	roscpp
@@ -130,7 +129,7 @@ set(DEP_LIBS ${DEP_LIBS} ${PCL_LIBRARIES})
 set(DEP_LIBS ${DEP_LIBS} ${OpenCV_LIBS})
 set(DEP_LIBS ${DEP_LIBS} ${GTSAM_LIBRARIES} gtsam)
 set(DEP_LIBS ${DEP_LIBS} teaserpp::teaser_registration teaserpp::teaser_features teaserpp::teaser_io ${TEASERPP_BLAS_LAPACK_LIBS})
-# set(DEP_LIBS ${DEP_LIBS} ${fast_gicp_LIBRARIES})
+set(DEP_LIBS ${DEP_LIBS} ${fast_gicp_LIBRARIES})
 set(DEP_LIBS ${DEP_LIBS} ${TENSORRT_LIBRARIES})
 set(DEP_LIBS ${DEP_LIBS} ${YAML_CPP_LIBRARIES})
 
@@ -205,7 +204,7 @@ target_link_libraries(${PROJECT_NAME}_laserProcessing ${catkin_LIBRARIES} ${PCL_
 # Odom Estimation
 add_executable(${PROJECT_NAME}_odomEstimation src/node/odomEstimationNode.cpp src/core/common.cpp)
 add_dependencies(${PROJECT_NAME}_odomEstimation ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(${PROJECT_NAME}_odomEstimation ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES}  ${OpenMP_CXX_FLAGS})
+target_link_libraries(${PROJECT_NAME}_odomEstimation ${catkin_LIBRARIES} ${DEP_LIBS})
 
 # Semantic Fusion
 add_executable(${PROJECT_NAME}_semanticFusion src/node/semanticFusionNode.cpp src/core/rangenetAPI.cpp src/core/common.cpp)
@@ -214,6 +213,6 @@ target_link_libraries(${PROJECT_NAME}_semanticFusion ${catkin_LIBRARIES} ${PCL_L
 
 # Loop Closure / Make SubMap / Mapping Optimization
 add_executable(${PROJECT_NAME}_subMapOptmization  src/node/subMapOptmizationNode.cpp src/core/epscGeneration.cpp src/core/common.cpp src/core/registration.cpp)
-add_dependencies(${PROJECT_NAME}_subMapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(${PROJECT_NAME}_subMapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp fast_gicp)
 # target_compile_options(${PROJECT_NAME}_subMapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME}_subMapOptmization ${catkin_LIBRARIES} ${DEP_LIBS} fast_gicp)

@@ -68,13 +68,15 @@ private:
 	void print_param(void);
 	void init_param();
 
-	//   template <typename PointT>
-	//   void groundFilter(const pcl::PointCloud<PointT>::Ptr& pc_in,
-	//                     pcl::PointCloud<PointT>::Ptr& pc_out);
-	void groundFilter(const pcl::PointCloud<PointXYZIL>::Ptr& pc_in,
-						pcl::PointCloud<PointXYZIL>::Ptr& pc_out);
-	void groundFilter(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in,
-						pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out);
+	template <typename PointT>
+	void groundFilter(const typename pcl::PointCloud<PointT>::Ptr &pc_in,
+									typename pcl::PointCloud<PointT>::Ptr &pc_out) {
+		pcl::PassThrough<PointT> pass;
+		pass.setInputCloud(pc_in);
+		pass.setFilterFieldName("z");
+		pass.setFilterLimits(-5.0, 30.0);
+		pass.filter(*pc_out);
+	}
 
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getColorCloud(pcl::PointCloud<PointXYZIL>::Ptr& cloud_in);
 	cv::Mat getColorImage(cv::Mat& desc);

@@ -51,6 +51,7 @@ class laserPretreatmentNode : public ParamServer
 
 		ros::Time startTime = ros::Time::now();
 
+
 		pcl::PointCloud<PointType> laserCloudIn;
 		pcl::fromROSMsg(*laserCloudMsg, laserCloudIn);
 

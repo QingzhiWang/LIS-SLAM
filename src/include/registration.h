@@ -76,12 +76,5 @@ int coarse_reg_teaser(const pcl::PointCloud<PointXYZIL>::Ptr &target_pts,
 					  const pcl::PointCloud<PointXYZIL>::Ptr &source_pts,
 					  Eigen::Matrix4f &tran_mat, float noise_bound, int min_inlier_num);
 
-bool find_feature_correspondence_ncc(const pcl::PointCloud<PointXYZIL>::Ptr &target_kpts, 
-									 const pcl::PointCloud<PointXYZIL>::Ptr &source_kpts,
-									 pcl::PointCloud<PointXYZIL>::Ptr &target_corrs, 
-									 pcl::PointCloud<PointXYZIL>::Ptr &source_corrs,
-									 bool fixed_num_corr, 
-									 int corr_num, 
-									 bool reciprocal_on);
 
 #endif //REGISTRATION_H

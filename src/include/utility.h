@@ -271,6 +271,8 @@ class ParamServer {
 	int N_SCAN;
 	int Horizon_SCAN;
 
+	string lidarIntensity;
+
 	int downsampleRate;
 	float lidarMinRange;
 	float lidarMaxRange;
@@ -378,6 +380,8 @@ class ParamServer {
 
 		nh.param<int>("lis_slam/N_SCAN", N_SCAN, 16);
 		nh.param<int>("lis_slam/Horizon_SCAN", Horizon_SCAN, 1800);
+
+		nh.param<std::string>("lis_slam/lidarIntensity", lidarIntensity, "intensity");
 
 		nh.param<int>("lis_slam/downsampleRate", downsampleRate, 1);
 		nh.param<float>("lis_slam/lidarMinRange", lidarMinRange, 1.0);

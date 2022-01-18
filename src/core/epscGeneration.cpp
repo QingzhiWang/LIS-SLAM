@@ -49,35 +49,8 @@ void EPSCGeneration::print_param()
 	std::cout << "maximum distance:\t" << max_dis << std::endl;
 }
 
-// template <typename PointT>
-// void EPSCGeneration::groundFilter(const pcl::PointCloud<PointT>::Ptr &pc_in,
-//                                  pcl::PointCloud<PointT>::Ptr &pc_out) {
-//   pcl::PassThrough<PointT> pass;
-//   pass.setInputCloud(pc_in);
-//   pass.setFilterFieldName("z");
-//   pass.setFilterLimits(-2.0, 30.0);
-//   pass.filter(*pc_out);
-// }
 
-void groundFilter(const pcl::PointCloud<PointXYZIL>::Ptr &pc_in,
-                  pcl::PointCloud<PointXYZIL>::Ptr &pc_out) 
-{
-  pcl::PassThrough<PointXYZIL> pass;
-  pass.setInputCloud(pc_in);
-  pass.setFilterFieldName("z");
-  pass.setFilterLimits(-2.0, 30.0);
-  pass.filter(*pc_out);
-}
 
-void groundFilter(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in,
-                  pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out) 
-{
-  pcl::PassThrough<pcl::PointXYZI> pass;
-  pass.setInputCloud(pc_in);
-  pass.setFilterFieldName("z");
-  pass.setFilterLimits(-2.0, 30.0);
-  pass.filter(*pc_out);
-}
 
 cv::Mat EPSCGeneration::getColorImage(cv::Mat &desc) 
 {

@@ -21,27 +21,27 @@ lis_slam:
 
 
   # Topics   velodyne_points  points_raw
-  pointCloudTopic: "points_raw"                 # Point cloud data
-  imuTopic: "imu_correct"                           # IMU data imu_correct imu_raw
-  odomTopic: "odometry"                     # IMU pre-preintegration odometry, same frequency as IMU
-  gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
+  # pointCloudTopic: "points_raw"                 # Point cloud data
+  # imuTopic: "imu_correct"                       # IMU data imu_correct imu_raw
+  # odomTopic: "odometry"                         # IMU pre-preintegration odometry, same frequency as IMU
+  # gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
   
   # Topics kitti(RAW)
-  # pointCloudTopic: "/kitti/velo/pointcloud"   # Point cloud data
-  # imuTopic: "/kitti/oxts/imu"                 # IMU data
-  # odomTopic: "odometry"                   # IMU pre-preintegration odometry, same frequency as IMU
-  # gpsTopic: "odometry/gps"                    # GPS odometry topic from navsat, see module_navsat.launch file
+  pointCloudTopic: "/kitti/velo/pointcloud"   # Point cloud data
+  imuTopic: "/kitti/oxts/imu/extract"         # IMU data
+  odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
+  gpsTopic: "odometry/gps"                    # GPS odometry topic from navsat, see module_navsat.launch file
  
   #CQU
   # pointCloudTopic: "rslidar_points"           # Point cloud data
   # imuTopic: "imu/data"                        # IMU data
-  # odomTopic: "odometry"                   # IMU pre-preintegration odometry, same frequency as IMU
+  # odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "odometry/gpsz"  
 
   # Topics  HCLT/KITTI(odometry)
   # pointCloudTopic: "/velodyne_points"         # Point cloud data
   # imuTopic: "/imu/data"                       # IMU data
-  # odomTopic: "odometry"                   # IMU pre-preintegration odometry, same frequency as IMU
+  # odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
 
@@ -54,6 +54,8 @@ lis_slam:
   N_SCAN:  64                                 # number of lidar channel (i.e., 16, 32, 64, 128)
   Horizon_SCAN: 1800                          # lidar horizontal resolution (Velodyne:1800, Ouster:512,1024,2048)
   
+  lidarIntensity: "i"
+
   downsampleRate: 1                          # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1 
   lidarMinRange: 1.0                         # default: 1.0, minimum lidar range to be used
   lidarMaxRange: 70.0                        # 70.0      # default: 1000.0, maximum lidar range to be used

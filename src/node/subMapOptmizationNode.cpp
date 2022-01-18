@@ -622,7 +622,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 if(!keyframeInit())
                     continue;
                 
-                // ROS_WARN("Now (keyframeInit) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+                ROS_WARN("Now (keyframeInit) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
                 updateInitialGuess();
 
@@ -651,15 +651,16 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 
 				// 首先提取带匹配点云（注意：要在初始化当前帧点云前）
 				extractTargetCloud();
-                // ROS_WARN("Now (extractCloud) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+                ROS_WARN("Now (extractCloud) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
                 currentCloudInit();
+				
 				// scan2SubMapOptimizationICP()
                 scan2SubMapOptimization();
-                // ROS_WARN("Now (scan2SubMapOptimization) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+                ROS_WARN("Now (scan2SubMapOptimization) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
 				IMUPreintegration();
-                // ROS_WARN("Now (IMUPreintegration) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+                ROS_WARN("Now (IMUPreintegration) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
                 calculateTranslation();
                 float accu_tran = std::max(transformCurFrame2Submap[3], transformCurFrame2Submap[4]); 
@@ -787,8 +788,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_raw, currentKeyFrame->semantic_raw_down, 0.4);  //0.4
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.1); //0.2
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, 0.05); //0.05
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.4); //0.6
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.3); //0.4
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.5); //0.6
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.4); //0.4
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.5); //0.5
         
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.2);
@@ -1361,11 +1362,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         get_intersection_bbx(cur_keyframe->bound, localMap->bound, bbx_intersection, 10.0);
 		
 
-        SubMapManager::voxel_downsample_pcl(localMap->submap_dynamic, localMap->submap_dynamic, 0.05);
-        // SubMapManager::voxel_downsample_pcl(localMap->submap_pole, localMap->submap_pole, 0.02);
-        SubMapManager::voxel_downsample_pcl(localMap->submap_ground, localMap->submap_ground, 0.2);
-        SubMapManager::voxel_downsample_pcl(localMap->submap_building, localMap->submap_building, 0.1);
-        SubMapManager::voxel_downsample_pcl(localMap->submap_outlier, localMap->submap_outlier, 0.5);
+        SubMapManager::voxel_downsample_pcl(localMap->submap_dynamic, localMap->submap_dynamic, 0.1); // default: 0.05
+        SubMapManager::voxel_downsample_pcl(localMap->submap_pole, localMap->submap_pole, 0.05); // default: 0.02
+        SubMapManager::voxel_downsample_pcl(localMap->submap_ground, localMap->submap_ground, 0.3); // default: 0.2
+        SubMapManager::voxel_downsample_pcl(localMap->submap_building, localMap->submap_building, 0.2); // default: 0.1
+        SubMapManager::voxel_downsample_pcl(localMap->submap_outlier, localMap->submap_outlier, 0.6); // default: 0.5
         
 		// Use the intersection bounding box to filter the outlier points
         bbx_filter(localMap->submap_dynamic, bbx_intersection);
@@ -2377,14 +2378,17 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					std::cout << "loopKeyPre [" << i << "]:" << loopKeyPre[i] << std::endl;
 				}
 
+				visualizeLoopClosureTest();
+
 				// int bestMatched = -1;
 				// if (detectLoopClosure(loopKeyCur, loopKeyPre, matched_init_transform, bestMatched) == false)
 				// 	continue;
+				
+				// visualizeLoopClosure();
 
 				// curKeyFramePtr->loop_container.push_back(bestMatched);	
 				
-				// Test epsc loop closure detection !
-				visualizeLoopClosureTest();
+
 				
 				int loopSubMapCur = -1;
 				auto it = keyframeInSubmapIndex.find(loopKeyCur);
@@ -2429,7 +2433,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 				}
 
 				int bestMatched = -1;
-				if (detectLoopClosureForSubMapTEASER(curKeyFramePtr, loopKeyCur, loopSubMapPre, bestMatched) == false)
+				if (detectLoopClosureForSubMap(curKeyFramePtr, loopKeyCur, loopSubMapPre, bestMatched) == false)
 					continue;
 
 				visualizeLoopClosure();
@@ -2577,8 +2581,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     }
 
 
-
-
     bool detectLoopClosureForSubMapTEASER(keyframe_Ptr cur_keyframe, int &loopKeyCur, vector<int> &loopSubMapPre, int &bestMatched) 
     {
         pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
@@ -2626,12 +2628,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 
 
 				Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
-				pcl::PointCloud<PointXYZIL>::Ptr target_cor( new pcl::PointCloud<PointXYZIL>());
-				pcl::PointCloud<PointXYZIL>::Ptr source_cor( new pcl::PointCloud<PointXYZIL>());
-				
-				find_feature_correspondence_ncc(prevKeyframeCloud, tmpCloud, target_cor, source_cor, false, 2000, false);
-				int result = coarse_reg_teaser(target_cor, source_cor, result_pose, 0.2, 8);
-				// int result = coarse_reg_teaser(prevKeyframeCloud, tmpCloud, result_pose, 0.2, 8);
+				int result = coarse_reg_teaser(prevKeyframeCloud, tmpCloud, result_pose, 0.2, 8);
 
                 bestScore = result;
                 bestMatched = loopSubMapPre[i];
@@ -2653,12 +2650,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         auto t2 = ros::Time::now();
         std::cout << " done" << std::endl;
         std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
-
-        // if (bestScore < 1.0) 
-        // {
-		// 	correctionKey2PreSubMap = correctionLidarFrame;
-        //     std::cout << "correctionKey2PreSubMap update !" << std::endl;
-        // }
 
         // if (bestScore > historyKeyframeFitnessScore) 
         // {
@@ -2706,7 +2697,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         return true;
     }
-
 
 
     bool detectLoopClosureForSubMap(keyframe_Ptr cur_keyframe, int &loopKeyCur, vector<int> &loopSubMapPre, int &bestMatched) 
@@ -2799,12 +2789,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         auto t2 = ros::Time::now();
         std::cout << " done" << std::endl;
         std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
-
-        // if (bestScore < 1.0) 
-        // {
-		// 	correctionKey2PreSubMap = correctionLidarFrame;
-        //     std::cout << "correctionKey2PreSubMap update !" << std::endl;
-        // }
 
         if (bestScore > historyKeyframeFitnessScore) 
         {

@@ -217,38 +217,38 @@ int coarse_reg_teaser(const pcl::PointCloud<PointXYZIL>::Ptr &target_pts,
 	#pragma omp for
 	for (int i = 0; i < N; ++i)
 	{
-		// tgt_cloud.push_back({
-		// 		static_cast<float>(target_pts->points[i].x), 
-		// 		static_cast<float>(target_pts->points[i].y),
-		// 		static_cast<float>(target_pts->points[i].z)});
-		tgt.col(i) << target_pts->points[i].x, target_pts->points[i].y, target_pts->points[i].z;
+		tgt_cloud.push_back({
+				static_cast<float>(target_pts->points[i].x), 
+				static_cast<float>(target_pts->points[i].y),
+				static_cast<float>(target_pts->points[i].z)});
+		// tgt.col(i) << target_pts->points[i].x, target_pts->points[i].y, target_pts->points[i].z;
 		
 	}
 
 	#pragma omp for
 	for (int i = 0; i < M; ++i)
 	{
-		// src_cloud.push_back({
-		// 		static_cast<float>(source_pts->points[i].x), 
-		// 		static_cast<float>(source_pts->points[i].y),
-		// 		static_cast<float>(source_pts->points[i].z)});
-		src.col(i) << source_pts->points[i].x, source_pts->points[i].y, source_pts->points[i].z;
+		src_cloud.push_back({
+				static_cast<float>(source_pts->points[i].x), 
+				static_cast<float>(source_pts->points[i].y),
+				static_cast<float>(source_pts->points[i].z)});
+		// src.col(i) << source_pts->points[i].x, source_pts->points[i].y, source_pts->points[i].z;
 	}
 
-	// std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
-	// teaser::FPFHEstimation fpfh;
-	// auto obj_descriptors = fpfh.computeFPFHFeatures(src_cloud, 0.02, 0.04);
-	// auto scene_descriptors = fpfh.computeFPFHFeatures(tgt_cloud, 0.02, 0.04);
+	teaser::FPFHEstimation fpfh;
+	auto obj_descriptors = fpfh.computeFPFHFeatures(src_cloud, 0.02, 0.04);
+	auto scene_descriptors = fpfh.computeFPFHFeatures(tgt_cloud, 0.02, 0.04);
 
-	// teaser::Matcher matcher;
-	// auto correspondences = matcher.calculateCorrespondences(
-	// 		src_cloud, tgt_cloud, *obj_descriptors, *scene_descriptors, false, true, false, 0.95);
+	teaser::Matcher matcher;
+	auto correspondences = matcher.calculateCorrespondences(
+			src_cloud, tgt_cloud, *obj_descriptors, *scene_descriptors, false, true, false, 0.95);
 
-	// std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	// std::chrono::duration<double> time_used = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> time_used_1 = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
-	// std::cout << "TEASER Compute FPFH Features and Correspondences done in [" << time_used.count() * 1000.0 << "] ms." << std::endl;
+	std::cout << "TEASER Compute FPFH Features and Correspondences done in [" << time_used_1.count() * 1000.0 << "] ms." << std::endl;
 
 	// Run TEASER++ registration
 	// Prepare solver parameters
@@ -272,8 +272,8 @@ int coarse_reg_teaser(const pcl::PointCloud<PointXYZIL>::Ptr &target_pts,
 	// std::cout << "Begin TEASER global coarse registration with [" << correspondences.size() << "] pairs of correspondence" << std::endl;
 	teaser::RobustRegistrationSolver solver(params);
 	std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
-	solver.solve(src, tgt);
-  	// solver.solve(src_cloud, tgt_cloud, correspondences);
+	// solver.solve(src, tgt);
+  	solver.solve(src_cloud, tgt_cloud, correspondences);
 	std::chrono::steady_clock::time_point toc = std::chrono::steady_clock::now();
 	std::chrono::duration<double> time_used = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic);
 
@@ -316,224 +316,3 @@ int coarse_reg_teaser(const pcl::PointCloud<PointXYZIL>::Ptr &target_pts,
 }
 
 
-
-
-
-
-
-
-//NCC: neighborhood category context descriptor
-bool find_feature_correspondence_ncc(const pcl::PointCloud<PointXYZIL>::Ptr &target_kpts, 
-										const pcl::PointCloud<PointXYZIL>::Ptr &source_kpts,
-										pcl::PointCloud<PointXYZIL>::Ptr &target_corrs, 
-										pcl::PointCloud<PointXYZIL>::Ptr &source_corrs,
-										bool fixed_num_corr, 
-										int corr_num, 
-										bool reciprocal_on)
-										// to enable reciprocal correspondence, you need to disable fixed_num_corr. 
-										// once fixed_num_cor is enabled, reciprocal correspondence would be automatically disabled
-{
-	int target_kpts_num = target_kpts->points.size();
-	int source_kpts_num = source_kpts->points.size();
-	float dist_margin_thre = 0.0;
-
-	std::cout << "[" << target_kpts_num << "] key points in target point cloud and [" << source_kpts_num << "] key points in source point cloud."<< std::endl;
-
-	if (target_kpts_num < 10 || source_kpts_num < 10)
-	{
-		std::cout << "Too few key points\n";
-		return false;
-	}
-
-	std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
-
-
-	//法向估计类（此处泛型指应用位置XYZ坐标的数据求解出法向量坐标结果）
-	pcl::NormalEstimation<PointXYZIL, pcl::Normal> ne;
-	pcl::search::KdTree<PointXYZIL>::Ptr treeT (new pcl::search::KdTree<PointXYZIL> ());
-	pcl::search::KdTree<PointXYZIL>::Ptr treeS (new pcl::search::KdTree<PointXYZIL> ());
-	// 输出集，pcl::Normal法向点类型即保存法向量的XYZ坐标，其中0-2个分量为XYZ坐标，第3个分量为曲率
-	pcl::PointCloud<pcl::Normal>::Ptr target_normals (new pcl::PointCloud<pcl::Normal>);
-	pcl::PointCloud<pcl::Normal>::Ptr source_normals (new pcl::PointCloud<pcl::Normal>);
-	ne.setInputCloud (target_kpts);
-	ne.setSearchMethod (treeT);
-	ne.setRadiusSearch (0.2);
-	ne.compute (*target_normals);
-
-	ne.setInputCloud (source_kpts);
-	ne.setSearchMethod (treeS);
-	ne.setRadiusSearch (0.2);
-	ne.compute (*source_normals);
-
-	//first get descriptor
-	//std::vector<std::vector<int>> target_kpts_descriptors;
-	std::vector<Eigen::VectorXf, Eigen::aligned_allocator<Eigen::VectorXf>> target_kpts_descriptors;
-
-	float intensity_min = FLT_MAX;
-	float intensity_max = 0;
-
-	for (int i = 0; i < target_kpts_num; i++)
-	{
-		float cur_i = target_kpts->points[i].intensity;
-
-		intensity_min = std::min(intensity_min, cur_i);
-		intensity_max = std::max(intensity_max, cur_i);
-	}
-
-	for (int i = 0; i < target_kpts_num; i++)
-	{
-		Eigen::VectorXf temp_descriptor(11);
-		int temp_descriptor_close = (int)target_normals->points[i].normal_x;
-		int temp_descriptor_far = (int)target_normals->points[i].normal_y;
-		// neighborhood category with its distance to the query point
-		temp_descriptor(0) = temp_descriptor_close / 1000000;
-		temp_descriptor(1) = (temp_descriptor_close % 1000000) / 10000;
-		temp_descriptor(2) = (temp_descriptor_close % 10000) / 100;
-		temp_descriptor(3) = temp_descriptor_close % 100;
-		temp_descriptor(4) = temp_descriptor_far / 1000000;
-		temp_descriptor(5) = (temp_descriptor_far % 1000000) / 10000;
-		temp_descriptor(6) = (temp_descriptor_far % 10000) / 100;
-		temp_descriptor(7) = temp_descriptor_far % 100;
-		// other properties
-		float cur_i = target_kpts->points[i].intensity;
-		temp_descriptor(8) = (cur_i - intensity_min) / (intensity_max - intensity_min) * 255.0; //[0 - 255] //normalized intensity 
-		temp_descriptor(9) = target_normals->points[i].normal_z * 100;							//[0 - 100] //curvature
-		temp_descriptor(10) = target_kpts->points[i].z * 30;								//[0 - 100] //height above ground
-		//std::cout << temp_descriptor[1] << "," << temp_descriptor[2] << "," << temp_descriptor[3] << "," << temp_descriptor[4] << "," << temp_descriptor[5] << "," << temp_descriptor[6] << "," << temp_descriptor[7] << "," << temp_descriptor[8] << "," << temp_descriptor[9] << "," << temp_descriptor[10] << "," << temp_descriptor[11];
-		target_kpts_descriptors.push_back(temp_descriptor);
-	}
-
-	std::vector<Eigen::VectorXf, Eigen::aligned_allocator<Eigen::VectorXf>> source_kpts_descriptors;
-	for (int i = 0; i < source_kpts_num; i++)
-	{
-		Eigen::VectorXf temp_descriptor(11);
-		int temp_descriptor_close = (int)source_normals->points[i].normal_x;
-		int temp_descriptor_far = (int)source_normals->points[i].normal_y;
-		// neighborhood category with its distance to the query point
-		temp_descriptor(0) = temp_descriptor_close / 1000000;
-		temp_descriptor(1) = (temp_descriptor_close % 1000000) / 10000;
-		temp_descriptor(2) = (temp_descriptor_close % 10000) / 100;
-		temp_descriptor(3) = temp_descriptor_close % 100;
-		temp_descriptor(4) = temp_descriptor_far / 1000000;
-		temp_descriptor(5) = (temp_descriptor_far % 1000000) / 10000;
-		temp_descriptor(6) = (temp_descriptor_far % 10000) / 100;
-		temp_descriptor(7) = temp_descriptor_far % 100;
-		// other properties
-		float cur_i = source_kpts->points[i].intensity;
-		temp_descriptor(8) = (cur_i - intensity_min) / (intensity_max - intensity_min) * 255.0; //[0 - 255] //normalized intensity 
-		temp_descriptor(9) = source_normals->points[i].normal_z * 100; //[0 - 100] //curvature
-		temp_descriptor(10) = source_kpts->points[i].z * 30;   //[0 - 100] //height above ground
-		//std::cout << temp_descriptor[1] << "," << temp_descriptor[2] << "," << temp_descriptor[3] << "," << temp_descriptor[4] << "," << temp_descriptor[5] << "," << temp_descriptor[6] << "," << temp_descriptor[7] << "," << temp_descriptor[8] << "," << temp_descriptor[9] << "," << temp_descriptor[10] << "," << temp_descriptor[11];
-		source_kpts_descriptors.push_back(temp_descriptor);
-	}
-
-	std::vector<std::vector<float>> dist_table(target_kpts_num);
-	for (int i = 0; i < target_kpts_num; i++)
-		dist_table[i].resize(source_kpts_num);
-
-	std::vector<std::pair<int, float>> dist_array;
-
-	#pragma omp parallel for  //Multi-thread
-	for (int i = 0; i < target_kpts_num; i++)
-	{
-		for (int j = 0; j < source_kpts_num; j++)
-		{
-			//Method 1. directly use L1 distance (use the features from 0 to 11)
-			for (int k = 0; k < 11; k++)
-				dist_table[i][j] += std::abs(target_kpts_descriptors[i](k) - source_kpts_descriptors[j](k));
-
-			//Method 2. use cosine similarity instead
-			//dist_table[i][j] =
-			//target_kpts_descriptors[i].norm() * source_kpts_descriptors[j].norm() / target_kpts_descriptors[i].dot(source_kpts_descriptors[j]);
-
-			//Method 3. use K-L divergence instead (use only the histogram (distribution)
-			//for (int k = 0; k < 8; k++)
-			//	dist_table[i][j] += 1.0 * target_kpts_descriptors[i](k) * std::log((1.0 * target_kpts_descriptors[i](k) + 0.001) / (1.0 * source_kpts_descriptors[j](k) + 0.001));
-		}
-	}
-	if (!fixed_num_corr)
-	{
-		//find correspondence
-		for (int i = 0; i < target_kpts_num; i++)
-		{
-			//std::cout << "keypoint indice: " << target_bscs[0][i].keypointIndex_;
-			int min_dist_col_index = 0;
-			float min_dist_row = FLT_MAX;
-			for (int j = 0; j < source_kpts_num; j++)
-			{
-				if (dist_table[i][j] < min_dist_row)
-				{
-					min_dist_row = dist_table[i][j];
-					min_dist_col_index = j;
-				}
-			}
-			bool refined_corr = true;
-			if (reciprocal_on) //reciprocal nearest neighbor correspondnece
-			{
-				for (int j = 0; j < target_kpts_num; j++)
-				{
-					if (min_dist_row > dist_table[j][min_dist_col_index] + dist_margin_thre)
-					{
-						refined_corr = false;
-						break;
-					}
-				}
-			}
-			if (refined_corr)
-			{
-				//std::cout << "[" << i << "] - [" << min_dist_col_index << "]:" << min_dist_row;
-				target_corrs->points.push_back(target_kpts->points[i]);
-				source_corrs->points.push_back(source_kpts->points[min_dist_col_index]);
-			}
-		}
-	}
-	else //fixed num correspondence
-	{
-		for (int i = 0; i < target_kpts_num; i++)
-		{
-			for (int j = 0; j < source_kpts_num; j++)
-			{
-				std::pair<int, float> temp_pair;
-				temp_pair.first = i * source_kpts_num + j;
-				temp_pair.second = dist_table[i][j];
-				dist_array.push_back(temp_pair);
-			}
-		}
-		std::sort(dist_array.begin(), dist_array.end(), [](const std::pair<int, float> &a, const std::pair<int, float> &b) { return a.second < b.second; });
-		corr_num = std::min(corr_num, (int)dist_array.size()); //take the k shortest distance
-
-		std::vector<int> count_target_kpt(target_kpts_num, 0);
-		std::vector<int> count_source_kpt(source_kpts_num, 0);
-
-		int max_corr_num = 6;
-
-		for (int k = 0; k < corr_num; k++)
-		{
-			int index = dist_array[k].first;
-			int i = index / source_kpts_num;
-			int j = index % source_kpts_num;
-
-			if (count_target_kpt[i] > max_corr_num || count_source_kpt[j] > max_corr_num) //we only keep the first max_corr_num candidate correspondence of a single point in either source or target point cloud
-				continue;
-
-			count_target_kpt[i]++;
-			count_source_kpt[j]++;
-
-			target_corrs->points.push_back(target_kpts->points[i]);
-			source_corrs->points.push_back(source_kpts->points[j]);
-		}
-	}
-
-	std::chrono::steady_clock::time_point toc = std::chrono::steady_clock::now();
-	std::chrono::duration<double> time_used = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic);
-
-	//free memory
-	std::vector<Eigen::VectorXf, Eigen::aligned_allocator<Eigen::VectorXf>>().swap(target_kpts_descriptors);
-	std::vector<Eigen::VectorXf, Eigen::aligned_allocator<Eigen::VectorXf>>().swap(source_kpts_descriptors);
-	std::vector<std::vector<float>>().swap(dist_table);
-	std::vector<std::pair<int, float>>().swap(dist_array);
-
-	std::cout << "[" << source_corrs->points.size() << "] correspondences found in [" << time_used.count() * 1000.0 << "] ms" << std::endl;
-
-	return true;
-}

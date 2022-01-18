@@ -146,14 +146,14 @@ bool LaserProcessing ::cachePointCloud()
 		ringFlag = -1;
 		for (int i = 0; i < (int)currentCloudMsg.fields.size(); ++i) 
 		{
-		if (currentCloudMsg.fields[i].name == "ring") {
-			ringFlag = 1;
-			break;
-		}
+			if (currentCloudMsg.fields[i].name == "ring") {
+				ringFlag = 1;
+				break;
+			}
 		}
 		if (ringFlag == -1) {
-		ROS_ERROR("Point cloud ring channel not available, please configure your point cloud data!");
-		ros::shutdown();
+			ROS_ERROR("Point cloud ring channel not available, please configure your point cloud data!");
+			ros::shutdown();
 		}
 	}
 
@@ -162,13 +162,13 @@ bool LaserProcessing ::cachePointCloud()
 	{
 		deskewFlag = -1;
 		for (int i = 0; i < (int)currentCloudMsg.fields.size(); ++i) {
-		if (currentCloudMsg.fields[i].name == "time") {
-			deskewFlag = 1;
-			break;
-		}
+			if (currentCloudMsg.fields[i].name == "time") {
+				deskewFlag = 1;
+				break;
+			}
 		}
 		if (deskewFlag == -1)
-		ROS_WARN("Point cloud timestamp not available, deskew function disabled, system will drift significantly!");
+			ROS_WARN("Point cloud timestamp not available, deskew function disabled, system will drift significantly!");
 	}
 
 	// get timestamp
