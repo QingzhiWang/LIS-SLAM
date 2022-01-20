@@ -291,7 +291,7 @@ class OdomEstimationNode : public ParamServer
 		// initialization
 		static bool firstTransAvailable = false;
 		if (firstTransAvailable == false) {
-			ROS_WARN("Front: firstTransAvailable!");
+			// ROS_WARN("Front: firstTransAvailable!");
 			transformTobeMapped[0] = cloudInfo.imuRollInit;
 			transformTobeMapped[1] = cloudInfo.imuPitchInit;
 			transformTobeMapped[2] = cloudInfo.imuYawInit;
@@ -309,9 +309,9 @@ class OdomEstimationNode : public ParamServer
 		static Eigen::Affine3f lastImuPreTransformation;
 		if (cloudInfo.odomAvailable == true) 
 		{
-		ROS_WARN("Front: cloudInfo.odomAvailable == true!");
-		Eigen::Affine3f transBack = pcl::getTransformation(cloudInfo.initialGuessX, cloudInfo.initialGuessY, cloudInfo.initialGuessZ, 
-														   cloudInfo.initialGuessRoll, cloudInfo.initialGuessPitch, cloudInfo.initialGuessYaw);
+			// ROS_WARN("Front: cloudInfo.odomAvailable == true!");
+			Eigen::Affine3f transBack = pcl::getTransformation(cloudInfo.initialGuessX, cloudInfo.initialGuessY, cloudInfo.initialGuessZ, 
+															cloudInfo.initialGuessRoll, cloudInfo.initialGuessPitch, cloudInfo.initialGuessYaw);
 			if (lastImuPreTransAvailable == false) {
 				lastImuPreTransformation = transBack;
 				lastImuPreTransAvailable = true;
@@ -352,7 +352,7 @@ class OdomEstimationNode : public ParamServer
 				return;
 			}
 
-			ROS_WARN("Front: cloudInfo.odomAvailable == false!");
+			// ROS_WARN("Front: cloudInfo.odomAvailable == false!");
 			Eigen::Affine3f transBack = pcl::getTransformation(
 					transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
 					transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
@@ -381,7 +381,7 @@ class OdomEstimationNode : public ParamServer
 		// use imu incremental estimation for pose guess (only rotation)
 		if (cloudInfo.imuAvailable == true) 
 		{
-			ROS_WARN("Front: cloudInfo.imuAvailable == true!");
+			// ROS_WARN("Front: cloudInfo.imuAvailable == true!");
 			Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);
 
 			Eigen::Affine3f transIncre = lastImuTransformation.inverse() * transBack;

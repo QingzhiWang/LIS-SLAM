@@ -29,9 +29,10 @@ private:
 	bool UsingISCFlag = false;
 	bool UsingSCFlag = false;
 	bool UsingPoseFlag = false;
-	bool UsingSEPSCFlag = true;
-	bool UsingEPSCFlag = true;
+	bool UsingSEPSCFlag = false;
+	bool UsingEPSCFlag = false;
 	bool UsingSSCFlag = false;
+	bool UsingFEPSCFlag = true;
 
 	double max_dis = 70;
 	double min_dis = 3;
@@ -41,10 +42,10 @@ private:
 	double ring_step = (max_dis - min_dis) / rings;
 	double sector_step = 2 * M_PI / sectors;
 
-	int sectors_range = 360;
-	//   bool rotate = false;
-	//   bool occlusion = false;
-	//   bool remap = true;
+	// int sectors_range = 360;
+	// bool rotate = false;
+	// bool occlusion = false;
+	// bool remap = true;
 
 	std::vector<cv::Vec3b> color_projection;
 
@@ -55,10 +56,11 @@ private:
 	std::vector<cv::Mat> EPSCArr;
 	std::vector<cv::Mat> SEPSCArr;
 	std::vector<cv::Mat> SSCArr;
-	std::vector<cv::Mat> myDescriptorArr;
+	std::vector<cv::Mat> FEPSCArr;
 
 	std::vector<double> travelDistanceArr;
 	std::vector<Eigen::Vector3d> posArr;
+	std::vector<float> yawArr;
 
 
 	bool show = false;
@@ -84,13 +86,17 @@ private:
 	cv::Mat project(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 
 	void globalICP(cv::Mat& isc_dis1, cv::Mat& isc_dis2, double& angle,float& diff_x, float& diff_y);
-	Eigen::Affine3f globalICP(cv::Mat& ssc_dis1, cv::Mat& ssc_dis2);
+	Eigen::Affine3f globalICP(cv::Mat& ssc_dis1, cv::Mat& ssc_dis2, float &yaw_diff);
 
 	cv::Mat calculateSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 	cv::Mat calculateISC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 	cv::Mat calculateEPSC(const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_corner_pointcloud,
-							const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_surf_pointcloud);
+						  const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_surf_pointcloud);
 	cv::Mat calculateSEPSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
+	cv::Mat calculateFEPSC(
+			const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_corner_pointcloud,
+			const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_surf_pointcloud,
+			const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 	cv::Mat calculateSSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud);
 
 	double calculateLabelSim(cv::Mat& desc1, cv::Mat& desc2);
@@ -126,6 +132,8 @@ public:
 	cv::Mat getLastSCRGB(void);
 	cv::Mat getLastISCRGB(void);
 	cv::Mat getLastEPSCRGB(void);
+	cv::Mat getLastFEPSCRGB(void);
+	cv::Mat getLastFEPSCRGB(int id);
 	cv::Mat getLastSSCRGB(void);
 
 	cv::Mat getLastSEPSCMONO(void) {
@@ -133,6 +141,9 @@ public:
 	}
 	cv::Mat getLastEPSCMONO(void) {
 		if (UsingEPSCFlag) return EPSCArr.back();
+	}
+	cv::Mat getLastFEPSCMONO(void) {
+		if (UsingFEPSCFlag) return FEPSCArr.back();
 	}
 	cv::Mat getLastSCMONO(void) {
 		if (UsingSCFlag)  return SCArr.back();
