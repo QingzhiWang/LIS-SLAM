@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 	sensor_msgs
 	geometry_msgs
 	nav_msgs
+	std_srvs
 )
 
 find_package(Threads REQUIRED)
@@ -137,6 +138,10 @@ set(DEP_LIBS ${DEP_LIBS} ${YAML_CPP_LIBRARIES})
 add_message_files(
 	DIRECTORY msg
 	FILES cloud_info.msg submap.msg semantic_info.msg
+)
+
+add_service_files(
+   FILES finishMap.srv
 )
 
 generate_messages(

@@ -17,6 +17,7 @@
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 
 #include "lis_slam/semantic_info.h"
+#include <lis_slam/finishMap.h>
 
 #include "utility.h"
 #include "common.h"
@@ -84,6 +85,7 @@ Eigen::Affine3f odom2affine(nav_msgs::Odometry odom) {
 class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 {
  public:
+	bool FINISHMAP = false;
     ros::Subscriber subCloud;
     ros::Subscriber subIMU;
 	ros::Subscriber subOdom;
@@ -272,6 +274,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     
     SubMapOdometryNode() 
     {
+    	ros::ServiceServer service = nh.advertiseService("finish_map", &SubMapOdometryNode::finish_map_callback);
+
         subCloud = nh.subscribe<lis_slam::semantic_info>( "lis_slam/semantic_fusion/semantic_info", 100, &SubMapOdometryNode::semanticInfoHandler, this, ros::TransportHints().tcpNoDelay());
         subIMU   = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &SubMapOdometryNode::imuHandler, this, ros::TransportHints().tcpNoDelay());
         subOdom   = nh.subscribe<nav_msgs::Odometry>(odomTopic + "/front", 200, &SubMapOdometryNode::odomHandler, this, ros::TransportHints().tcpNoDelay());
@@ -404,7 +408,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		systemInitialized = false;
 	}
 
-
+	bool finish_map_callback(finishMap::Request &request, finishMap::Response &response) {
+		response.succeed = true;
+		FINISHMAP = true;
+		return response.succeed;
+	}
 
 
     void semanticInfoHandler(const lis_slam::semantic_info::ConstPtr &msgIn) 
@@ -731,7 +739,16 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
             while (seInfoQueue.size() > 10) seInfoQueue.pop_front();
 
-			// 保存最后SubMAp
+			// 保存最后SubMap
+			if(FINISHMAP == true && seInfoQueue.size() == 0)
+			{
+				ROS_WARN("Finish Make SubMap ---> Make %d submap  has %d  Frames !", subMapID, curSubMapSize);
+                    
+				saveSubMap();
+				publishSubMapCloud();	
+
+				return;
+			}
 
 
 			ros::spinOnce();
@@ -4557,6 +4574,8 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 		Eigen::Matrix4f H_init; 
 		Eigen::Matrix4f H_rot; 
 
+		int pose_size = 0;
+
 		// std::string path = "/home/wqz/paperTest/my_epsc_trajectory_noloop/kitti_test.txt"; //ADD
 		std::string path = RESULT_PATH;
 
@@ -4574,6 +4593,8 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
 			for(int i = 0; i < it->second.size(); i++)
 			{
+				pose_size++;
+
 				Eigen::Affine3f R = curSubMapAffine * it->second[i];
 
 				if (init_flag == true)	
@@ -4638,7 +4659,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 		}
 
         cout << "****************************************************" << endl;
-        cout << "Saving Trajectory to files completed" << endl;
+        cout << "Saving " << pose_size << " Trajectory to files completed" << endl;
 		
 	}	
 
