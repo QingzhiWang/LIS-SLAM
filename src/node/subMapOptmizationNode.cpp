@@ -657,7 +657,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
                 currentCloudInit();
 				
-				// scan2SubMapOptimizationICP()
+				scan2SubMapOptimizationICP();
                 scan2SubMapOptimization();
                 ROS_WARN("Now (scan2SubMapOptimization) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
@@ -1400,7 +1400,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         // ICP Settings
         static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> icp;
-        icp.setMaxCorrespondenceDistance(30);
+        icp.setMaxCorrespondenceDistance(1);
         icp.setMaximumIterations(40);
         icp.setTransformationEpsilon(1e-6);
         icp.setEuclideanFitnessEpsilon(1e-6);
@@ -1444,12 +1444,12 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		pcl::PointCloud<PointXYZIL>::Ptr sourcePC( new pcl::PointCloud<PointXYZIL>());
 		pcl::PointCloud<PointXYZIL>::Ptr targetPC( new pcl::PointCloud<PointXYZIL>());
 
-		*sourcePC += *currentKeyFrame->semantic_dynamic;
+		// *sourcePC += *currentKeyFrame->semantic_dynamic;
 		*sourcePC += *currentKeyFrame->semantic_pole;
-		*sourcePC += *currentKeyFrame->semantic_ground;
-		*sourcePC += *currentKeyFrame->semantic_building;
+		// *sourcePC += *currentKeyFrame->semantic_ground;
+		// *sourcePC += *currentKeyFrame->semantic_building;
 
-		*targetPC += *laserCloudSurfFromSubMap;
+		// *targetPC += *laserCloudSurfFromSubMap;
 		*targetPC += *laserCloudCornerFromSubMap;
 
 		icpAlignment(sourcePC, targetPC, transformTobeSubMapped);
