@@ -107,6 +107,7 @@ cv::Mat EPSCGeneration::project(pcl::PointCloud<PointXYZIL>::Ptr filtered_pointc
 
 			if (order_vec[label] > order_vec[ssc_dis.at<cv::Vec4f>(0, sector_id)[3]]) {
 				ssc_dis.at<cv::Vec4f>(0, sector_id)[0] = distance;
+				// ssc_dis.at<cv::Vec4f>(0, sector_id)[0] = 1;
 				ssc_dis.at<cv::Vec4f>(0, sector_id)[1] = filtered_pointcloud->points[i].x;
 				ssc_dis.at<cv::Vec4f>(0, sector_id)[2] = filtered_pointcloud->points[i].y;
 				ssc_dis.at<cv::Vec4f>(0, sector_id)[3] = label;
@@ -130,17 +131,17 @@ void EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2,
 		float dis_count = 0;
 		for (int j = 0; j < sectors; ++j) 
 		{
-		int new_col = j + i >= sectors ? j + i - sectors : j + i;
-		cv::Vec4f vec1 = ssc_dis1.at<cv::Vec4f>(0, j);
-		cv::Vec4f vec2 = ssc_dis2.at<cv::Vec4f>(0, new_col);
-		// if(vec1[3]==vec2[3]){
-		dis_count += fabs(vec1[0] - vec2[0]);
-		// }
+			int new_col = j + i >= sectors ? j + i - sectors : j + i;
+			cv::Vec4f vec1 = ssc_dis1.at<cv::Vec4f>(0, j);
+			cv::Vec4f vec2 = ssc_dis2.at<cv::Vec4f>(0, new_col);
+			// if(vec1[3]==vec2[3]){
+			dis_count += fabs(vec1[0] - vec2[0]);
+			// }
 		}
 		if (dis_count < similarity) 
 		{
-		similarity = dis_count;
-		angle = i;
+			similarity = dis_count;
+			angle = i;
 		}
 	}
 	int angle_o = angle;
@@ -261,8 +262,13 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 	float sectors_range = 360.;
 	float step = 2. * M_PI / sectors_range;
 	double similarity = 100000;
-	
+	ROS_INFO("globalICP: yaw_diff: %f", yaw_diff);
+
 	float angle = yaw_diff;
+	if (angle >= 2. * M_PI) angle = angle - 2. * M_PI;
+	if (angle < 0) angle = angle + 2. * M_PI;
+	ROS_INFO("globalICP: init angle: %f", angle);
+
 	int tmp_id = std::floor(angle / step);
 	int sectors = ssc_dis1.cols;
 
@@ -272,7 +278,10 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 		float dis_count = 0;
 		for (int j = 0; j < sectors; ++j) 
 		{
-			int new_col = j + i >= sectors ? j + i - sectors : j + i;
+			// int new_col = j + i >= sectors ? j + i - sectors : j + i;
+			int new_col = p + i;
+			if (new_col >= sectors) new_col = new_col - sectors;
+			if (new_col < 0) new_col = new_col + sectors;
 			cv::Vec4f vec1 = ssc_dis1.at<cv::Vec4f>(0, j);
 			cv::Vec4f vec2 = ssc_dis2.at<cv::Vec4f>(0, new_col);
 			// if(vec1[3]==vec2[3]){
@@ -286,8 +295,11 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 		}
 	}
 
+	ROS_INFO("globalICP: sector_id: %f", angle);
+	ROS_INFO("globalICP: ssc angle test: %f", angle * step);
+
 	angle = M_PI * (360. - angle * 360. / sectors) / 180.;
-	ROS_INFO("SSC: angle: %f", angle);
+	ROS_INFO("globalICP: ssc angle: %f", angle);
 
 	auto cs = cos(angle);
 	auto sn = sin(angle);
@@ -318,8 +330,67 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 	trans = icp.getFinalTransformation();
 	Eigen::Affine3f trans1 = Eigen::Affine3f::Identity();
 	trans1.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ()));
+
+
+	float diff_x, diff_y, diff_z;
+	float ROLL, PITCH, YAW;
+	pcl::getTranslationAndEulerAngles(trans * trans1, diff_x, diff_y, diff_z, ROLL, PITCH, YAW);
+
+	ROS_INFO("globalICP: ICP angle: %f", YAW);
+
+	if (show)
+	{
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+		for (int j = 0; j < sectors; ++j) 
+		{
+			if (ssc_dis1.at<cv::Vec4f>(0, j)[0] != 0) 
+			{
+				pcl::PointXYZRGB p;
+				p.x = ssc_dis1.at<cv::Vec4f>(0, j)[1];
+				p.y = ssc_dis1.at<cv::Vec4f>(0, j)[2];
+				p.z = 0;
+				p.r = std::get<0>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
+				p.g = std::get<1>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
+				p.b = std::get<2>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
+				temp_cloud->points.emplace_back(p);
+			}
+
+			if (ssc_dis2.at<cv::Vec4f>(0, j)[0] != 0) 
+			{
+				pcl::PointXYZRGB p;
+				p.x = ssc_dis2.at<cv::Vec4f>(0, j)[1] * cs - ssc_dis2.at<cv::Vec4f>(0, j)[2] * sn;
+				p.y = ssc_dis2.at<cv::Vec4f>(0, j)[1] * sn + ssc_dis2.at<cv::Vec4f>(0, j)[2] * cs;
+				p.z = 1;
+				p.r = std::get<0>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				p.g = std::get<1>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				p.b = std::get<2>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				temp_cloud->points.emplace_back(p);
+			}
+
+			if (ssc_dis2.at<cv::Vec4f>(0, j)[0] != 0) 
+			{
+				pcl::PointXYZRGB p;
+				p.x = ssc_dis2.at<cv::Vec4f>(0, j)[1] * cos(YAW) - ssc_dis2.at<cv::Vec4f>(0, j)[2] * sin(YAW) + diff_x;
+				p.y = ssc_dis2.at<cv::Vec4f>(0, j)[1] * sin(YAW) + ssc_dis2.at<cv::Vec4f>(0, j)[2] * cos(YAW) + diff_y;
+				p.z = 2;
+				p.r = std::get<0>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				p.g = std::get<1>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				p.b = std::get<2>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				temp_cloud->points.emplace_back(p);
+			}
+
+		}
 	
+		temp_cloud->height = 1;
+		temp_cloud->width = temp_cloud->points.size();
+		viewer->showCloud(temp_cloud);
+		usleep(1000000);
+	
+	}
+		
 	return trans * trans1;
+
 }
 
 cv::Mat EPSCGeneration::calculateSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud) 

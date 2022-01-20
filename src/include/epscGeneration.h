@@ -34,6 +34,9 @@ private:
 	bool UsingSSCFlag = false;
 	bool UsingFEPSCFlag = true;
 
+	bool show = true;
+	std::shared_ptr<pcl::visualization::CloudViewer> viewer;
+
 	double max_dis = 70;
 	double min_dis = 3;
 
@@ -61,10 +64,6 @@ private:
 	std::vector<double> travelDistanceArr;
 	std::vector<Eigen::Vector3d> posArr;
 	std::vector<float> yawArr;
-
-
-	bool show = false;
-	std::shared_ptr<pcl::visualization::CloudViewer> viewer;
 
 	void init_color(void);
 	void print_param(void);
