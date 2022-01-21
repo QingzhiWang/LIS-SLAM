@@ -155,6 +155,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     pcl::PointCloud<PointXYZIL>::Ptr laserCloudCornerFromSubMap;
     pcl::PointCloud<PointXYZIL>::Ptr laserCloudSurfFromSubMap;
 
+    pcl::PointCloud<PointXYZIL>::Ptr laserCloudFromPre;
+
+
     int laserCloudCornerLastDSNum = 0;
     int laserCloudSurfLastDSNum = 0;
 
@@ -339,6 +342,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         laserCloudCornerFromSubMap.reset(new pcl::PointCloud<PointXYZIL>());
         laserCloudSurfFromSubMap.reset(new pcl::PointCloud<PointXYZIL>());
 
+		laserCloudFromPre.reset(new pcl::PointCloud<PointXYZIL>());
+
 
         for (int i = 0; i < 6; ++i)
         {
@@ -375,7 +380,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		gtsam::imuBias::ConstantBias prior_imu_bias((gtsam::Vector(6) << 0, 0, 0, 0, 0, 0).finished());;  // assume zero initial bias
 
 		priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas(
-			(gtsam::Vector(6) << 1e-1, 1e-1, 1e-2, 1e-3, 1e-3, 1e-3).finished());  // rad,rad,rad,m, m, m
+			(gtsam::Vector(6) << 1e-2, 1e-2, 1e-3, 1e-4, 1e-4, 1e-4).finished());  // rad,rad,rad,m, m, m
 		// priorPoseNoise  = gtsam::noiseModel::Diagonal::Sigmas(
 		// 	(gtsam::Vector(6)<< 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1).finished()); // rad,rad,rad,m, m, m
 		priorVelNoise = gtsam::noiseModel::Isotropic::Sigma(3, 1e4);  // m/s
@@ -1133,6 +1138,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 	void extractTargetCloud()
 	{
+		pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudFromPre);
+		*laserCloudFromPre = *transformPointCloud(laserCloudFromPre, &keyFramePoses6D->back());
+
 		#if USING_SINGLE_TARGET
 			pcl::copyPointCloud(*laserCloudCornerLast,    *laserCloudCornerFromSubMap);
 			pcl::copyPointCloud(*laserCloudSurfLast,    *laserCloudSurfFromSubMap);
@@ -1450,7 +1458,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		std::cout << "TransformIn: [" << ROLL << ", " << PITCH << ", " << YAW << ", " 
                                       << X << ", " << Y << ", " << Z << "]" << std::endl;
 
-		if(score < 10.0)
+		if(score < 5.0)
 		{
 			// transformIn[0] = ROLL;
 			// transformIn[1] = PITCH;
@@ -1468,12 +1476,15 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		pcl::PointCloud<PointXYZIL>::Ptr targetPC( new pcl::PointCloud<PointXYZIL>());
 
 		// *sourcePC += *currentKeyFrame->semantic_dynamic;
-		*sourcePC += *currentKeyFrame->semantic_pole;
+		// *sourcePC += *currentKeyFrame->semantic_pole;
 		// *sourcePC += *currentKeyFrame->semantic_ground;
 		// *sourcePC += *currentKeyFrame->semantic_building;
 
 		// *targetPC += *laserCloudSurfFromSubMap;
-		*targetPC += *laserCloudCornerFromSubMap;
+		// *targetPC += *laserCloudCornerFromSubMap;
+		
+		*targetPC += *laserCloudFromPre;
+		*sourcePC += *currentKeyFrame->semantic_pole;
 
 		icpAlignment(sourcePC, targetPC, transformTobeSubMapped);
 	}

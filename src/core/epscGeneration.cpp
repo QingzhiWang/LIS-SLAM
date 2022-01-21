@@ -298,7 +298,8 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 	ROS_INFO("globalICP: sector_id: %f", angle);
 	ROS_INFO("globalICP: ssc angle test: %f", angle * step);
 
-	angle = M_PI * (360. - angle * 360. / sectors) / 180.;
+	// angle = M_PI * (360. - angle * 360. / sectors) / 180.;
+	angle = angle * step;
 	ROS_INFO("globalICP: ssc angle: %f", angle);
 
 	auto cs = cos(angle);
