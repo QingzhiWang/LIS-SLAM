@@ -279,7 +279,7 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 		for (int j = 0; j < sectors; ++j) 
 		{
 			// int new_col = j + i >= sectors ? j + i - sectors : j + i;
-			int new_col = p + i;
+			int new_col = j + i;
 			if (new_col >= sectors) new_col = new_col - sectors;
 			if (new_col < 0) new_col = new_col + sectors;
 			cv::Vec4f vec1 = ssc_dis1.at<cv::Vec4f>(0, j);
@@ -350,9 +350,12 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 				p.x = ssc_dis1.at<cv::Vec4f>(0, j)[1];
 				p.y = ssc_dis1.at<cv::Vec4f>(0, j)[2];
 				p.z = 0;
-				p.r = std::get<0>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
-				p.g = std::get<1>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
-				p.b = std::get<2>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
+				// p.r = std::get<0>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
+				// p.g = std::get<1>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
+				// p.b = std::get<2>(Argmax2RGB[(int)ssc_dis1.at<cv::Vec4f>(0, j)[3]]);
+				p.r = 255;
+				p.g = 0;
+				p.b = 0;
 				temp_cloud->points.emplace_back(p);
 			}
 
@@ -362,9 +365,12 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 				p.x = ssc_dis2.at<cv::Vec4f>(0, j)[1] * cs - ssc_dis2.at<cv::Vec4f>(0, j)[2] * sn;
 				p.y = ssc_dis2.at<cv::Vec4f>(0, j)[1] * sn + ssc_dis2.at<cv::Vec4f>(0, j)[2] * cs;
 				p.z = 1;
-				p.r = std::get<0>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
-				p.g = std::get<1>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
-				p.b = std::get<2>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				// p.r = std::get<0>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				// p.g = std::get<1>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				// p.b = std::get<2>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				p.r = 0;
+				p.g = 255;
+				p.b = 0;
 				temp_cloud->points.emplace_back(p);
 			}
 
@@ -374,9 +380,12 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 				p.x = ssc_dis2.at<cv::Vec4f>(0, j)[1] * cos(YAW) - ssc_dis2.at<cv::Vec4f>(0, j)[2] * sin(YAW) + diff_x;
 				p.y = ssc_dis2.at<cv::Vec4f>(0, j)[1] * sin(YAW) + ssc_dis2.at<cv::Vec4f>(0, j)[2] * cos(YAW) + diff_y;
 				p.z = 2;
-				p.r = std::get<0>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
-				p.g = std::get<1>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
-				p.b = std::get<2>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				// p.r = std::get<0>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				// p.g = std::get<1>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				// p.b = std::get<2>(Argmax2RGB[(int)ssc_dis2.at<cv::Vec4f>(0, j)[3]]);
+				p.r = 0;
+				p.g = 0;
+				p.b = 255;
 				temp_cloud->points.emplace_back(p);
 			}
 

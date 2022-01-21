@@ -17,7 +17,7 @@
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 
 #include "lis_slam/semantic_info.h"
-#include <lis_slam/finishMap.h>
+#include "lis_slam/finishMap.h"
 
 #include "utility.h"
 #include "common.h"
@@ -86,6 +86,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 {
  public:
 	bool FINISHMAP = false;
+ 	ros::ServiceServer service;
     ros::Subscriber subCloud;
     ros::Subscriber subIMU;
 	ros::Subscriber subOdom;
@@ -274,7 +275,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
     
     SubMapOdometryNode() 
     {
-    	ros::ServiceServer service = nh.advertiseService("finish_map", &SubMapOdometryNode::finish_map_callback);
+    	service = nh.advertiseService("finish_map", &SubMapOdometryNode::finish_map_callback, this);
 
         subCloud = nh.subscribe<lis_slam::semantic_info>( "lis_slam/semantic_fusion/semantic_info", 100, &SubMapOdometryNode::semanticInfoHandler, this, ros::TransportHints().tcpNoDelay());
         subIMU   = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &SubMapOdometryNode::imuHandler, this, ros::TransportHints().tcpNoDelay());
@@ -408,12 +409,12 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		systemInitialized = false;
 	}
 
-	bool finish_map_callback(finishMap::Request &request, finishMap::Response &response) {
+
+	bool finish_map_callback(lis_slam::finishMap::Request &request, lis_slam::finishMap::Response &response) {
 		response.succeed = true;
 		FINISHMAP = true;
 		return response.succeed;
 	}
-
 
     void semanticInfoHandler(const lis_slam::semantic_info::ConstPtr &msgIn) 
     {
@@ -1418,9 +1419,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         // ICP Settings
         static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> icp;
         icp.setMaxCorrespondenceDistance(1);
-        icp.setMaximumIterations(40);
+        icp.setMaximumIterations(30);
         icp.setTransformationEpsilon(1e-6);
-        icp.setEuclideanFitnessEpsilon(1e-6);
+        icp.setEuclideanFitnessEpsilon(1e-5);
         icp.setRANSACIterations(0);
 
 		Eigen::Affine3f initLidarFrame = trans2Affine3f(transformIn);
@@ -1448,12 +1449,17 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         
 		std::cout << "TransformIn: [" << ROLL << ", " << PITCH << ", " << YAW << ", " 
                                       << X << ", " << Y << ", " << Z << "]" << std::endl;
-		// transformIn[0] = ROLL;
-		// transformIn[1] = PITCH;
-		// transformIn[2] = YAW;
-		// transformIn[3] = X;
-		// transformIn[4] = Y;
-		// transformIn[5] = Z;
+
+		if(score < 10.0)
+		{
+			// transformIn[0] = ROLL;
+			// transformIn[1] = PITCH;
+			transformIn[2] = YAW;
+			transformIn[3] = X;
+			transformIn[4] = Y;
+			// transformIn[5] = Z;
+		}
+
 	}
 
     void scan2SubMapOptimizationICP()
