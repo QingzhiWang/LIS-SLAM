@@ -11,7 +11,7 @@
 // IF TRAVELLED DISTANCE IS LESS THAN THIS VALUE, SKIP FOR PLACE RECOGNTION
 #define SKIP_NEIBOUR_DISTANCE 20.0  // 20.0
 // how much error will odom generate per frame
-#define INFLATION_COVARIANCE 0.015  // 0.03
+#define INFLATION_COVARIANCE 0.01  // 0.03
 
 // define threshold for loop closure detection
 // #define GEOMETRY_THRESHOLD 0.55     // 0.67  0.57(--)
@@ -34,7 +34,7 @@ private:
 	bool UsingSSCFlag = false;
 	bool UsingFEPSCFlag = true;
 
-	bool show = true;
+	bool show = false;
 	std::shared_ptr<pcl::visualization::CloudViewer> viewer;
 
 	double max_dis = 70;

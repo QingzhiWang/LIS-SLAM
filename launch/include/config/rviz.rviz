@@ -9,13 +9,12 @@ Panels:
         - /Feature Cloud1
         - /Semantic Cloud1
         - /Odometry1
+        - /Odometry1/keyframe_imu1/Shape1
         - /Odometry1/lidar1/Shape1
         - /Odometry1/lidar_imu1/Shape1
         - /Submap1
         - /Mapping1/Map (global)1/Autocompute Value Bounds1
         - /EPSC1
-        - /EPSC1/Loop constraint1
-        - /EPSC1/Test Loop constraint1
         - /Test1
       Splitter Ratio: 0.6264045238494873
     Tree Height: 483
@@ -320,7 +319,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
-          Size (Pixels): 2.5
+          Size (Pixels): 4
           Size (m): 0.09000000357627869
           Style: Points
           Topic: /lis_slam/semantic_fusion/semantic_cloud_rgb
@@ -428,7 +427,7 @@ Visualization Manager:
             Color: 0; 0; 0
             Head Length: 0.20000000298023224
             Head Radius: 0.20000000298023224
-            Shaft Length: 0.5
+            Shaft Length: 1
             Shaft Radius: 0.10000000149011612
             Value: Arrow
           Topic: /odometry/keyframe_imu
@@ -451,7 +450,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: false
-          Enabled: true
+          Enabled: false
           Keep: 3000
           Name: imu
           Position Tolerance: 0.10000000149011612
@@ -467,7 +466,7 @@ Visualization Manager:
             Value: Arrow
           Topic: /odometry/imu
           Unreliable: false
-          Value: true
+          Value: false
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -981,7 +980,7 @@ Visualization Manager:
       Name: EPSC
     - Class: rviz/Group
       Displays:
-        - Alpha: 0.800000011920929
+        - Alpha: 0.5
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 10
@@ -1058,7 +1057,7 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 1.5
-          Size (m): 0.10000000149011612
+          Size (m): 0.20000000298023224
           Style: Flat Squares
           Topic: /Pre
           Unreliable: false
@@ -1105,7 +1104,7 @@ Visualization Manager:
           Color: 32; 74; 135
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1120,7 +1119,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 0.800000011920929
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -1133,7 +1132,7 @@ Visualization Manager:
           Color: 0; 0; 0
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1142,13 +1141,13 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 1.5
-          Size (m): 0.10000000149011612
+          Size (m): 0.20000000298023224
           Style: Flat Squares
           Topic: /CurICP
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
       Enabled: true
       Name: Test
   Enabled: true
@@ -1167,16 +1166,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 128.4236297607422
+      Distance: 135.6436004638672
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 271.8356018066406
-        Y: 167.82363891601562
-        Z: 11.961715698242188
+        X: 44.605655670166016
+        Y: 12.065363883972168
+        Z: -36.96046829223633
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -1185,7 +1184,7 @@ Visualization Manager:
       Pitch: 1.5697963237762451
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 2.1299993991851807
+      Yaw: 4.428121566772461
     Saved: ~
 Window Geometry:
   Displays:

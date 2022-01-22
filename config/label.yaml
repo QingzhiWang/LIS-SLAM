@@ -213,7 +213,7 @@ using_label:
 
 label_sorce:
   0: 1.0     # no Label
-  1: 0.8     # "car" There is a probability of dynamic objects
+  1: 1.1     # "car" There is a probability of dynamic objects
   2: 0.6     # "bicycle" to "car"
   3: 0.5     # "motorcycle" to "car"
   4: 0.8     # "truck" to "car"

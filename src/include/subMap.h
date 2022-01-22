@@ -213,42 +213,22 @@ class CloudUtility
 		get_cloud_bbx(temp_cloud, bound);
 	}
 
-
-    void transform_bbx(bounds_t &bound, Eigen::Affine3f &transCur)
-    {
-        
-        bound.max_x = transCur(0, 0) * bound.max_x + transCur(0, 3);
-        bound.max_y = transCur(1, 1) * bound.max_y + transCur(1, 3);
-        bound.max_z = transCur(2, 2) * bound.max_z + transCur(2, 3);
-        bound.min_x = transCur(0, 0) * bound.min_x + transCur(0, 3);
-        bound.min_y = transCur(1, 1) * bound.min_y + transCur(1, 3);
-        bound.min_z = transCur(2, 2) * bound.min_z + transCur(2, 3);  
-    }
-
-    void transform_bbx(bounds_t &bound_in, bounds_t &bound_out, Eigen::Affine3f &transCur)
-    {
-        bound_out.max_x = bound_in.max_x + transCur(0, 3);
-        bound_out.max_y = bound_in.max_y + transCur(1, 3);
-        bound_out.max_z = bound_in.max_z + transCur(2, 3);
-        bound_out.min_x = bound_in.min_x + transCur(0, 3);
-        bound_out.min_y = bound_in.min_y + transCur(1, 3);
-        bound_out.min_z = bound_in.min_z + transCur(2, 3);  
-    }
-
-
 	void transform_bbx(bounds_t &bound_in, centerpoint_t &cp_in, bounds_t &bound_out, centerpoint_t &cp_out, Eigen::Affine3f &transCur)
     {
-        cp_out.x = transCur(0, 0) * cp_in.x + transCur(0, 1) * cp_in.y + transCur(0, 2) * cp_in.z + transCur(0, 3);
-        cp_out.y = transCur(1, 0) * cp_in.x + transCur(1, 1) * cp_in.y + transCur(1, 2) * cp_in.z + transCur(1, 3);
-        cp_out.z = transCur(2, 0) * cp_in.x + transCur(2, 1) * cp_in.y + transCur(2, 2) * cp_in.z + transCur(2, 3);
+		bounds_t bound_tmp = bound_in;
+		centerpoint_t cp_tmp = cp_in;
+        cp_out.x = transCur(0, 0) * cp_tmp.x + transCur(0, 1) * cp_tmp.y + transCur(0, 2) * cp_tmp.z + transCur(0, 3);
+        cp_out.y = transCur(1, 0) * cp_tmp.x + transCur(1, 1) * cp_tmp.y + transCur(1, 2) * cp_tmp.z + transCur(1, 3);
+        cp_out.z = transCur(2, 0) * cp_tmp.x + transCur(2, 1) * cp_tmp.y + transCur(2, 2) * cp_tmp.z + transCur(2, 3);
 
-        bound_out.max_x = bound_in.max_x - cp_in.x + cp_out.x;
-        bound_out.max_y = bound_in.max_y - cp_in.y + cp_out.y;
-        bound_out.max_z = bound_in.max_z - cp_in.z + cp_out.z;
-        bound_out.min_x = bound_in.min_x - cp_in.x + cp_out.x;
-        bound_out.min_y = bound_in.min_y - cp_in.y + cp_out.y;
-        bound_out.min_z = bound_in.min_z - cp_in.z + cp_out.z; 
+        bound_out.max_x = bound_tmp.max_x - cp_tmp.x + cp_out.x;
+        bound_out.max_y = bound_tmp.max_y - cp_tmp.y + cp_out.y;
+        bound_out.max_z = bound_tmp.max_z - cp_tmp.z + cp_out.z;
+        bound_out.min_x = bound_tmp.min_x - cp_tmp.x + cp_out.x;
+        bound_out.min_y = bound_tmp.min_y - cp_tmp.y + cp_out.y;
+        bound_out.min_z = bound_tmp.min_z - cp_tmp.z + cp_out.z; 
     }
+	
   protected:
   private:
 };

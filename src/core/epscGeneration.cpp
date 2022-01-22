@@ -105,17 +105,17 @@ cv::Mat EPSCGeneration::project(pcl::PointCloud<PointXYZIL>::Ptr filtered_pointc
 			int sector_id = std::floor(angle / step);
 			if (sector_id >= sectors_range || sector_id < 0) continue;
 
-			if (order_vec[label] > order_vec[ssc_dis.at<cv::Vec4f>(0, sector_id)[3]]) {
-				ssc_dis.at<cv::Vec4f>(0, sector_id)[0] = distance;
-				// ssc_dis.at<cv::Vec4f>(0, sector_id)[0] = 1;
-				ssc_dis.at<cv::Vec4f>(0, sector_id)[1] = filtered_pointcloud->points[i].x;
-				ssc_dis.at<cv::Vec4f>(0, sector_id)[2] = filtered_pointcloud->points[i].y;
-				ssc_dis.at<cv::Vec4f>(0, sector_id)[3] = label;
-			}
-			// ssc_dis.at<cv::Vec4f>(0, sector_id)[0] = distance;
-			// ssc_dis.at<cv::Vec4f>(0, sector_id)[1] = filtered_pointcloud->points[i].x;
-			// ssc_dis.at<cv::Vec4f>(0, sector_id)[2] = filtered_pointcloud->points[i].y;
-			// ssc_dis.at<cv::Vec4f>(0, sector_id)[3] = label;
+			// if (order_vec[label] > order_vec[ssc_dis.at<cv::Vec4f>(0, sector_id)[3]]) {
+			// 	ssc_dis.at<cv::Vec4f>(0, sector_id)[0] = distance;
+			// 	// ssc_dis.at<cv::Vec4f>(0, sector_id)[0] = 1;
+			// 	ssc_dis.at<cv::Vec4f>(0, sector_id)[1] = filtered_pointcloud->points[i].x;
+			// 	ssc_dis.at<cv::Vec4f>(0, sector_id)[2] = filtered_pointcloud->points[i].y;
+			// 	ssc_dis.at<cv::Vec4f>(0, sector_id)[3] = label;
+			// }
+			ssc_dis.at<cv::Vec4f>(0, sector_id)[0]++;
+			ssc_dis.at<cv::Vec4f>(0, sector_id)[1] = filtered_pointcloud->points[i].x;
+			ssc_dis.at<cv::Vec4f>(0, sector_id)[2] = filtered_pointcloud->points[i].y;
+			ssc_dis.at<cv::Vec4f>(0, sector_id)[3] = label;
 		}
 	}
 	return ssc_dis;
@@ -262,18 +262,18 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 	float sectors_range = 360.;
 	float step = 2. * M_PI / sectors_range;
 	double similarity = 100000;
-	ROS_INFO("globalICP: yaw_diff: %f", yaw_diff);
+	// ROS_INFO("globalICP: yaw_diff: %f", yaw_diff);
 
 	float angle = yaw_diff;
 	if (angle >= 2. * M_PI) angle = angle - 2. * M_PI;
 	if (angle < 0) angle = angle + 2. * M_PI;
-	ROS_INFO("globalICP: init angle: %f", angle);
+	// ROS_INFO("globalICP: init angle: %f", angle);
 
 	int tmp_id = std::floor(angle / step);
 	int sectors = ssc_dis1.cols;
 
 	// for (int i = tmp_id - sectors / 2; i < tmp_id + sectors / 2; ++i) 
-	for (int i = tmp_id - 20; i < tmp_id + 20; ++i) 
+	for (int i = tmp_id - 30; i < tmp_id + 30; ++i) 
 	{
 		float dis_count = 0;
 		for (int j = 0; j < sectors; ++j) 
@@ -295,11 +295,11 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 		}
 	}
 
-	ROS_INFO("globalICP: sector_id: %f", angle);
+	// ROS_INFO("globalICP: sector_id: %f", angle);
 
 	// angle = M_PI * (360. - angle * 360. / sectors) / 180.;
 	angle = angle * step;
-	ROS_INFO("globalICP: ssc angle: %f", angle);
+	// ROS_INFO("globalICP: ssc angle: %f", angle);
 
 	auto cs = cos(angle);
 	auto sn = sin(angle);
@@ -336,7 +336,7 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 	float ROLL, PITCH, YAW;
 	pcl::getTranslationAndEulerAngles(trans * trans1, diff_x, diff_y, diff_z, ROLL, PITCH, YAW);
 
-	ROS_INFO("globalICP: ICP angle: %f", YAW);
+	// ROS_INFO("globalICP: ICP angle: %f", YAW);
 
 	if (show)
 	{
@@ -741,7 +741,7 @@ void EPSCGeneration::loopDetection(
 		double pos_distance = std::sqrt((posArr[i] - posArr.back()).array().square().sum());
 		if (delta_travel_distance > SKIP_NEIBOUR_DISTANCE && pos_distance < delta_travel_distance * INFLATION_COVARIANCE) 
 		{
-			ROS_INFO("Matched_id: %d, delta_travel_distance: %f, pos_distance : %f", i, delta_travel_distance, pos_distance);
+			// ROS_INFO("Matched_id: %d, delta_travel_distance: %f, pos_distance : %f", i, delta_travel_distance, pos_distance);
 			cv::Mat before_dis = ProjectArr[i];
 
 			// double angle = 0;
@@ -757,14 +757,11 @@ void EPSCGeneration::loopDetection(
 			// transform.rotate(Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ()));
 
 			float yaw_diff = yaw_t - yawArr[i];
-			ROS_INFO("Init: yaw_diff: %f", yaw_diff);
 
 			Eigen::Affine3f transform = globalICP(before_dis, cur_dis, yaw_diff);
 			float diff_x, diff_y, diff_z;
 			float ROLL, PITCH, angle;
 			pcl::getTranslationAndEulerAngles(transform, diff_x, diff_y, diff_z, ROLL, PITCH, angle);
-
-			ROS_INFO("ICP: angle: %f", angle);
 
 			pcl::PointCloud<PointXYZIL>::Ptr trans_cloud_semantic(new pcl::PointCloud<PointXYZIL>);
 			transformPointCloud(*pc_filtered_semantic, *trans_cloud_semantic, transform);
