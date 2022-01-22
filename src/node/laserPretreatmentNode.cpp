@@ -6,6 +6,10 @@
 #include "utility.h"
 #include "common.h"
 
+#include "distortionAdjust.h"
+#include "lis_slam/cloud_info.h"
+
+
 using std::atan2;
 using std::cos;
 using std::sin;
