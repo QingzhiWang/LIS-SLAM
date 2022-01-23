@@ -68,6 +68,9 @@ class OdomEstimationNode : public ParamServer
 	bool isDegenerate = false;
 	Eigen::Matrix<float, 6, 6> matP;
 
+	float deltaR = 100;
+	float deltaT = 100;
+
 	bool isMapOptmization = false;
 
 	pcl::PointCloud<PointType>::Ptr cloudKeyPoses3D;
@@ -208,17 +211,19 @@ class OdomEstimationNode : public ParamServer
 		currentCloudInit();
 		scan2SubMapOptimization();
 		publishOdometry();
-
-		calculateTranslation();
-		if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
-			abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
-			abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) 
+		if(deltaR < 0.005 || deltaT < 0.05)
 		{
-			saveKeyFrames();
-			publishCloudInfo();
-			publishCloud(&pubKeyFrameId, cloudKeyPoses3D, timeLaserInfoStamp, mapFrame);
+			calculateTranslation();
+			if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
+				abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
+				abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) 
+			{
+				saveKeyFrames();
+				publishCloudInfo();
+				publishCloud(&pubKeyFrameId, cloudKeyPoses3D, timeLaserInfoStamp, mapFrame);
+			}
 		}
-	
+
 
 		end = std::chrono::system_clock::now();
 		std::chrono::duration<float> elapsed_seconds = end - start;
@@ -292,7 +297,7 @@ class OdomEstimationNode : public ParamServer
 		// initialization
 		static bool firstTransAvailable = false;
 		if (firstTransAvailable == false) {
-			ROS_WARN("Front: firstTransAvailable!");
+			// ROS_WARN("Front: firstTransAvailable!");
 			transformTobeMapped[0] = cloudInfo.imuRollInit;
 			transformTobeMapped[1] = cloudInfo.imuPitchInit;
 			transformTobeMapped[2] = cloudInfo.imuYawInit;
@@ -310,7 +315,7 @@ class OdomEstimationNode : public ParamServer
 		static Eigen::Affine3f lastImuPreTransformation;
 		if (cloudInfo.odomAvailable == true) 
 		{
-			ROS_WARN("Front: cloudInfo.odomAvailable == true!");
+			// ROS_WARN("Front: cloudInfo.odomAvailable == true!");
 			Eigen::Affine3f transBack = pcl::getTransformation(cloudInfo.initialGuessX, cloudInfo.initialGuessY, cloudInfo.initialGuessZ, 
 															cloudInfo.initialGuessRoll, cloudInfo.initialGuessPitch, cloudInfo.initialGuessYaw);
 			if (lastImuPreTransAvailable == false) {
@@ -353,7 +358,7 @@ class OdomEstimationNode : public ParamServer
 				return;
 			}
 
-			ROS_WARN("Front: cloudInfo.odomAvailable == false!");
+			// ROS_WARN("Front: cloudInfo.odomAvailable == false!");
 			Eigen::Affine3f transBack = pcl::getTransformation(
 					transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], 
 					transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
@@ -382,7 +387,7 @@ class OdomEstimationNode : public ParamServer
 		// use imu incremental estimation for pose guess (only rotation)
 		if (cloudInfo.imuAvailable == true) 
 		{
-			ROS_WARN("Front: cloudInfo.imuAvailable == true!");
+			// ROS_WARN("Front: cloudInfo.imuAvailable == true!");
 			Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit);
 
 			Eigen::Affine3f transIncre = lastImuTransformation.inverse() * transBack;
@@ -590,8 +595,9 @@ class OdomEstimationNode : public ParamServer
 
 			kdtreeCornerFromMap->setInputCloud(laserCloudCornerFromMapDS);
 			kdtreeSurfFromMap->setInputCloud(laserCloudSurfFromMapDS);
-
-			for (int iterCount = 0; iterCount < 30; iterCount++)  // 30
+			
+			int iterCount = 0;
+			for (; iterCount < 30; iterCount++)  // 30
 			{
 				laserCloudOri->clear();
 				coeffSel->clear();
@@ -604,6 +610,8 @@ class OdomEstimationNode : public ParamServer
 
 				if (LMOptimization(iterCount) == true) break;
 			}
+			
+			ROS_WARN("KEYFRAME ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
 
 			transformUpdate();
 		} else {
@@ -945,10 +953,10 @@ class OdomEstimationNode : public ParamServer
 		transformTobeMapped[4] += matX.at<float>(4, 0);
 		transformTobeMapped[5] += matX.at<float>(5, 0);
 
-		float deltaR = sqrt(pow(pcl::rad2deg(matX.at<float>(0, 0)), 2) +
+		deltaR = sqrt(pow(pcl::rad2deg(matX.at<float>(0, 0)), 2) +
 							pow(pcl::rad2deg(matX.at<float>(1, 0)), 2) +
 							pow(pcl::rad2deg(matX.at<float>(2, 0)), 2));
-		float deltaT = sqrt(pow(matX.at<float>(3, 0) * 100, 2) +
+		deltaT = sqrt(pow(matX.at<float>(3, 0) * 100, 2) +
 							pow(matX.at<float>(4, 0) * 100, 2) +
 							pow(matX.at<float>(5, 0) * 100, 2));
 		

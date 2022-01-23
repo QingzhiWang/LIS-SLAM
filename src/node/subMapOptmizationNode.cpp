@@ -939,13 +939,15 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 }
 
                 lastImuPreTransformation = transBack;
-        		
-				if (cloudInfo.imuAvailable == true)
-                	lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit); // save imu before return;
-                
-				return;
-            }
+			}
+
+			if (cloudInfo.imuAvailable == true)
+				lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imuRollInit, cloudInfo.imuPitchInit, cloudInfo.imuYawInit); // save imu before return;
+			
+			return;
+            
         }
+
         // use imu incremental estimation for pose guess (only rotation)
         if (cloudInfo.imuAvailable == true)
         {
@@ -1516,7 +1518,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     break;          
             }
 
-			ROS_WARN("iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
+			// ROS_WARN("iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
             transformUpdate();
 
         } else {
