@@ -137,7 +137,7 @@ set(DEP_LIBS ${DEP_LIBS} ${YAML_CPP_LIBRARIES})
 
 add_message_files(
 	DIRECTORY msg
-	FILES cloud_info.msg submap.msg semantic_info.msg
+	FILES cloud_info.msg semantic_info.msg
 )
 
 add_service_files(
@@ -195,6 +195,17 @@ target_link_libraries(semantic_lib
 ###########
 ## Build ##
 ###########
+
+# Data Pretreat
+add_executable(${PROJECT_NAME}_dataPretreat src/node/dataPretreatNode.cpp src/core/common.cpp src/core/distortionAdjust.cpp src/core/laserPretreatment.cpp)
+add_dependencies(${PROJECT_NAME}_dataPretreat ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(${PROJECT_NAME}_dataPretreat ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS})
+
+# Feature extraction
+add_executable(${PROJECT_NAME}_featureExtraction src/node/featureExtractionNode.cpp src/core/featureExtraction.cpp src/core/common.cpp)
+add_dependencies(${PROJECT_NAME}_featureExtraction ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(${PROJECT_NAME}_featureExtraction ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS})
+
 
 # Laser Pretreatment  新增laser预处理
 add_executable(${PROJECT_NAME}_laserPretreatment src/node/laserPretreatmentNode.cpp src/core/common.cpp)

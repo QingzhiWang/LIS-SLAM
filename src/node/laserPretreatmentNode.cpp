@@ -6,7 +6,6 @@
 #include "utility.h"
 #include "common.h"
 
-#include "distortionAdjust.h"
 #include "lis_slam/cloud_info.h"
 
 

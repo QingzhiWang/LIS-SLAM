@@ -804,11 +804,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         pcl::fromROSMsg(cloudInfo.cloud_surface, *currentKeyFrame->cloud_surface);     
 
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_raw, currentKeyFrame->semantic_raw_down, 0.5);  //0.4
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.1); //0.2
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.2); //0.2
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, 0.05); //0.05
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.6); //0.6
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.4); //0.4
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.5); //0.5
+        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.6); //0.5
         
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.2);
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, 0.4);

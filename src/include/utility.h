@@ -239,6 +239,7 @@ class ParamServer {
 	ros::NodeHandle nh;
 
 	bool useImu;
+	bool useGPSVel;
 
 	std::string PROJECT_PATH;
 	std::string MODEL_PATH;
@@ -251,6 +252,7 @@ class ParamServer {
 	string imuTopic;
 	string odomTopic;
 	string gpsTopic;
+	string gpsVelTopic;
 
 	// Frames
 	string lidarFrame;
@@ -352,6 +354,7 @@ class ParamServer {
 
 	ParamServer() {
 		nh.param<bool>("lis_slam/useImu", useImu, true);
+		nh.param<bool>("lis_slam/useGPSVel", useGPSVel, true);
 
 		nh.param<std::string>("lis_slam/PROJECT_PATH", PROJECT_PATH,
 							"/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/");
@@ -365,6 +368,7 @@ class ParamServer {
 		nh.param<std::string>("lis_slam/imuTopic", imuTopic, "imu_correct");
 		nh.param<std::string>("lis_slam/odomTopic", odomTopic, "odometry/imu");
 		nh.param<std::string>("lis_slam/gpsTopic", gpsTopic, "odometry/gps");
+		nh.param<std::string>("lis_slam/gpsVelTopic", gpsVelTopic, "/kitti/oxts/gps/vel");
 
 		nh.param<std::string>("lis_slam/lidarFrame", lidarFrame, "base_link");
 		nh.param<std::string>("lis_slam/odometryFrame", odometryFrame, "odom");
@@ -399,8 +403,8 @@ class ParamServer {
 		extRot = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extRotV.data(), 3, 3);
 		extRPY = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extRPYV.data(), 3, 3);
 		extTrans = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(extTransV.data(), 3, 1);
-		// extQRPY = Eigen::Quaterniond(extRPY);
-		extQRPY = Eigen::Quaterniond(extRPY.inverse());
+		extQRPY = Eigen::Quaterniond(extRPY);
+		// extQRPY = Eigen::Quaterniond(extRPY.inverse());
 
 		nh.param<float>("lis_slam/edgeThreshold", edgeThreshold, 0.1);
 		nh.param<float>("lis_slam/surfThreshold", surfThreshold, 0.1);
@@ -478,8 +482,8 @@ class ParamServer {
 		// rotate roll pitch yaw
 		Eigen::Quaterniond q_from(imu_in.orientation.w, imu_in.orientation.x,
 								imu_in.orientation.y, imu_in.orientation.z);
-		// Eigen::Quaterniond q_final = q_from * extQRPY;
-		Eigen::Quaterniond q_final = extQRPY * q_from;
+		Eigen::Quaterniond q_final = q_from * extQRPY;
+		// Eigen::Quaterniond q_final = extQRPY * q_from;
 		imu_out.orientation.x = q_final.x();
 		imu_out.orientation.y = q_final.y();
 		imu_out.orientation.z = q_final.z();
@@ -493,6 +497,30 @@ class ParamServer {
 
 		return imu_out;
 	}
+
+	geometry_msgs::TwistStamped gpsVelConverter(const geometry_msgs::TwistStamped &vel_in) 
+	{
+		geometry_msgs::TwistStamped vel_out = vel_in;
+
+		Eigen::Vector3d lvel(vel_in.twist.linear.x,
+							 vel_in.twist.linear.y,
+							 vel_in.twist.linear.z);
+		lvel = extRot * lvel;
+		vel_out.twist.linear.x = lvel.x();
+		vel_out.twist.linear.y = lvel.y();
+		vel_out.twist.linear.z = lvel.z();
+
+		Eigen::Vector3d gvel(vel_in.twist.angular.x,
+							 vel_in.twist.angular.y,
+							 vel_in.twist.angular.z);
+		gvel = extRot * gvel;
+		vel_out.twist.angular.x = gvel.x();
+		vel_out.twist.angular.y = gvel.y();
+		vel_out.twist.angular.z = gvel.z();
+
+		return vel_out;
+	}
+
 };
 
 

@@ -45,9 +45,9 @@ public:
 	
     void assignCouldInfo();
 
-	void initCloudInfo(const lis_slam::cloud_infoPtr& msgIn)
+	void initCloudInfo(lis_slam::cloud_info &msgIn)
     {
-		cloudInfo = *msgIn;
+		cloudInfo = msgIn;
 	}
 
 	lis_slam::cloud_info getCloudInfo() 
@@ -63,6 +63,9 @@ private:
 	double timeScanEnd;
 
     pcl::PointCloud<PointXYZIRT>::Ptr laserCloudIn;
+
+    pcl::PointCloud<PointXYZIRT>::Ptr fullCloud;
+    pcl::PointCloud<PointXYZIRT>::Ptr extractedCloud;
 
     pcl::PointCloud<PointXYZIRT>::Ptr cornerCloud;
     pcl::PointCloud<PointXYZIRT>::Ptr surfaceCloud;

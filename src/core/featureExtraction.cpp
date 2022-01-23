@@ -9,10 +9,15 @@ void FeatureExtraction ::allocateMemory()
 {
 	laserCloudIn.reset(new pcl::PointCloud<PointXYZIRT>());
 
+	fullCloud.reset(new pcl::PointCloud<PointXYZIRT>());
+	extractedCloud.reset(new pcl::PointCloud<PointXYZIRT>());
+
 	cornerCloud.reset(new pcl::PointCloud<PointXYZIRT>());
 	surfaceCloud.reset(new pcl::PointCloud<PointXYZIRT>());
 	sharpCornerCloud.reset(new pcl::PointCloud<PointXYZIRT>());
 	SharpSurfaceCloud.reset(new pcl::PointCloud<PointXYZIRT>());
+
+	fullCloud->points.resize(N_SCAN * Horizon_SCAN);
 
 	startRingIndex = new int32_t[N_SCAN];
 	endRingIndex = new int32_t[N_SCAN];
@@ -33,6 +38,9 @@ void FeatureExtraction ::allocateMemory()
 void FeatureExtraction ::resetParameters() 
 {
 	laserCloudIn->clear();
+	
+	fullCloud->clear();
+	extractedCloud->clear();
 	
 	cornerCloud->clear();
 	surfaceCloud->clear();
@@ -80,6 +88,9 @@ bool FeatureExtraction ::cachePointCloud()
 	pcl::fromROSMsg(cloudInfo.cloud_deskewed, *laserCloudIn);
 	cloudHeader = cloudInfo.header;
 
+	// ROS_WARN("laserCloudIn.size: %d", laserCloudIn->size());
+
+
 	// check dense flag
 	if (laserCloudIn->is_dense == false) {
 		ROS_ERROR("Point cloud is not in dense format, please remove NaN points first!");
@@ -91,9 +102,9 @@ bool FeatureExtraction ::cachePointCloud()
 	if (ringFlag == 0) 
 	{
 		ringFlag = -1;
-		for (int i = 0; i < (int)currentCloudMsg.fields.size(); ++i) 
+		for (int i = 0; i < (int)cloudInfo.cloud_deskewed.fields.size(); ++i) 
 		{
-			if (currentCloudMsg.fields[i].name == "ring") {
+			if (cloudInfo.cloud_deskewed.fields[i].name == "ring") {
 				ringFlag = 1;
 				break;
 			}
@@ -105,7 +116,7 @@ bool FeatureExtraction ::cachePointCloud()
 	}
 
 	// get timestamp
-	cloudHeader = currentCloudMsg.header;
+	cloudHeader = cloudInfo.cloud_deskewed.header;
 	timeScanCur = cloudHeader.stamp.toSec();
 	timeScanEnd = timeScanCur + laserCloudIn->points.back().time;  // Velodyne
 
@@ -149,6 +160,9 @@ void FeatureExtraction ::projectPointCloud()
 		if (rangeMat.at<float>(rowIdn, columnIdn) != FLT_MAX) continue;
 
 		rangeMat.at<float>(rowIdn, columnIdn) = range;
+
+		int index = columnIdn + rowIdn * Horizon_SCAN;
+		fullCloud->points[index] = thisPoint;
 	}
 }
 
@@ -172,6 +186,8 @@ for (int i = 0; i < N_SCAN; ++i)
 		// save range info
 		pointRange[count] = rangeMat.at<float>(i, j);
 		// save extracted cloud
+		extractedCloud->push_back(fullCloud->points[j + i * Horizon_SCAN]);
+
 		++count;
 	}
 	}
@@ -184,23 +200,23 @@ for (int i = 0; i < N_SCAN; ++i)
  *****************************************/
 void FeatureExtraction ::calculateSmoothness() 
 {
-int cloudSize = extractedCloud->points.size();
-for (int i = 5; i < cloudSize - 5; i++) 
-{
-	float diffRange = pointRange[i - 5] + pointRange[i - 4] +
-					  pointRange[i - 3] + pointRange[i - 2] +
-					  pointRange[i - 1] - pointRange[i] * 10 +
-					  pointRange[i + 1] + pointRange[i + 2] +
-					  pointRange[i + 3] + pointRange[i + 4] + pointRange[i + 5];
+	int cloudSize = extractedCloud->points.size();
+	for (int i = 5; i < cloudSize - 5; i++) 
+	{
+		float diffRange = pointRange[i - 5] + pointRange[i - 4] +
+						pointRange[i - 3] + pointRange[i - 2] +
+						pointRange[i - 1] - pointRange[i] * 10 +
+						pointRange[i + 1] + pointRange[i + 2] +
+						pointRange[i + 3] + pointRange[i + 4] + pointRange[i + 5];
 
-	cloudCurvature[i] = diffRange * diffRange;  // diffX * diffX + diffY * diffY + diffZ * diffZ;
+		cloudCurvature[i] = diffRange * diffRange;  // diffX * diffX + diffY * diffY + diffZ * diffZ;
 
-	cloudNeighborPicked[i] = 0;
-	cloudLabel[i] = 0;
-	// cloudSmoothness for sorting
-	cloudSmoothness[i].value = cloudCurvature[i];
-	cloudSmoothness[i].ind = i;
-}
+		cloudNeighborPicked[i] = 0;
+		cloudLabel[i] = 0;
+		// cloudSmoothness for sorting
+		cloudSmoothness[i].value = cloudCurvature[i];
+		cloudSmoothness[i].ind = i;
+	}
 }
 
 /****************************************

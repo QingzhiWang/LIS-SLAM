@@ -4,11 +4,7 @@
 # Email wangqingzhi27@outlook.com
 
 lis_slam:
-  useImu: true       # If using IMU data, set to "true" 
-  loopClosureEnableFlag: true
-  
-  useOdometryPitchPrediction: true              # 在结构性较强时可使用前端里程计pitch预测值
-  
+
   PROJECT_PATH: "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/"
   MODEL_PATH: "/home/wqz/AWorkSpace/darknet53"
 
@@ -19,19 +15,26 @@ lis_slam:
   saveTrajectory: false
   RESULT_PATH: "../assets/trajectory/00_pred_loop.txt"
 
-
+  useImu: true       # If using IMU data, set to "true" 
+  useGPSVel : true
+  loopClosureEnableFlag: true
+  
+  useOdometryPitchPrediction: true              # 在结构性较强时可使用前端里程计pitch预测值
+  
   # Topics   velodyne_points  points_raw
   # pointCloudTopic: "points_raw"                 # Point cloud data
   # imuTopic: "imu_correct"                       # IMU data imu_correct imu_raw
   # odomTopic: "odometry"                         # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
+  # gpsVelTopic : "/kitti/oxts/gps/vel"
   
   # Topics kitti(RAW)
   pointCloudTopic: "/kitti/velo/pointcloud"   # Point cloud data
   imuTopic: "/kitti/oxts/imu/extract"         # IMU data
   odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
   gpsTopic: "odometry/gps"                    # GPS odometry topic from navsat, see module_navsat.launch file
- 
+  gpsVelTopic : "/kitti/oxts/gps/vel"
+  
   #CQU
   # pointCloudTopic: "rslidar_points"           # Point cloud data
   # imuTopic: "imu/data"                        # IMU data
