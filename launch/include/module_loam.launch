@@ -1,13 +1,12 @@
 <launch>
     <arg name="project" default="lis_slam"/>
     
-    <node pkg="$(arg project)" type="$(arg project)_dataPretreat"   name="$(arg project)_dataPretreat"           output="screen" 	respawn="true"/>
-    <node pkg="$(arg project)" type="$(arg project)_featureExtraction"   name="$(arg project)_featureExtraction" output="screen" 	respawn="true"/>
+    <!-- <node pkg="$(arg project)" type="$(arg project)_dataPretreat"   name="$(arg project)_dataPretreat"           output="screen" 	respawn="true"/> -->
     
-	<!-- <node pkg="$(arg project)" type="$(arg project)_laserPretreatment"   name="$(arg project)_laserPretreatment"    output="screen" 	respawn="true"/> -->
-    <!-- <node pkg="$(arg project)" type="$(arg project)_laserProcessing"     name="$(arg project)_laserProcessing"      output="screen"     respawn="true"/> -->
-    <node pkg="$(arg project)" type="$(arg project)_odomEstimation"   name="$(arg project)_odomEstimation"          output="screen"     respawn="true"/>
+	<node pkg="$(arg project)" type="$(arg project)_laserPretreatment"   name="$(arg project)_laserPretreatment"    output="screen" 	respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_laserProcessing"     name="$(arg project)_laserProcessing"      output="screen"     respawn="true"/>
+    
+	<node pkg="$(arg project)" type="$(arg project)_odomEstimation"   name="$(arg project)_odomEstimation"          output="screen"     respawn="true"/>
     <node pkg="$(arg project)" type="$(arg project)_semanticFusion"      name="$(arg project)_semanticFusion"       output="screen"     respawn="true"/>
     <node pkg="$(arg project)" type="$(arg project)_subMapOptmization"      name="$(arg project)_subMapOptmization" output="screen"     respawn="true"/>
-    <!-- <node pkg="$(arg project)" type="$(arg project)_transformFusion"      name="$(arg project)_transformFusion"       output="screen"     respawn="true"/>  -->
 </launch>

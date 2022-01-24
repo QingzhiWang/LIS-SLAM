@@ -49,12 +49,12 @@ class LaserProcessingNode : public ParamServer
 			ROS_WARN("useImu==false!");
 		}
 
-		pubCloudInfo = nh.advertise<lis_slam::cloud_info>( "lis_slam/laser_process/cloud_info", 10);
-		pubRawPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_deskewed", 10);
-		pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_corner", 10);
-		pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_surface", 10);
-		pubSharpCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_corner_sharp", 10);
-		pubSharpSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/laser_process/cloud_surface_sharp", 10);
+		pubCloudInfo = nh.advertise<lis_slam::cloud_info>( "lis_slam/data/cloud_info", 10);
+		pubRawPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/data/distorted_cloud", 10);
+		pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/feature/cloud_corner", 10);
+		pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/feature/cloud_surface", 10);
+		pubSharpCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/feature/cloud_corner_sharp", 10);
+		pubSharpSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/feature/cloud_surface_sharp", 10);
 	}
 
 	~LaserProcessingNode() {}

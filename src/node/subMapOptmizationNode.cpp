@@ -736,7 +736,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 ROS_WARN("Average make SubMap time %f ms", total_time / total_frame);
             }
 
-            while (seInfoQueue.size() > 10) seInfoQueue.pop_front();
+            while (seInfoQueue.size() > 20) seInfoQueue.pop_front();
 
 			// 保存最后SubMap
 			if(FINISHMAP == true && seInfoQueue.size() == 0)
@@ -817,7 +817,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         // this->get_cloud_bbx(currentKeyFrame->semantic_raw, currentKeyFrame->local_bound);
         this->get_cloud_bbx_cpt(currentKeyFrame->semantic_raw, currentKeyFrame->local_bound, currentKeyFrame->local_cp);
 
-        ROS_WARN("keyFrameID: %d ,keyFrameInfo Size: %d ",keyFrameID, keyFrameInfo.size());    
+        // ROS_WARN("keyFrameID: %d ,keyFrameInfo Size: %d ",keyFrameID, keyFrameInfo.size());    
 		
 		std::cout << "Feature point number of last frame (Ori | Ds): " << std::endl 
 				  <<  "Dynamic: [" << currentKeyFrame->semantic_dynamic->points.size() << " | " << currentKeyFrame->semantic_dynamic_down->points.size() << "]." << std::endl 
@@ -1379,8 +1379,8 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
         SubMapManager::voxel_downsample_pcl(localMap->submap_dynamic, localMap->submap_dynamic, 0.1); // default: 0.05
         SubMapManager::voxel_downsample_pcl(localMap->submap_pole, localMap->submap_pole, 0.05); // default: 0.02
-        SubMapManager::voxel_downsample_pcl(localMap->submap_ground, localMap->submap_ground, 0.3); // default: 0.2
-        SubMapManager::voxel_downsample_pcl(localMap->submap_building, localMap->submap_building, 0.1); // default: 0.1
+        SubMapManager::voxel_downsample_pcl(localMap->submap_ground, localMap->submap_ground, 0.4); // default: 0.2
+        SubMapManager::voxel_downsample_pcl(localMap->submap_building, localMap->submap_building, 0.2); // default: 0.1
         SubMapManager::voxel_downsample_pcl(localMap->submap_outlier, localMap->submap_outlier, 0.6); // default: 0.5
         
 		// Use the intersection bounding box to filter the outlier points
@@ -1518,7 +1518,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                     break;          
             }
 
-			// ROS_WARN("iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
+			ROS_WARN("iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
             transformUpdate();
 
         } else {
@@ -3487,19 +3487,20 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 				auto t1 = ros::Time::now();
 
 				curSubMapId = subMapIndexQueue.front();
+				ROS_WARN("\033[1;32m OptmizationThread -> curSubMapId: %d.\033[0m", curSubMapId);
 
 				auto thisCurId = subMapInfo.find(curSubMapId);
         		if (thisCurId != subMapInfo.end())
 				{
 					if(curSubMapId != thisCurId->second->submap_id)
 					{
-						ROS_WARN("subMapOptmizationThread -->> curSubMapId != submap_id!");
+						ROS_WARN("OptmizationThread -->> curSubMapId != submap_id!");
 						continue;
 					}
         			curSubMapPtr = thisCurId->second;
 
 				}else{
-					ROS_WARN("subMapOptmizationThread -->> Dont find subMapInfo[%d]!", curSubMapId);
+					ROS_WARN("OptmizationThread -->> Dont find subMapInfo[%d]!", curSubMapId);
 					continue;
 				}
 
@@ -3524,7 +3525,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 				correctPoses();
 				publishOdometry();
 				visualizeSubMap();
-				
+
 				preSubMapId = curSubMapId;
 
 				ros::Time t2 = ros::Time::now();
@@ -3616,6 +3617,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         SubMapPoses3D[curSubMapId]=thisPose3D;
         SubMapPoses6D[curSubMapId]=thisPose6D;
 
+
         noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-2, 1e-2, M_PI*M_PI, 1e8, 1e8, 1e8).finished()); // rad*rad, meter*meter
         gtSAMgraph.add(PriorFactor<Pose3>(curSubMapId, trans2gtsamPose(transformTobeMapped), priorNoise));
         initialEstimate.insert(curSubMapId, trans2gtsamPose(transformTobeMapped));
@@ -3636,6 +3638,8 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 		auto thisCurId = subMapInfo.find(preSubMapId);
 		if (thisCurId != subMapInfo.end()){
 			submap_Ptr preSubMap = subMapInfo[preSubMapId];
+
+			ROS_WARN("\033[1;32m OptmizationThread -> preSubMapId: %d.\033[0m", preSubMapId);
 			
 			Eigen::Affine3f tran_map = pclPointToAffine3f(preSubMap->submap_pose_6D_optimized);
 			this->transform_bbx(preSubMap->local_bound, preSubMap->local_cp, preSubMap->bound, preSubMap->cp, tran_map);
@@ -4712,9 +4716,9 @@ int main(int argc, char **argv)
     std::thread loop_closure_process(&SubMapOdometryNode::loopClosureThread, &SOD);
     
 
-    // SubMapOptmizationNode SOP;
-    // std::thread visualize_map_process(&SubMapOptmizationNode::visualizeGlobalMapThread, &SOP);
-    // std::thread submap_optmization_process(&SubMapOptmizationNode::subMapOptmizationThread, &SOP);
+    SubMapOptmizationNode SOP;
+    std::thread visualize_map_process(&SubMapOptmizationNode::visualizeGlobalMapThread, &SOP);
+    std::thread submap_optmization_process(&SubMapOptmizationNode::subMapOptmizationThread, &SOP);
     
     ROS_WARN("\033[1;32m----> SubMap Optmization Node Started.\033[0m");
 
@@ -4725,8 +4729,8 @@ int main(int argc, char **argv)
     make_submap_process.join();
     loop_closure_process.join();
     
-    // visualize_map_process.join();
-    // submap_optmization_process.join();
+    visualize_map_process.join();
+    submap_optmization_process.join();
 
     return 0;
 }

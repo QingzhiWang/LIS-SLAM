@@ -99,7 +99,7 @@ class OdomEstimationNode : public ParamServer
 
 	OdomEstimationNode() {
 		// subCloudInfo = nh.subscribe<lis_slam::cloud_info>("lis_slam/laser_process/cloud_info", 10, &OdomEstimationNode::laserCloudInfoHandler, this);
-		subCloudInfo = nh.subscribe<lis_slam::cloud_info>("lis_slam/feature/cloud_info", 10, &OdomEstimationNode::laserCloudInfoHandler, this);
+		subCloudInfo = nh.subscribe<lis_slam::cloud_info>("lis_slam/data/cloud_info", 10, &OdomEstimationNode::laserCloudInfoHandler, this);
 
 		pubKeyFrameInfo = nh.advertise<lis_slam::cloud_info>("lis_slam/odom_estimation/cloud_info", 10);
 
@@ -597,7 +597,7 @@ class OdomEstimationNode : public ParamServer
 			kdtreeSurfFromMap->setInputCloud(laserCloudSurfFromMapDS);
 			
 			int iterCount = 0;
-			for (; iterCount < 30; iterCount++)  // 30
+			for (; iterCount < 10; iterCount++)  // 30
 			{
 				laserCloudOri->clear();
 				coeffSel->clear();
@@ -611,7 +611,7 @@ class OdomEstimationNode : public ParamServer
 				if (LMOptimization(iterCount) == true) break;
 			}
 			
-			ROS_WARN("KEYFRAME ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
+			// ROS_WARN("KEYFRAME ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
 
 			transformUpdate();
 		} else {

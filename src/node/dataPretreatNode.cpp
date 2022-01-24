@@ -23,6 +23,7 @@ class DataPretreatNode : public ParamServer
 private:
 	LaserPretreatment lpre;
 	DistortionAdjust dtor;
+	FeatureExtraction fext;
 
 	ros::Subscriber subPointCloud;
 	ros::Subscriber subImu;
@@ -32,6 +33,12 @@ private:
 	ros::Publisher pubDistortedCloud;
 	ros::Publisher pubPretreatmentedCloud;
 
+
+	ros::Publisher pubCornerPoints;
+	ros::Publisher pubSurfacePoints;
+	ros::Publisher pubSharpCornerPoints;
+	ros::Publisher pubSharpSurfacePoints;
+	
 	ros::Publisher pubCloudInfo;
 
 	std::mutex cloudMutex;
@@ -63,10 +70,15 @@ public:
 		}
 
 		pubCloudInfo = nh.advertise<lis_slam::cloud_info>( "lis_slam/data/cloud_info", 100);
-		
-		pubDistortedCloud = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/data/distorted_cloud", 100);
-		pubPretreatmentedCloud = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/points_pretreatmented", 100);
 
+		pubPretreatmentedCloud = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/points_pretreatmented", 100);
+		pubDistortedCloud = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/data/distorted_cloud", 100);
+		
+		pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/feature/cloud_corner", 10);
+		pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/feature/cloud_surface", 10);
+		pubSharpCornerPoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/feature/cloud_corner_sharp", 10);
+		pubSharpSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>( "lis_slam/feature/cloud_surface_sharp", 10);
+		
 		allocateMemory();
 	}		
 	
@@ -210,7 +222,19 @@ public:
 				dtor.assignCloudInfo();
 				lis_slam::cloud_info cloudInfo = dtor.current_cloud_info_;
 				pubDistortedCloud.publish(cloudInfo.cloud_deskewed);
-				pubCloudInfo.publish(cloudInfo);
+				
+				fext.initCloudInfo(cloudInfo);
+				fext.featureExtraction(); //线面特征提取
+				fext.assignCouldInfo(); //更新并获取CouldInfo
+				lis_slam::cloud_info cloudInfoOut = fext.getCloudInfo();
+				fext.resetParameters();
+				
+				pubCloudInfo.publish(cloudInfoOut);
+				
+				pubCornerPoints.publish(cloudInfoOut.cloud_corner);
+				pubSurfacePoints.publish(cloudInfoOut.cloud_surface);
+				pubSharpCornerPoints.publish(cloudInfoOut.cloud_corner_sharp);
+				pubSharpSurfacePoints.publish(cloudInfoOut.cloud_surface_sharp);
 
 				end = std::chrono::system_clock::now();
 				std::chrono::duration<float> elapsed_seconds = end - start;

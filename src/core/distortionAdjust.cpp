@@ -197,8 +197,8 @@ void DistortionAdjust::initCloudPoint(pcl::PointCloud<PointXYZIRT>::Ptr& cloud_i
 	current_cloud_time_ = cloudHeader.stamp.toSec();
 
 	// get timestamp
-	timeScanCur = current_cloud_time_ - scan_period_ / 2.0;;
-	// timeScanCur = current_cloud_time_;
+	// timeScanCur = current_cloud_time_ - scan_period_ / 2.0;;
+	timeScanCur = current_cloud_time_;
 	timeScanEnd = timeScanCur + current_cloud_data_->points.back().time;  // Velodyne
 	
 }
@@ -209,7 +209,7 @@ void DistortionAdjust::assignCloudInfo()
 
 	sensor_msgs::PointCloud2 tempCloud;
 
-	ROS_WARN("current_cloud_data_.size: %d", current_cloud_data_->size());
+	// ROS_WARN("current_cloud_data_.size: %d", current_cloud_data_->size());
 
 	pcl::toROSMsg(*current_cloud_data_, tempCloud);
 	tempCloud.header.stamp = cloudHeader.stamp;
@@ -242,7 +242,6 @@ bool DistortionAdjust::deskewInfo()
 	if(!gpsVelDeskewInfo()) {
 		ROS_WARN("gpsVelDeskewInfo() == false");
 		return false;
-	
 	}
 	// motion compensation for lidar measurements:
 	current_velocity_data_ = vel_data_.front();
@@ -262,7 +261,7 @@ void DistortionAdjust::imuDeskewInfo()
         new_imu_data_.clear();
     }
 
-    bool valid_imu = IMUData::SyncData(unsynced_imu_, imu_data_, timeScanCur);
+    bool valid_imu = IMUData::SyncData(unsynced_imu_, imu_data_, current_cloud_time_);
 
 	
 	current_cloud_info_.imuAvailable = false;
@@ -272,10 +271,6 @@ void DistortionAdjust::imuDeskewInfo()
 		double imuRoll, imuPitch, imuYaw;
 		tf::Quaternion orientation(imu_data_.front().orientation.x, imu_data_.front().orientation.y, 
 								   imu_data_.front().orientation.z, imu_data_.front().orientation.w);
-		// orientation.w() = imu_data_.front().orientation.w;
-		// orientation.x() = imu_data_.front().orientation.x;
-		// orientation.y() = imu_data_.front().orientation.y;
-		// orientation.z() = imu_data_.front().orientation.z;
 		tf::Matrix3x3(orientation).getRPY(imuRoll, imuPitch, imuYaw);
 
 		current_cloud_info_.imuRollInit = imuRoll;
@@ -406,7 +401,7 @@ bool DistortionAdjust::gpsVelDeskewInfo()
         new_vel_data_.clear();
     }
 
-	bool valid_velocity = VelocityData::SyncData(unsynced_velocity_, vel_data_, timeScanCur);
+	bool valid_velocity = VelocityData::SyncData(unsynced_velocity_, vel_data_, current_cloud_time_);
 	
 	return valid_velocity;
 }
