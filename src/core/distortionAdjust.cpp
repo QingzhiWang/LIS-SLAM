@@ -423,28 +423,30 @@ bool DistortionAdjust::AdjustCloud()
     pcl::PointCloud<PointXYZIRT>::Ptr origin_cloud_ptr(new pcl::PointCloud<PointXYZIRT>(*current_cloud_data_));
     current_cloud_data_.reset(new pcl::PointCloud<PointXYZIRT>());
 
-    float orientation_space = 2.0 * M_PI;
-    float delete_space = 5.0 * M_PI / 180.0;
-    float start_orientation = atan2(origin_cloud_ptr->points[0].y, origin_cloud_ptr->points[0].x);
+    // float orientation_space = 2.0 * M_PI;
+    // float delete_space = 5.0 * M_PI / 180.0;
+    // float start_orientation = atan2(origin_cloud_ptr->points[0].y, origin_cloud_ptr->points[0].x);
 
-    Eigen::AngleAxisf t_V(start_orientation, Eigen::Vector3f::UnitZ());
-    Eigen::Matrix3f rotate_matrix = t_V.matrix();
-    Eigen::Matrix4f transform_matrix = Eigen::Matrix4f::Identity();
-    transform_matrix.block<3,3>(0,0) = rotate_matrix.inverse();
-    pcl::transformPointCloud(*origin_cloud_ptr, *origin_cloud_ptr, transform_matrix);
+    // Eigen::AngleAxisf t_V(start_orientation, Eigen::Vector3f::UnitZ());
+    // Eigen::Matrix3f rotate_matrix = t_V.matrix();
+    // Eigen::Matrix4f transform_matrix = Eigen::Matrix4f::Identity();
+    // transform_matrix.block<3,3>(0,0) = rotate_matrix.inverse();
+    // pcl::transformPointCloud(*origin_cloud_ptr, *origin_cloud_ptr, transform_matrix);
 
-    velocity_ = rotate_matrix * velocity_;
-    angular_rate_ = rotate_matrix * angular_rate_;
+    // velocity_ = rotate_matrix * velocity_;
+    // angular_rate_ = rotate_matrix * angular_rate_;
 
     for (size_t point_index = 1; point_index < origin_cloud_ptr->points.size(); ++point_index) {
-        float orientation = atan2(origin_cloud_ptr->points[point_index].y, origin_cloud_ptr->points[point_index].x);
-        if (orientation < 0.0)
-            orientation += 2.0 * M_PI;
+        // float orientation = atan2(origin_cloud_ptr->points[point_index].y, origin_cloud_ptr->points[point_index].x);
+        // if (orientation < 0.0)
+        //     orientation += 2.0 * M_PI;
         
-        if (orientation < delete_space || 2.0 * M_PI - orientation < delete_space)
-            continue;
+        // if (orientation < delete_space || 2.0 * M_PI - orientation < delete_space)
+        //     continue;
 
-        float real_time = fabs(orientation) / orientation_space * scan_period_ - scan_period_ / 2.0;
+        // float real_time = fabs(orientation) / orientation_space * scan_period_ - scan_period_ / 2.0;
+        
+		float real_time = origin_cloud_ptr->points[point_index].time + current_cloud_time_ - scan_period_ / 2.0;
 
         Eigen::Vector3f origin_point(origin_cloud_ptr->points[point_index].x,
                                      origin_cloud_ptr->points[point_index].y,
@@ -464,7 +466,7 @@ bool DistortionAdjust::AdjustCloud()
         current_cloud_data_->points.push_back(point);
     }
 
-    pcl::transformPointCloud(*current_cloud_data_, *current_cloud_data_, transform_matrix.inverse());
+    // pcl::transformPointCloud(*current_cloud_data_, *current_cloud_data_, transform_matrix.inverse());
     return true;
 }
 

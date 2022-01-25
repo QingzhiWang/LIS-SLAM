@@ -173,7 +173,8 @@ bool LaserProcessing ::cachePointCloud()
 
 	// get timestamp
 	cloudHeader = currentCloudMsg.header;
-	timeScanCur = cloudHeader.stamp.toSec();
+	// timeScanCur = cloudHeader.stamp.toSec();
+	timeScanCur = cloudHeader.stamp.toSec() - 0.05;
 	timeScanEnd = timeScanCur + laserCloudIn->points.back().time;  // Velodyne
 
 	return true;
