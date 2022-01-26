@@ -1136,7 +1136,8 @@ public:
                     cloud_temp->points.push_back(cloud_in_out->points[i]);
             }
         }
-        cloud_temp->points.swap(cloud_in_out->points);
+        // cloud_temp->points.swap(cloud_in_out->points);
+		*cloud_in_out = *cloud_temp;
 
         std::chrono::steady_clock::time_point toc = std::chrono::steady_clock::now();
         std::chrono::duration<double> time_used = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic);

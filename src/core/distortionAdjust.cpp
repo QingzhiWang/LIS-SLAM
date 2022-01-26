@@ -446,7 +446,7 @@ bool DistortionAdjust::AdjustCloud()
 
         // float real_time = fabs(orientation) / orientation_space * scan_period_ - scan_period_ / 2.0;
         
-		float real_time = origin_cloud_ptr->points[point_index].time + current_cloud_time_ - scan_period_ / 2.0;
+		float real_time = origin_cloud_ptr->points[point_index].time - scan_period_ / 2.0;
 
         Eigen::Vector3f origin_point(origin_cloud_ptr->points[point_index].x,
                                      origin_cloud_ptr->points[point_index].y,

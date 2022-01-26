@@ -2402,6 +2402,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		
 				// curKeyFramePtr->loop_container.push_back(bestMatched);	
 				
+				
 				int loopSubMapCur = -1;
 				auto it = keyframeInSubmapIndex.find(loopKeyCur);
 				if(it != keyframeInSubmapIndex.end()){
@@ -2591,9 +2592,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         // add loop constriant
         loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
 
-		*cureKeyframeCloud = *transformPointCloud(cureKeyframeCloud, tCorrect);
-		publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
-
         return true;
     }
 
@@ -2709,9 +2707,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         // add loop constriant
         loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
 
-		// *cureKeyframeCloud = *transformPointCloud(cureKeyframeCloud, tCorrect);
-		// publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
-
         return true;
     }
 
@@ -2754,7 +2749,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         double bestScore = std::numeric_limits<double>::max();
 		Eigen::Affine3f correctionLidarFrame;
 		Eigen::Affine3f key2PreSubMapTrans;
-        static Eigen::Affine3f correctionKey2PreSubMap = Eigen::Affine3f::Identity();
+        // static Eigen::Affine3f correctionKey2PreSubMap = Eigen::Affine3f::Identity();
 
         for (int i = 0; i < loopSubMapPre.size(); i++) 
         {
@@ -2788,7 +2783,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
 					key2PreSubMapTrans = subMapTrans.inverse() * keyTrans;
 				}
-				key2PreSubMapTrans = correctionKey2PreSubMap * key2PreSubMapTrans;
+				// key2PreSubMapTrans = correctionKey2PreSubMap * key2PreSubMapTrans;
 
 				// Align clouds
 				pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
@@ -2830,7 +2825,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         }
         std::cout << "loop found!!" << std::endl;
 		
-		correctionKey2PreSubMap = correctionLidarFrame;
+		// correctionKey2PreSubMap = correctionLidarFrame;
 
 		Eigen::Affine3f key2CurSubMapTrans;
 		int loopSubMapCur = -1;
@@ -2845,11 +2840,17 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		}
 
         float X, Y, Z, ROLL, PITCH, YAW;
-        Eigen::Affine3f tCorrect = correctionLidarFrame * key2PreSubMapTrans * key2CurSubMapTrans.inverse();  // pre-multiplying -> successive rotation about a fixed frame
-        pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
-        gtsam::Pose3 pose = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
-        gtsam::Vector Vector6(6);
-        float noiseScore = 0.01;
+		Eigen::Affine3f curSubMap2KeyTrans = key2CurSubMapTrans.inverse();
+		// Eigen::Affine3f tWrong = pclPointToAffine3f(subMapInfo[loopSubMapCur]->submap_pose_6D_optimized);
+        Eigen::Affine3f tCorrect = correctionLidarFrame * key2PreSubMapTrans * curSubMap2KeyTrans;  // pre-multiplying -> successive rotation about a fixed frame
+        
+		pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
+        gtsam::Pose3 poseFrom = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
+		// gtsam::Pose3 poseTo = pclPointTogtsamPose3(subMapInfo[bestMatched]->submap_pose_6D_optimized);
+        gtsam::Pose3 poseTo = Pose3(Rot3::RzRyRx(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
+
+		gtsam::Vector Vector6(6);
+        float noiseScore = 0.001;
         // float noiseScore = bestScore*0.01;
         Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
         noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
@@ -2857,16 +2858,26 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         // Add pose constraint
         // mtx.lock();
         loopIndexQueue.push_back(make_pair(loopSubMapCur, bestMatched));
-        loopPoseQueue.push_back(pose);
+        loopPoseQueue.push_back(poseFrom.between(poseTo));
         loopNoiseQueue.push_back(constraintNoise);
         // mtx.unlock();
 
         // add loop constriant
         loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
 
-		*cureKeyframeCloud = *transformPointCloud(cureKeyframeCloud, tCorrect);
-		publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 
+		auto thisCurId = subMapInfo.find(loopSubMapCur);
+		if (thisCurId != subMapInfo.end()) 
+		{
+			pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+			tmpCloud->clear();
+			*tmpCloud += *subMapInfo[loopSubMapCur]->submap_dynamic;
+			*tmpCloud += *subMapInfo[loopSubMapCur]->submap_pole;
+			*tmpCloud += *subMapInfo[loopSubMapCur]->submap_ground;
+			*tmpCloud += *subMapInfo[loopSubMapCur]->submap_building;
+			*tmpCloud = *transformPointCloud(tmpCloud, tCorrect);
+			publishLabelCloud(&pubTestCur, tmpCloud, timeLaserInfoStamp, odometryFrame);
+		}
         return true;
     }
 
@@ -3298,6 +3309,12 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
     vector<gtsam::Pose3> subMapPoseQueue;
     vector<gtsam::noiseModel::Diagonal::shared_ptr> subMapNoiseQueue;
 
+
+	ros::Publisher pubTestPre;
+    ros::Publisher pubTestCur;
+    ros::Publisher pubTestPreN;
+    ros::Publisher pubTestCurN;
+
     
     void allocateMemory() 
 	{
@@ -3359,6 +3376,11 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 		pubOdometryGlobal = nh.advertise<nav_msgs::Odometry> (odomTopic + "/fusion", 200);
         
         allocateMemory();
+
+		pubTestPre = nh.advertise<sensor_msgs::PointCloud2>("/op_pre", 1);
+        pubTestCur = nh.advertise<sensor_msgs::PointCloud2>("/op_cur", 1);
+        pubTestPreN = nh.advertise<sensor_msgs::PointCloud2>("/op_pre_n", 1);
+        pubTestCurN = nh.advertise<sensor_msgs::PointCloud2>("/op_cur_n", 1);
     }
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr &msgIn) 
@@ -3446,7 +3468,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
             cout << "\r" << std::flush << "Processing feature cloud " << it->first << " of " << cloudSubMapPoses6D->size() << " ...";
         }
 
-        publishLabelCloud(&pubCloudMap, globalMapCloud, timeSubMapInfoStamp, mapFrame);
+        publishLabelCloud(&pubCloudMap, globalMapCloud, timeSubMapInfoStamp, odometryFrame);
     }
 
 
@@ -3648,7 +3670,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			this->transform_bbx(curSubMapPtr->local_bound, curSubMapPtr->local_cp, curSubMapPtr->bound, curSubMapPtr->cp, tran_map);
 			
 			bounds_t bbx_intersection;
-			get_intersection_bbx(curSubMapPtr->bound, preSubMap->bound, bbx_intersection, 10.0);
+			get_intersection_bbx(curSubMapPtr->bound, preSubMap->bound, bbx_intersection, 5.0);
 
 			laserCloudCornerFromSubMap->points.insert(laserCloudCornerFromSubMap->points.end(), 
 													preSubMap->submap_pole->points.begin(), 
@@ -3666,8 +3688,17 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			*laserCloudCornerFromSubMap = *transformPointCloud(laserCloudCornerFromSubMap, &preSubMap->submap_pose_6D_optimized);
 			*laserCloudSurfFromSubMap = *transformPointCloud(laserCloudSurfFromSubMap, &preSubMap->submap_pose_6D_optimized);
         	
+			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerFromSubMap: %d.\033[0m", laserCloudCornerFromSubMap->size());
+			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfFromSubMap: %d.\033[0m", laserCloudSurfFromSubMap->size());
+		publishLabelCloud(&pubTestPre, laserCloudSurfFromSubMap, timeSubMapInfoStamp, odometryFrame);
+
+
 			bbx_filter(laserCloudCornerFromSubMap, bbx_intersection);
         	bbx_filter(laserCloudSurfFromSubMap, bbx_intersection);
+
+			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerFromSubMap: %d.\033[0m", laserCloudCornerFromSubMap->size());
+			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfFromSubMap: %d.\033[0m", laserCloudSurfFromSubMap->size());
+		publishLabelCloud(&pubTestPreN, laserCloudSurfFromSubMap, timeSubMapInfoStamp, odometryFrame);
 		
 			laserCloudCornerLast->clear();
 			laserCloudSurfLast->clear();
@@ -3677,26 +3708,40 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			laserCloudCornerLast->points.insert(laserCloudCornerLast->points.end(), 
 												curSubMapPtr->submap_pole->points.begin(), 
 												curSubMapPtr->submap_pole->points.end());
-			laserCloudSurfLast->points.insert(laserCloudSurfLastDS->points.end(), 
+			laserCloudSurfLast->points.insert(laserCloudSurfLast->points.end(), 
 												curSubMapPtr->submap_dynamic->points.begin(), 
 												curSubMapPtr->submap_dynamic->points.end());
-			laserCloudSurfLast->points.insert(laserCloudSurfLastDS->points.end(), 
+			laserCloudSurfLast->points.insert(laserCloudSurfLast->points.end(), 
 												curSubMapPtr->submap_ground->points.begin(), 
 												curSubMapPtr->submap_ground->points.end());
-			laserCloudSurfLast->points.insert(laserCloudSurfLastDS->points.end(), 
+			laserCloudSurfLast->points.insert(laserCloudSurfLast->points.end(), 
 												curSubMapPtr->submap_building->points.begin(), 
 												curSubMapPtr->submap_building->points.end());
 			
-			tran_map = trans2Affine3f(transformTobeMapped);	
-			*laserCloudCornerLast = *transformPointCloud(laserCloudCornerLast, tran_map);
-			*laserCloudSurfLast = *transformPointCloud(laserCloudSurfLast, tran_map);
-			
+			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerLast: %d.\033[0m", laserCloudCornerLast->size());
+			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfLast: %d.\033[0m", laserCloudSurfLast->size());
+		publishLabelCloud(&pubTestCur, laserCloudSurfLast, timeSubMapInfoStamp, odometryFrame);
+		
+			// tran_map = trans2Affine3f(transformTobeMapped);	
+			// *laserCloudCornerLast = *transformPointCloud(laserCloudCornerLast, tran_map);
+			// *laserCloudSurfLast = *transformPointCloud(laserCloudSurfLast, tran_map);
+
+			centerpoint_t cp;
+			get_bound_cpt(bbx_intersection, cp);
+			tran_map = tran_map.inverse();
+			this->transform_bbx(bbx_intersection, cp, bbx_intersection, cp, tran_map);
+
 			bbx_filter(laserCloudCornerLast, bbx_intersection);
         	bbx_filter(laserCloudSurfLast, bbx_intersection);
-
+			
+			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerLast: %d.\033[0m", laserCloudCornerLast->size());
+			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfLast: %d.\033[0m", laserCloudSurfLast->size());
+		publishLabelCloud(&pubTestCurN, laserCloudSurfLast, timeSubMapInfoStamp, odometryFrame);
+		
 			*laserCloudCornerLastDS = *laserCloudCornerLast;
 			*laserCloudSurfLastDS = *laserCloudSurfLast;
-		
+			SubMapManager::voxel_downsample_pcl(laserCloudCornerLast, laserCloudCornerLastDS, 0.2);
+			SubMapManager::voxel_downsample_pcl(laserCloudSurfLast, laserCloudSurfLastDS, 0.5);
 		
 		}else{
 			ROS_WARN("extractSubMapCloud -->> Dont find subMapInfo[%d]!", curSubMapId - 1);
@@ -3705,6 +3750,9 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         
         laserCloudCornerLastDSNum = laserCloudCornerLastDS->points.size();
         laserCloudSurfLastDSNum = laserCloudSurfLastDS->points.size();
+
+		ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerLastDSNum: %d.\033[0m", laserCloudCornerLastDSNum);
+		ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfLastDSNum: %d.\033[0m", laserCloudSurfLastDSNum);
 
 	}
 
@@ -3820,19 +3868,19 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
 		for (int i = 0; i < (int)subMapIndexContainer.size(); ++i)
 		{
-			int indexTo = subMapIndexContainer[i].first;
-			int indexFrom = subMapIndexContainer[i].second;
+			int indexFrom = subMapIndexContainer[i].first;
+			int indexTo = subMapIndexContainer[i].second;
 			gtsam::Pose3 poseBetween = subMapPoseQueue[i];
 			gtsam::noiseModel::Diagonal::shared_ptr noiseBetween = subMapNoiseQueue[i];
 			gtSAMgraph.add(BetweenFactor<Pose3>(indexFrom, indexTo, poseBetween, noiseBetween));
 
-			// gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
-			// initialEstimate.insert(indexTo, poseTo);
+			gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
+			initialEstimate.insert(indexTo, poseTo);
 		}
 
-		int indexTo = subMapIndexContainer[0].first;
-		gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
-		initialEstimate.insert(indexTo, poseTo);
+		// int indexTo = subMapIndexContainer[0].second;
+		// gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
+		// initialEstimate.insert(indexTo, poseTo);
 
 		subMapIndexContainer.clear();
 		subMapPoseQueue.clear();
@@ -3999,8 +4047,8 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
             
 				auto thisCurId = subMapInfo.find(key);
         		if (thisCurId != subMapInfo.end()){
-        			subMapInfo[curSubMapId]->submap_pose_6D_optimized = cloudSubMapPoses6D->points[i];
-        			subMapInfo[curSubMapId]->submap_pose_3D_optimized = cloudSubMapPoses3D->points[i];
+        			subMapInfo[thisCurId->first]->submap_pose_6D_optimized = cloudSubMapPoses6D->points[i];
+        			subMapInfo[thisCurId->first]->submap_pose_3D_optimized = cloudSubMapPoses3D->points[i];
 				}else{
 					ROS_WARN("correctPoses -->> Dont find subMapInfo[%d]!", key);
 					continue;
@@ -4013,6 +4061,73 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
     }
 
 
+
+
+
+	void icpAlignment(pcl::PointCloud<PointXYZIL>::Ptr source_pc, pcl::PointCloud<PointXYZIL>::Ptr target_pc, float transformIn[])
+	{
+
+		ROS_WARN("Source PC Size: %d, Target PC Size: %d", source_pc->points.size(), target_pc->points.size());
+
+        std::cout << "matching..." << std::flush;
+        auto t1 = ros::Time::now();
+
+        // ICP Settings
+        static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> icp;
+        icp.setMaxCorrespondenceDistance(0.2);
+        icp.setMaximumIterations(50);
+        icp.setTransformationEpsilon(1e-5);
+        icp.setEuclideanFitnessEpsilon(1e-5);
+        icp.setRANSACIterations(0);
+
+		Eigen::Affine3f initLidarFrame = trans2Affine3f(transformIn);
+		// Align clouds
+		pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+		*tmpCloud = *transformPointCloud(source_pc, initLidarFrame);
+		icp.setInputSource(tmpCloud);
+
+		icp.setInputTarget(target_pc);
+		pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
+		icp.align(*unused_result);
+
+		double score = icp.getFitnessScore();
+		
+		Eigen::Affine3f correctionLidarFrame;
+		correctionLidarFrame = icp.getFinalTransformation();
+        
+		auto t2 = ros::Time::now();
+        std::cout << " done" << std::endl;
+        std::cout << "score: " << score << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
+        
+		float X, Y, Z, ROLL, PITCH, YAW;
+        Eigen::Affine3f tCorrect = correctionLidarFrame * initLidarFrame;  // pre-multiplying -> successive rotation about a fixed frame
+        pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
+        
+		std::cout << "TransformIn: [" << ROLL << ", " << PITCH << ", " << YAW << ", " 
+                                      << X << ", " << Y << ", " << Z << "]" << std::endl;
+
+		if(score <= 3.0) 
+		{
+			transformTobeMapped[2] = YAW;
+			transformTobeMapped[3] = X;
+			transformTobeMapped[4] = Y;
+		}
+
+	}
+
+    void scan2SubMapOptimizationICP()
+	{
+		pcl::PointCloud<PointXYZIL>::Ptr sourcePC( new pcl::PointCloud<PointXYZIL>());
+		pcl::PointCloud<PointXYZIL>::Ptr targetPC( new pcl::PointCloud<PointXYZIL>());
+
+		*targetPC += *laserCloudSurfFromSubMap;
+		*targetPC += *laserCloudCornerFromSubMap;
+		
+		*targetPC += *laserCloudSurfLast;
+		*sourcePC += *laserCloudCornerLast;
+
+		icpAlignment(sourcePC, targetPC, transformTobeMapped);
+	}
 
 
 
@@ -4042,22 +4157,22 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
                     break;          
             }
 
-			ROS_WARN("iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
-            transformUpdate();
+			ROS_WARN("\033[1;32m OptmizationThread -> iterCount: %d, deltaR: %f, deltaT: %f.\033[0m", iterCount, deltaR, deltaT);
+			transformUpdate();
 
 			gtsam::Pose3 poseFrom = pclPointTogtsamPose3(SubMapPoses6D[preSubMapId]);
 			gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
 			noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
 
-			//  std::cout<<"*********************************************************"<<std::endl;
-			// for(int i=0;i<6;i++)
-			// {
-			//     std::cout<<"After Optimization : transformTobeMapped["<<i<<"] : "<<transformTobeMapped[i]<<std::endl;
-			// }
-			// std::cout<<"*********************************************************"<<std::endl;
+			std::cout<<"*********************************************************"<<std::endl;
+			for(int i=0;i<6;i++)
+			{
+			    std::cout<<"After Optimization : transformTobeMapped["<<i<<"] : "<<transformTobeMapped[i]<<std::endl;
+			}
+			std::cout<<"*********************************************************"<<std::endl;
 
-			subMapIndexContainerAll.push_back(make_pair(curSubMapId, preSubMapId));
-			subMapIndexContainer.push_back(make_pair(curSubMapId, preSubMapId));
+			subMapIndexContainerAll.push_back(make_pair(preSubMapId, curSubMapId));
+			subMapIndexContainer.push_back(make_pair(preSubMapId, curSubMapId));
 			subMapPoseQueue.push_back(poseFrom.between(poseTo));
 			subMapNoiseQueue.push_back(odometryNoise);
 
