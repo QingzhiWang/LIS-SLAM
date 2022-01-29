@@ -5,8 +5,8 @@
 
 lis_slam:
 
-  PROJECT_PATH: "/home/wqz/AWorkSpace/LIS-SLAM/src/lis-slam/"
-  MODEL_PATH: "/home/wqz/AWorkSpace/darknet53"
+  PROJECT_PATH: "/home/wqz/LIS_SLAM/src/lis-slam/"
+  MODEL_PATH: "/home/wqz/darknet53"
 
   # Export settings
   savePCD: false                                       
