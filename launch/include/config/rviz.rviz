@@ -62,12 +62,12 @@ Visualization Manager:
           Reference Frame: map
           Value: false
         - Class: rviz/Axes
-          Enabled: true
+          Enabled: false
           Length: 2
           Name: Odom
           Radius: 0.5
           Reference Frame: odom
-          Value: true
+          Value: false
         - Class: rviz/Axes
           Enabled: true
           Length: 1
@@ -79,7 +79,7 @@ Visualization Manager:
           Cell Size: 10
           Class: rviz/Grid
           Color: 160; 160; 164
-          Enabled: true
+          Enabled: false
           Line Style:
             Line Width: 0.029999999329447746
             Value: Lines
@@ -92,7 +92,7 @@ Visualization Manager:
           Plane: XY
           Plane Cell Count: 100
           Reference Frame: <Fixed Frame>
-          Value: true
+          Value: false
       Enabled: true
       Name: links
     - Class: rviz/Group
@@ -308,12 +308,12 @@ Visualization Manager:
             Min Value: -10
             Value: true
           Axis: Z
-          Channel Name: rgb
+          Channel Name: label
           Class: rviz/PointCloud2
           Color: 255; 255; 255
-          Color Transformer: RGB8
+          Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -324,11 +324,11 @@ Visualization Manager:
           Size (Pixels): 2
           Size (m): 0.09000000357627869
           Style: Points
-          Topic: /lis_slam/semantic_fusion/semantic_cloud_rgb
+          Topic: /lis_slam/semantic_fusion/semantic_cloud
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
       Enabled: true
       Name: Semantic Cloud
     - Class: rviz/Group
@@ -350,7 +350,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: true
-          Enabled: true
+          Enabled: false
           Keep: 1000
           Name: front
           Position Tolerance: 0.10000000149011612
@@ -366,7 +366,7 @@ Visualization Manager:
             Value: Axes
           Topic: /odometry/front
           Unreliable: false
-          Value: true
+          Value: false
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -384,7 +384,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: true
-          Enabled: true
+          Enabled: false
           Keep: 1000
           Name: keyFrame
           Position Tolerance: 0.10000000149011612
@@ -400,7 +400,7 @@ Visualization Manager:
             Value: Arrow
           Topic: /odometry/keyframe
           Unreliable: false
-          Value: true
+          Value: false
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -418,7 +418,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: false
-          Enabled: true
+          Enabled: false
           Keep: 300
           Name: keyframe_imu
           Position Tolerance: 0.10000000149011612
@@ -434,7 +434,7 @@ Visualization Manager:
             Value: Arrow
           Topic: /odometry/keyframe_imu
           Unreliable: false
-          Value: true
+          Value: false
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -486,7 +486,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: false
-          Enabled: false
+          Enabled: true
           Keep: 3000
           Name: lidar
           Position Tolerance: 0.10000000149011612
@@ -502,7 +502,7 @@ Visualization Manager:
             Value: Arrow
           Topic: /odometry/lidar
           Unreliable: false
-          Value: false
+          Value: true
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -571,7 +571,7 @@ Visualization Manager:
           Topic: /odometry/keyframe_imu
           Unreliable: false
           Value: false
-      Enabled: true
+      Enabled: false
       Name: Odometry
     - Class: rviz/Group
       Displays:
@@ -657,8 +657,8 @@ Visualization Manager:
           Axis: Z
           Channel Name: intensity
           Class: rviz/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
+          Color: 32; 74; 135
+          Color Transformer: FlatColor
           Decay Time: 0
           Enabled: true
           Invert Rainbow: false
@@ -669,7 +669,7 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.800000011920929
+          Size (m): 0.6000000238418579
           Style: Flat Squares
           Topic: /lis_slam/make_submap/keyframe_id
           Unreliable: false
@@ -685,8 +685,8 @@ Visualization Manager:
           Axis: Z
           Channel Name: intensity
           Class: rviz/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
+          Color: 204; 0; 0
+          Color Transformer: FlatColor
           Decay Time: 0
           Enabled: true
           Invert Rainbow: false
@@ -697,7 +697,7 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 3
-          Size (m): 2
+          Size (m): 1.600000023841858
           Style: Flat Squares
           Topic: /lis_slam/make_submap/submap_id
           Unreliable: false
@@ -760,7 +760,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
-      Enabled: true
+      Enabled: false
       Name: Submap
     - Class: rviz/Group
       Displays:
@@ -773,10 +773,10 @@ Visualization Manager:
           Axis: Z
           Channel Name: intensity
           Class: rviz/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: Intensity
+          Color: 204; 0; 0
+          Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -785,13 +785,41 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 3
-          Size (m): 2
+          Size (m): 1.600000023841858
           Style: Flat Squares
-          Topic: /lis_slam/make_submap/submap_id
+          Topic: /lis_slam/mapping/submap_id
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 32; 74; 135
+          Color Transformer: FlatColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: keyframe_id
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.6000000238418579
+          Style: Flat Squares
+          Topic: /lis_slam/mapping/keyframe_id
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
         - Alpha: 0.699999988079071
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -848,7 +876,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
-        - Alpha: 1
+        - Alpha: 0.6000000238418579
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 5.130220890045166
@@ -868,9 +896,9 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
-          Size (Pixels): 1.2000000476837158
-          Size (m): 0.20000000298023224
-          Style: Points
+          Size (Pixels): 1
+          Size (m): 0.05999999865889549
+          Style: Flat Squares
           Topic: /lis_slam/mapping/map_global
           Unreliable: false
           Use Fixed Frame: true
@@ -967,21 +995,17 @@ Visualization Manager:
           Marker Topic: /lis_slam/make_submap/loop_closure_constraints
           Name: Loop constraint
           Namespaces:
-            loop_edges: true
-            loop_nodes: true
-            loop_nodes_id: true
+            {}
           Queue Size: 1
           Value: true
         - Class: rviz/MarkerArray
-          Enabled: true
+          Enabled: false
           Marker Topic: /lis_slam/make_submap/loop_closure_constraints_test
           Name: Test Loop constraint
           Namespaces:
-            loop_edges: true
-            loop_nodes: true
-            test_loop_nodes_id: true
+            {}
           Queue Size: 1
-          Value: true
+          Value: false
       Enabled: true
       Name: EPSC
     - Class: rviz/Group
@@ -1284,25 +1308,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 168.5572509765625
+      Distance: 220.21063232421875
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 240.19009399414062
-        Y: -112.03466796875
-        Z: -36.52602767944336
+        X: 233.7339630126953
+        Y: -66.16171264648438
+        Z: -9.2265043258667
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6547971963882446
+      Pitch: 1.5697963237762451
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 3.553187131881714
+      Yaw: 4.915570259094238
     Saved: ~
 Window Geometry:
   Displays:

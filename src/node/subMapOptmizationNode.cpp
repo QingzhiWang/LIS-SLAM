@@ -44,19 +44,20 @@ using symbol_shorthand::G;  // GPS pose
 using symbol_shorthand::V;  // Vel   (xdot,ydot,zdot)
 using symbol_shorthand::X;  // Pose3 (x,y,z,r,p,y)
 
+bool FINISHMAP = false;
 
 std::mutex subMapMtx;
 std::deque<int> subMapIndexQueue;
 map<int, submap_Ptr> subMapInfo;
 
-multimap<int, int> loopIndexContainer;  // from new to old
+
 vector<pair<int, int>> loopIndexQueue;
 vector<gtsam::Pose3> loopPoseQueue;
 vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseQueue;
 
 map<int, vector<Eigen::Affine3f>> keyFrame2SubMapPose;
 
-
+multimap<int, int> loopIndexContainer;  // from new to old
 multimap<int, int> loopIndexContainerTest;
 
 
@@ -85,7 +86,7 @@ Eigen::Affine3f odom2affine(nav_msgs::Odometry odom) {
 class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 {
  public:
-	bool FINISHMAP = false;
+	// bool FINISHMAP = false;
 
  	ros::ServiceServer service;
     ros::Subscriber subCloud;
@@ -1066,7 +1067,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         currentKeyFrame->relative_pose = point6d;
 
         //calculate bbx (global)
-        Eigen::Affine3f tran_map = pclPointToAffine3f(currentKeyFrame->optimized_pose);
+        Eigen::Affine3f  tran_map = pclPointToAffine3f(currentKeyFrame->optimized_pose);
         this->transform_bbx(currentKeyFrame->local_bound, currentKeyFrame->local_cp, currentKeyFrame->bound, currentKeyFrame->cp, tran_map);
 
         keyframe_Ptr tmpKeyFrame;
@@ -3233,6 +3234,8 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
     ros::Publisher pubCloudMap;
 
     ros::Publisher pubSubMapId;
+    ros::Publisher pubKeyFrameId;
+
     ros::Publisher pubSubMapConstraintEdge;
 
     ros::Publisher pubLoopConstraintEdge;
@@ -3247,7 +3250,9 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
     pcl::PointCloud<PointType>::Ptr cloudSubMapPoses3D;
     pcl::PointCloud<PointTypePose>::Ptr cloudSubMapPoses6D;
-	
+	pcl::PointCloud<PointType>::Ptr cloudKeyFramePoses3D;
+    pcl::PointCloud<PointTypePose>::Ptr cloudKeyFramePoses6D;
+
     map<int,PointType> SubMapPoses3D;
     map<int,PointTypePose> SubMapPoses6D;
         
@@ -3315,11 +3320,17 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
     ros::Publisher pubTestPreN;
     ros::Publisher pubTestCurN;
 
+
+	ros::Publisher pubLoopConstraintEdgeTest;
+	map<int, PointType> keyFramePosesIndex3D;
     
     void allocateMemory() 
 	{
         cloudSubMapPoses3D.reset(new pcl::PointCloud<PointType>());
         cloudSubMapPoses6D.reset(new pcl::PointCloud<PointTypePose>()); 
+
+        cloudKeyFramePoses3D.reset(new pcl::PointCloud<PointType>());
+        cloudKeyFramePoses6D.reset(new pcl::PointCloud<PointTypePose>()); 
 
         laserCloudCornerLast.reset(new pcl::PointCloud<PointXYZIL>()); 
         laserCloudSurfLast.reset(new pcl::PointCloud<PointXYZIL>()); 
@@ -3370,17 +3381,22 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         pubCloudMap = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/mapping/map_global", 1);
                 
         pubSubMapId = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/mapping/submap_id", 1);
-        pubSubMapConstraintEdge = nh.advertise<visualization_msgs::MarkerArray>("lis_slam/mapping/submap_constraints", 1);
+        pubKeyFrameId = nh.advertise<sensor_msgs::PointCloud2>("lis_slam/mapping/keyframe_id", 1);
+
+		pubSubMapConstraintEdge = nh.advertise<visualization_msgs::MarkerArray>("lis_slam/mapping/submap_constraints", 1);
         
 		pubSubMapOdometryGlobal = nh.advertise<nav_msgs::Odometry> (odomTopic + "/submap", 200);
 		pubOdometryGlobal = nh.advertise<nav_msgs::Odometry> (odomTopic + "/fusion", 200);
-        
-        allocateMemory();
+                
+		allocateMemory();
 
 		pubTestPre = nh.advertise<sensor_msgs::PointCloud2>("/op_pre", 1);
         pubTestCur = nh.advertise<sensor_msgs::PointCloud2>("/op_cur", 1);
         pubTestPreN = nh.advertise<sensor_msgs::PointCloud2>("/op_pre_n", 1);
         pubTestCurN = nh.advertise<sensor_msgs::PointCloud2>("/op_cur_n", 1);
+
+		pubLoopConstraintEdgeTest = nh.advertise<visualization_msgs::MarkerArray>("lis_slam/mapping/loop_closure_constraints_test", 1);
+
     }
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr &msgIn) 
@@ -3416,10 +3432,17 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
      *****************************/
     void visualizeGlobalMapThread() 
 	{
-        ros::Rate rate(0.1);
-        while (ros::ok()){
+        ros::Rate rate(0.2); //0.1
+        while (ros::ok())
+		{
+			updateKeyFrame();
             publishGlobalMap();
-            ros::spinOnce();
+			visualizeLoopClosureTest();
+
+			publishCloud(&pubSubMapId, cloudSubMapPoses3D, ros::Time::now(), odometryFrame);       
+			publishCloud(&pubKeyFrameId, cloudKeyFramePoses3D, ros::Time::now(), odometryFrame);       
+            
+			ros::spinOnce();
             rate.sleep();
         }
 
@@ -3452,6 +3475,40 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         cout << "Saving map to pcd files completed" << endl;
 	}
 
+
+	void updateKeyFrame()
+	{
+		cloudKeyFramePoses3D->clear();
+		cloudKeyFramePoses6D->clear();
+
+        for (auto it = subMapInfo.begin(); it != subMapInfo.end(); it++)
+		{
+			auto thisSubMap = it->second;
+
+			Eigen::Affine3f  curSubMapAffine = pclPointToAffine3f(thisSubMap->submap_pose_6D_optimized);
+			std::cout << "Update Submap [" << thisSubMap->submap_id <<"] Keyfrmae Pose ..." << std::endl;
+
+			for(auto inter = thisSubMap->keyframe_poses_6D_map.begin(); inter != thisSubMap->keyframe_poses_6D_map.end(); inter++)
+			{
+				Eigen::Affine3f  curKeyFrameAffine = pclPointToAffine3f(inter->second);
+				Eigen::Affine3f  curKeyFramePose = curSubMapAffine * curKeyFrameAffine;
+
+				std::cout << "Update Keyfrmae [" << inter->first <<"] Pose ..." << std::endl;
+				float transform[6];
+				pcl::getTranslationAndEulerAngles(curKeyFramePose, transform[3], transform[4], transform[5], 
+                                                      transform[0], transform[1], transform[2]);
+				PointType  point3d = trans2PointType(transform, inter->first);
+
+				cloudKeyFramePoses3D->push_back(point3d);
+				keyFramePosesIndex3D[ inter->first] = point3d;
+
+			}
+			
+        }
+
+	}
+
+
     void publishGlobalMap()
     {
         if (cloudSubMapPoses3D->points.empty() == true)
@@ -3460,17 +3517,121 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         pcl::PointCloud<PointXYZIL>::Ptr globalMapCloud(new pcl::PointCloud<PointXYZIL>());
 
         for (auto it = subMapInfo.begin(); it != subMapInfo.end(); it++) {
-            *globalMapCloud += *transformPointCloud(it->second->submap_dynamic,  &it->second->submap_pose_6D_optimized);
-            *globalMapCloud += *transformPointCloud(it->second->submap_pole,  &it->second->submap_pose_6D_optimized);
-            *globalMapCloud += *transformPointCloud(it->second->submap_ground,  &it->second->submap_pose_6D_optimized);
-            *globalMapCloud += *transformPointCloud(it->second->submap_building,  &it->second->submap_pose_6D_optimized);
-            *globalMapCloud += *transformPointCloud(it->second->submap_outlier,  &it->second->submap_pose_6D_optimized);
-            cout << "\r" << std::flush << "Processing feature cloud " << it->first << " of " << cloudSubMapPoses6D->size() << " ...";
+			auto itEnd = subMapInfo.end(); itEnd--;
+			if(FINISHMAP == true || it != itEnd)
+			{
+				*globalMapCloud += *transformPointCloud(it->second->submap_dynamic,  &it->second->submap_pose_6D_optimized);
+				*globalMapCloud += *transformPointCloud(it->second->submap_pole,  &it->second->submap_pose_6D_optimized);
+				*globalMapCloud += *transformPointCloud(it->second->submap_ground,  &it->second->submap_pose_6D_optimized);
+				*globalMapCloud += *transformPointCloud(it->second->submap_building,  &it->second->submap_pose_6D_optimized);
+				*globalMapCloud += *transformPointCloud(it->second->submap_outlier,  &it->second->submap_pose_6D_optimized);
+				cout << "\r" << std::flush << "Processing feature cloud " << it->first << " of " << cloudSubMapPoses6D->size() << " ...";
+			}
         }
 
         publishLabelCloud(&pubCloudMap, globalMapCloud, timeSubMapInfoStamp, odometryFrame);
     }
 
+
+    void visualizeLoopClosureTest() 
+    {
+        visualization_msgs::MarkerArray markerArray;
+		
+		visualization_msgs::Marker markerNodeId;
+        markerNodeId.header.frame_id = odometryFrame;
+        markerNodeId.header.stamp = ros::Time::now();
+        markerNodeId.action = visualization_msgs::Marker::ADD;
+        markerNodeId.type =  visualization_msgs::Marker::TEXT_VIEW_FACING;
+        markerNodeId.ns = "test_loop_nodes_id";
+        markerNodeId.id = 0;
+        markerNodeId.pose.orientation.w = 1;
+        markerNodeId.scale.z = 0.4; 
+        markerNodeId.color.r = 0; markerNodeId.color.g = 0; markerNodeId.color.b = 255;
+        markerNodeId.color.a = 1;
+
+        // loop nodes
+        visualization_msgs::Marker markerNode;
+        markerNode.header.frame_id = odometryFrame;
+        markerNode.header.stamp = ros::Time::now();
+        markerNode.action = visualization_msgs::Marker::ADD;
+        markerNode.type = visualization_msgs::Marker::SPHERE_LIST;
+        markerNode.ns = "loop_nodes";
+        markerNode.id = 0;
+        markerNode.pose.orientation.w = 1;
+        markerNode.scale.x = 0.4;
+        markerNode.scale.y = 0.4;
+        markerNode.scale.z = 0.4;
+        markerNode.color.r = 0.0;
+        markerNode.color.g = 0.0;
+        markerNode.color.b = 1.0;
+        markerNode.color.a = 1;
+        // loop edges
+        visualization_msgs::Marker markerEdge;
+        markerEdge.header.frame_id = odometryFrame;
+        markerEdge.header.stamp = ros::Time::now();
+        markerEdge.action = visualization_msgs::Marker::ADD;
+        markerEdge.type = visualization_msgs::Marker::LINE_LIST;
+        markerEdge.ns = "loop_edges";
+        markerEdge.id = 1;
+        markerEdge.pose.orientation.w = 1;
+        markerEdge.scale.x = 0.3;
+        markerEdge.scale.y = 0.3;
+        markerEdge.scale.z = 0.3;
+        markerEdge.color.r = 0.0;
+        markerEdge.color.g = 0.0;
+        markerEdge.color.b = 1.0;
+        markerEdge.color.a = 1;
+
+
+        for (auto it = loopIndexContainerTest.begin(); it != loopIndexContainerTest.end(); ++it) 
+        {
+            int key_cur = it->first;
+            int key_pre = it->second;
+
+            geometry_msgs::Pose pose;
+            pose.position.x =  keyFramePosesIndex3D[key_cur].x;
+            pose.position.y =  keyFramePosesIndex3D[key_cur].y;
+            pose.position.z =  keyFramePosesIndex3D[key_cur].z + 0.15;
+            int k = key_cur;
+            ostringstream str;
+            str << k;
+            markerNodeId.id = k;
+            markerNodeId.text = str.str();
+            markerNodeId.pose = pose;
+            markerArray.markers.push_back(markerNodeId);
+
+            pose.position.x =  keyFramePosesIndex3D[key_pre].x;
+            pose.position.y =  keyFramePosesIndex3D[key_pre].y;
+            pose.position.z =  keyFramePosesIndex3D[key_pre].z + 0.15;
+            k = key_pre;
+            ostringstream str_pre;
+            str_pre << k;
+            markerNodeId.id = k;
+            markerNodeId.text = str_pre.str();
+            markerNodeId.pose = pose;
+            markerArray.markers.push_back(markerNodeId);
+
+            geometry_msgs::Point p;
+            p.x = keyFramePosesIndex3D[key_cur].x;
+            p.y = keyFramePosesIndex3D[key_cur].y;
+            p.z = keyFramePosesIndex3D[key_cur].z;
+            markerNode.points.push_back(p);
+            markerEdge.points.push_back(p);
+            p.x = keyFramePosesIndex3D[key_pre].x;
+            p.y = keyFramePosesIndex3D[key_pre].y;
+            p.z = keyFramePosesIndex3D[key_pre].z;
+            markerNode.points.push_back(p);
+            markerEdge.points.push_back(p);
+        }
+
+        markerArray.markers.push_back(markerNode);
+        markerArray.markers.push_back(markerEdge);
+        pubLoopConstraintEdgeTest.publish(markerArray);
+
+		ROS_WARN("loopIndexContainerTest Size: %d !", loopIndexContainerTest.size());
+		ROS_INFO("Finshed  visualizeLoopClosureTest !");
+
+    }
 
 
 
@@ -4312,15 +4473,15 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
 					float w = 2.0 - LabelSorce[laserCloudCornerLastDS->points[i].label];
 
-                    // coeff.x = w * s * la;
-                    // coeff.y = w * s * lb;
-                    // coeff.z = w * s * lc;
-                    // coeff.intensity = w * s * ld2;
-
-                    coeff.x = s * la;
-                    coeff.y = s * lb;
-                    coeff.z = s * lc;
+                    coeff.x = w * s * la;
+                    coeff.y = w * s * lb;
+                    coeff.z = w * s * lc;
                     coeff.intensity = w * s * ld2;
+
+                    // coeff.x = s * la;
+                    // coeff.y = s * lb;
+                    // coeff.z = s * lc;
+                    // coeff.intensity = w * s * ld2;
 
                     if (s > 0.1) {
                         laserCloudOriCornerVec[i] = pointOri;
@@ -4436,15 +4597,15 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
 					float w = 2.0 - LabelSorce[laserCloudSurfLastDS->points[i].label];
 
-                    // coeff.x = w * s * pa;
-                    // coeff.y = w * s * pb;
-                    // coeff.z = w * s * pc;
-                    // coeff.intensity = w * s * pd2;
-                    
-					coeff.x = s * pa;
-                    coeff.y = s * pb;
-                    coeff.z = s * pc;
+                    coeff.x = w * s * pa;
+                    coeff.y = w * s * pb;
+                    coeff.z = w * s * pc;
                     coeff.intensity = w * s * pd2;
+                    
+					// coeff.x = s * pa;
+                    // coeff.y = s * pb;
+                    // coeff.z = s * pc;
+                    // coeff.intensity = w * s * pd2;
 
                     if (s > 0.1) {
                         laserCloudOriSurfVec[i] = pointOri;
@@ -4734,6 +4895,8 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
 		// std::string path = "/home/wqz/paperTest/my_epsc_trajectory_noloop/kitti_test.txt"; //ADD
 		std::string path = RESULT_PATH;
+		cout << "RESULT_PATH: " << RESULT_PATH << endl;
+
 
 		for(auto it = keyFrame2SubMapPose.begin(); it != keyFrame2SubMapPose.end(); it++)
 		{

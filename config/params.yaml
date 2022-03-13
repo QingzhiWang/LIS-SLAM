@@ -10,10 +10,10 @@ lis_slam:
 
   # Export settings
   savePCD: false                                       
-  savePCDDirectory: "../assets/MyNoLoop/kitti_00/"     # in your home folder, starts and ends with "/".
+  savePCDDirectory: "/AWorkSpace/TestData/map/lis/noLoop/kitti_00/"     # in your home folder, starts and ends with "/".
 
-  saveTrajectory: false
-  RESULT_PATH: "../assets/trajectory/00_pred_loop.txt"
+  saveTrajectory: true
+  RESULT_PATH: "/home/wqz/AWorkSpace/TestData/trajectory/lis/00_test.txt"
 
   useImu: true       # If using IMU data, set to "true" 
   useGPSVel : true
@@ -21,20 +21,24 @@ lis_slam:
   
   useOdometryPitchPrediction: true              # 在结构性较强时可使用前端里程计pitch预测值
   
+
+
   # Topics   velodyne_points  points_raw
   # pointCloudTopic: "points_raw"                 # Point cloud data
   # imuTopic: "imu_correct"                       # IMU data imu_correct imu_raw
   # odomTopic: "odometry"                         # IMU pre-preintegration odometry, same frequency as IMU
   # gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
   # gpsVelTopic : "/kitti/oxts/gps/vel"
-  
+  # lidarIntensity: "intensity"
+
   # Topics kitti(RAW)
   pointCloudTopic: "/kitti/velo/pointcloud"   # Point cloud data
   imuTopic: "/kitti/oxts/imu/extract"         # IMU data
   odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
   gpsTopic: "odometry/gps"                    # GPS odometry topic from navsat, see module_navsat.launch file
   gpsVelTopic : "/kitti/oxts/gps/vel"
-  
+  lidarIntensity: "i"
+
   #CQU
   # pointCloudTopic: "rslidar_points"           # Point cloud data
   # imuTopic: "imu/data"                        # IMU data
@@ -56,8 +60,7 @@ lis_slam:
   # Sensor Settings
   N_SCAN:  64                                 # number of lidar channel (i.e., 16, 32, 64, 128)
   Horizon_SCAN: 1800                          # lidar horizontal resolution (Velodyne:1800, Ouster:512,1024,2048)
-  
-  lidarIntensity: "i"
+
 
   downsampleRate: 1                          # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1 
   lidarMinRange: 1.0                         # default: 1.0, minimum lidar range to be used
