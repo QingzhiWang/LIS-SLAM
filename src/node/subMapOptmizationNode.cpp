@@ -630,7 +630,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 if(!keyframeInit())
                     continue;
                 
-                ROS_WARN("Now (keyframeInit) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+                // ROS_WARN("Now (keyframeInit) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
                 updateInitialGuess();
 
@@ -659,16 +659,16 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
                 
 				// 首先提取带匹配点云（注意：要在初始化当前帧点云前）
 				extractTargetCloud();
-                ROS_WARN("Now (extractCloud) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+                // ROS_WARN("Now (extractCloud) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
                 currentCloudInit();
 				
-				scan2SubMapOptimizationICP();
+				// scan2SubMapOptimizationICP();
                 scan2SubMapOptimization();
-                ROS_WARN("Now (scan2SubMapOptimization) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+                // ROS_WARN("Now (scan2SubMapOptimization) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
 				IMUPreintegration();
-                ROS_WARN("Now (IMUPreintegration) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
+                // ROS_WARN("Now (IMUPreintegration) time %f ms", ((std::chrono::duration<float>)(std::chrono::system_clock::now() - start)).count()*1000);
 
 				calculateTranslation();
 				float accu_tran = std::max(transformCurFrame2Submap[3], transformCurFrame2Submap[4]); 
@@ -810,7 +810,13 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.6); //0.6
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.4); //0.4
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.6); //0.5
-        
+
+        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.5); //0.2
+        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, 0.5); //0.05
+        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.5); //0.6
+        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.5); //0.4
+        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.5); //0.5
+    
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.2);
         SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, 0.4);
         
@@ -1300,29 +1306,29 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         bounds_t bbx_intersection;
         get_intersection_bbx(cur_keyframe->bound, cur_submap->bound, bbx_intersection, 2.0);
 
-        std::cout << "cur_submap local_bound: [" << cur_submap->local_bound.min_x << ", "
-                                                 << cur_submap->local_bound.min_y << ", " 
-                                                 << cur_submap->local_bound.min_z << ", " 
-                                                 << cur_submap->local_bound.max_x << ", " 
-                                                 << cur_submap->local_bound.max_y << ", " 
-                                                 << cur_submap->local_bound.max_z
-                                                 << "]" << std::endl;
+        // std::cout << "cur_submap local_bound: [" << cur_submap->local_bound.min_x << ", "
+        //                                          << cur_submap->local_bound.min_y << ", " 
+        //                                          << cur_submap->local_bound.min_z << ", " 
+        //                                          << cur_submap->local_bound.max_x << ", " 
+        //                                          << cur_submap->local_bound.max_y << ", " 
+        //                                          << cur_submap->local_bound.max_z
+        //                                          << "]" << std::endl;
 
-        std::cout << "cur_submap bound: [" << cur_submap->bound.min_x << ", "
-                                           << cur_submap->bound.min_y << ", " 
-                                           << cur_submap->bound.min_z << ", " 
-                                           << cur_submap->bound.max_x << ", " 
-                                           << cur_submap->bound.max_y << ", " 
-                                           << cur_submap->bound.max_z
-                                           << "]" << std::endl;
+        // std::cout << "cur_submap bound: [" << cur_submap->bound.min_x << ", "
+        //                                    << cur_submap->bound.min_y << ", " 
+        //                                    << cur_submap->bound.min_z << ", " 
+        //                                    << cur_submap->bound.max_x << ", " 
+        //                                    << cur_submap->bound.max_y << ", " 
+        //                                    << cur_submap->bound.max_z
+        //                                    << "]" << std::endl;
 
-        std::cout << "bbx_intersection: [" << bbx_intersection.min_x << ", "
-                                           << bbx_intersection.min_y << ", " 
-                                           << bbx_intersection.min_z << ", " 
-                                           << bbx_intersection.max_x << ", " 
-                                           << bbx_intersection.max_y << ", " 
-                                           << bbx_intersection.max_z  
-                                           << "]" << std::endl; 
+        // std::cout << "bbx_intersection: [" << bbx_intersection.min_x << ", "
+        //                                    << bbx_intersection.min_y << ", " 
+        //                                    << bbx_intersection.min_z << ", " 
+        //                                    << bbx_intersection.max_x << ", " 
+        //                                    << bbx_intersection.max_y << ", " 
+        //                                    << bbx_intersection.max_z  
+        //                                    << "]" << std::endl; 
 
 		laserCloudCornerFromSubMap->points.insert(laserCloudCornerFromSubMap->points.end(), 
 								  				cur_submap->submap_pole->points.begin(), 
@@ -1413,7 +1419,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		cloud_temp->points.insert(cloud_temp->points.end(), 
 								laserCloudSurfFromSubMap->points.begin(), 
 								laserCloudSurfFromSubMap->points.end());
-        std::cout << "cloud_temp size: " << cloud_temp->points.size() << std::endl;
+        // std::cout << "cloud_temp size: " << cloud_temp->points.size() << std::endl;
         publishLabelCloud(&pubTest1, cloud_temp, timeLaserInfoStamp, odometryFrame);
 
 	}
@@ -2395,7 +2401,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 					std::cout << "loopKeyPre [" << i << "]:" << loopKeyPre[i] << std::endl;
 				}
 
-				visualizeLoopClosureTest();
+				// visualizeLoopClosureTest();
 
 				// int bestMatched = -1;
 				// if (detectLoopClosure(loopKeyCur, loopKeyPre, matched_init_transform, bestMatched) == false)
@@ -2455,7 +2461,7 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 				if (detectLoopClosureForSubMap(curKeyFramePtr, loopKeyCur, loopSubMapPre, loopKeyPreLast, curKey2PreKeyInitTrans, bestMatched) == false)
 					continue;
 
-				visualizeLoopClosure();
+				// visualizeLoopClosure();
 
 				curKeyFramePtr->loop_container.push_back(bestMatched);	
 
@@ -3320,7 +3326,6 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
     ros::Publisher pubTestPreN;
     ros::Publisher pubTestCurN;
 
-
 	ros::Publisher pubLoopConstraintEdgeTest;
 	map<int, PointType> keyFramePosesIndex3D;
     
@@ -3396,7 +3401,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         pubTestCurN = nh.advertise<sensor_msgs::PointCloud2>("/op_cur_n", 1);
 
 		pubLoopConstraintEdgeTest = nh.advertise<visualization_msgs::MarkerArray>("lis_slam/mapping/loop_closure_constraints_test", 1);
-
+		pubLoopConstraintEdge = nh.advertise<visualization_msgs::MarkerArray>("lis_slam/mapping/loop_closure_constraints", 1);
     }
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr &msgIn) 
@@ -3437,7 +3442,9 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 		{
 			updateKeyFrame();
             publishGlobalMap();
+
 			visualizeLoopClosureTest();
+			visualizeLoopClosure();
 
 			publishCloud(&pubSubMapId, cloudSubMapPoses3D, ros::Time::now(), odometryFrame);       
 			publishCloud(&pubKeyFrameId, cloudKeyFramePoses3D, ros::Time::now(), odometryFrame);       
@@ -3481,19 +3488,22 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 		cloudKeyFramePoses3D->clear();
 		cloudKeyFramePoses6D->clear();
 
+		// cloudSubMapPoses3D->clear();
+
         for (auto it = subMapInfo.begin(); it != subMapInfo.end(); it++)
 		{
 			auto thisSubMap = it->second;
 
 			Eigen::Affine3f  curSubMapAffine = pclPointToAffine3f(thisSubMap->submap_pose_6D_optimized);
-			std::cout << "Update Submap [" << thisSubMap->submap_id <<"] Keyfrmae Pose ..." << std::endl;
+			// std::cout << "Update Submap [" << thisSubMap->submap_id <<"] Keyfrmae Pose ..." << std::endl;
+			// cloudKeyFramePoses3D->push_back(thisSubMap->submap_pose_3D_optimized);
 
 			for(auto inter = thisSubMap->keyframe_poses_6D_map.begin(); inter != thisSubMap->keyframe_poses_6D_map.end(); inter++)
 			{
 				Eigen::Affine3f  curKeyFrameAffine = pclPointToAffine3f(inter->second);
 				Eigen::Affine3f  curKeyFramePose = curSubMapAffine * curKeyFrameAffine;
 
-				std::cout << "Update Keyfrmae [" << inter->first <<"] Pose ..." << std::endl;
+				// std::cout << "Update Keyfrmae [" << inter->first <<"] Pose ..." << std::endl;
 				float transform[6];
 				pcl::getTranslationAndEulerAngles(curKeyFramePose, transform[3], transform[4], transform[5], 
                                                       transform[0], transform[1], transform[2]);
@@ -3501,11 +3511,8 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
 				cloudKeyFramePoses3D->push_back(point3d);
 				keyFramePosesIndex3D[ inter->first] = point3d;
-
 			}
-			
         }
-
 	}
 
 
@@ -3628,10 +3635,120 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         markerArray.markers.push_back(markerEdge);
         pubLoopConstraintEdgeTest.publish(markerArray);
 
-		ROS_WARN("loopIndexContainerTest Size: %d !", loopIndexContainerTest.size());
-		ROS_INFO("Finshed  visualizeLoopClosureTest !");
+		// ROS_WARN("loopIndexContainerTest Size: %d !", loopIndexContainerTest.size());
+		// ROS_INFO("Finshed  visualizeLoopClosureTest !");
 
     }
+
+
+
+    void visualizeLoopClosure() 
+    {
+        visualization_msgs::MarkerArray markerArray;
+
+		visualization_msgs::Marker markerNodeId;
+        markerNodeId.header.frame_id = odometryFrame;
+        markerNodeId.header.stamp = ros::Time::now();
+        markerNodeId.action = visualization_msgs::Marker::ADD;
+        markerNodeId.type =  visualization_msgs::Marker::TEXT_VIEW_FACING;
+        markerNodeId.ns = "loop_nodes_id";
+        markerNodeId.id = 0;
+        markerNodeId.pose.orientation.w = 1;
+        markerNodeId.scale.z = 0.5; 
+        markerNodeId.color.r = 0; markerNodeId.color.g = 0; markerNodeId.color.b = 255;
+        markerNodeId.color.a = 1;
+
+        // loop nodes
+        visualization_msgs::Marker markerNode;
+        markerNode.header.frame_id = odometryFrame;
+        markerNode.header.stamp = ros::Time::now();
+        markerNode.action = visualization_msgs::Marker::ADD;
+        markerNode.type = visualization_msgs::Marker::SPHERE_LIST;
+        markerNode.ns = "loop_nodes";
+        markerNode.id = 0;
+        markerNode.pose.orientation.w = 1;
+        markerNode.scale.x = 0.5;
+        markerNode.scale.y = 0.5;
+        markerNode.scale.z = 0.5;
+        markerNode.color.r = 1;
+        markerNode.color.g = 0.0;
+        markerNode.color.b = 0;
+        markerNode.color.a = 1;
+        // loop edges
+        visualization_msgs::Marker markerEdge;
+        markerEdge.header.frame_id = odometryFrame;
+        markerEdge.header.stamp = ros::Time::now();
+        markerEdge.action = visualization_msgs::Marker::ADD;
+        markerEdge.type = visualization_msgs::Marker::LINE_LIST;
+        markerEdge.ns = "loop_edges";
+        markerEdge.id = 1;
+        markerEdge.pose.orientation.w = 1;
+        markerEdge.scale.x = 0.4;
+        markerEdge.scale.y = 0.4;
+        markerEdge.scale.z = 0.4;
+        markerEdge.color.r = 1.0;
+        markerEdge.color.g = 0.0;
+        markerEdge.color.b = 0;
+        markerEdge.color.a = 1;
+
+
+        for (auto it = loopIndexContainer.begin(); it != loopIndexContainer.end(); ++it) 
+        {
+            int key_cur = it->first;
+            int key_pre = it->second;
+
+            geometry_msgs::Pose pose;
+            pose.position.x =  subMapInfo[key_cur]->submap_pose_6D_optimized.x;
+            pose.position.y =  subMapInfo[key_cur]->submap_pose_6D_optimized.y;
+            pose.position.z =  subMapInfo[key_cur]->submap_pose_6D_optimized.z + 0.15;
+            int k = key_cur;
+            ostringstream str;
+            str << k;
+            markerNodeId.id = k;
+            markerNodeId.text = str.str();
+            markerNodeId.pose = pose;
+            markerArray.markers.push_back(markerNodeId);
+
+            pose.position.x =  subMapInfo[key_pre]->submap_pose_6D_optimized.x;
+            pose.position.y =  subMapInfo[key_pre]->submap_pose_6D_optimized.y;
+            pose.position.z =  subMapInfo[key_pre]->submap_pose_6D_optimized.z + 0.15;
+            k = key_pre;
+            ostringstream str_pre;
+            str_pre << k;
+            markerNodeId.id = k;
+            markerNodeId.text = str_pre.str();
+            markerNodeId.pose = pose;
+            markerArray.markers.push_back(markerNodeId);
+
+
+            geometry_msgs::Point p;
+            p.x = subMapInfo[key_cur]->submap_pose_6D_optimized.x;
+            p.y = subMapInfo[key_cur]->submap_pose_6D_optimized.y;
+            p.z = subMapInfo[key_cur]->submap_pose_6D_optimized.z;
+            markerNode.points.push_back(p);
+            markerEdge.points.push_back(p);
+            p.x = subMapInfo[key_pre]->submap_pose_6D_optimized.x;
+            p.y = subMapInfo[key_pre]->submap_pose_6D_optimized.y;
+            p.z = subMapInfo[key_pre]->submap_pose_6D_optimized.z;
+            markerNode.points.push_back(p);
+            markerEdge.points.push_back(p);
+        }
+
+        markerArray.markers.push_back(markerNode);
+        markerArray.markers.push_back(markerEdge);
+        pubLoopConstraintEdge.publish(markerArray);
+
+		// ROS_WARN("LoopIndexContainer Size: %d !", loopIndexContainer.size());
+		// ROS_INFO("Finshed  visualizeLoopClosure !");
+
+    }
+
+
+
+
+
+
+
 
 
 
@@ -3974,37 +4091,37 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 
 		curSubMapPtr->submap_pose_6D_optimized = thisPose6D;
 		curSubMapPtr->submap_pose_3D_optimized = thisPose3D;
-		std::cout << "********** saveSubMapAndFactor **********" << std::endl;
-		std::cout << "curSubMapPtr: init [" << curSubMapPtr->submap_pose_6D_init.x << ", "
-                                        << curSubMapPtr->submap_pose_6D_init.y << ", " 
-                                        << curSubMapPtr->submap_pose_6D_init.z << ", " 
-                                        << curSubMapPtr->submap_pose_6D_init.roll << ", " 
-                                        << curSubMapPtr->submap_pose_6D_init.pitch << ", " 
-                                        << curSubMapPtr->submap_pose_6D_init.yaw << "]" 
-										<< std::endl;
-		std::cout << "curSubMapPtr: optimized [" << curSubMapPtr->submap_pose_6D_optimized.x << ", "
-                                        << curSubMapPtr->submap_pose_6D_optimized.y << ", " 
-                                        << curSubMapPtr->submap_pose_6D_optimized.z << ", " 
-                                        << curSubMapPtr->submap_pose_6D_optimized.roll << ", " 
-                                        << curSubMapPtr->submap_pose_6D_optimized.pitch << ", " 
-                                        << curSubMapPtr->submap_pose_6D_optimized.yaw << "]" 
-										<< std::endl;
-		subMapInfo[curSubMapId]->submap_pose_6D_optimized = thisPose6D;
-		subMapInfo[curSubMapId]->submap_pose_3D_optimized = thisPose3D;
-		std::cout << "subMapInfo: init [" << subMapInfo[curSubMapId]->submap_pose_6D_init.x << ", "
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_init.y << ", " 
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_init.z << ", " 
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_init.roll << ", " 
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_init.pitch << ", " 
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_init.yaw << "]" 
-										<< std::endl;
-		std::cout << "subMapInfo: optimized [" << subMapInfo[curSubMapId]->submap_pose_6D_optimized.x << ", "
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_optimized.y << ", " 
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_optimized.z << ", " 
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_optimized.roll << ", " 
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_optimized.pitch << ", " 
-                                        << subMapInfo[curSubMapId]->submap_pose_6D_optimized.yaw << "]" 
-										<< std::endl;
+		// std::cout << "********** saveSubMapAndFactor **********" << std::endl;
+		// std::cout << "curSubMapPtr: init [" << curSubMapPtr->submap_pose_6D_init.x << ", "
+        //                                 << curSubMapPtr->submap_pose_6D_init.y << ", " 
+        //                                 << curSubMapPtr->submap_pose_6D_init.z << ", " 
+        //                                 << curSubMapPtr->submap_pose_6D_init.roll << ", " 
+        //                                 << curSubMapPtr->submap_pose_6D_init.pitch << ", " 
+        //                                 << curSubMapPtr->submap_pose_6D_init.yaw << "]" 
+		// 								<< std::endl;
+		// std::cout << "curSubMapPtr: optimized [" << curSubMapPtr->submap_pose_6D_optimized.x << ", "
+        //                                 << curSubMapPtr->submap_pose_6D_optimized.y << ", " 
+        //                                 << curSubMapPtr->submap_pose_6D_optimized.z << ", " 
+        //                                 << curSubMapPtr->submap_pose_6D_optimized.roll << ", " 
+        //                                 << curSubMapPtr->submap_pose_6D_optimized.pitch << ", " 
+        //                                 << curSubMapPtr->submap_pose_6D_optimized.yaw << "]" 
+		// 								<< std::endl;
+		// subMapInfo[curSubMapId]->submap_pose_6D_optimized = thisPose6D;
+		// subMapInfo[curSubMapId]->submap_pose_3D_optimized = thisPose3D;
+		// std::cout << "subMapInfo: init [" << subMapInfo[curSubMapId]->submap_pose_6D_init.x << ", "
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_init.y << ", " 
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_init.z << ", " 
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_init.roll << ", " 
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_init.pitch << ", " 
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_init.yaw << "]" 
+		// 								<< std::endl;
+		// std::cout << "subMapInfo: optimized [" << subMapInfo[curSubMapId]->submap_pose_6D_optimized.x << ", "
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_optimized.y << ", " 
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_optimized.z << ", " 
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_optimized.roll << ", " 
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_optimized.pitch << ", " 
+        //                                 << subMapInfo[curSubMapId]->submap_pose_6D_optimized.yaw << "]" 
+		// 								<< std::endl;
 
 
         // cout << "****************************************************" << endl;
@@ -4325,12 +4442,12 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
 			noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
 
-			std::cout<<"*********************************************************"<<std::endl;
-			for(int i=0;i<6;i++)
-			{
-			    std::cout<<"After Optimization : transformTobeMapped["<<i<<"] : "<<transformTobeMapped[i]<<std::endl;
-			}
-			std::cout<<"*********************************************************"<<std::endl;
+			// std::cout<<"*********************************************************"<<std::endl;
+			// for(int i=0;i<6;i++)
+			// {
+			//     std::cout<<"After Optimization : transformTobeMapped["<<i<<"] : "<<transformTobeMapped[i]<<std::endl;
+			// }
+			// std::cout<<"*********************************************************"<<std::endl;
 
 			subMapIndexContainerAll.push_back(make_pair(preSubMapId, curSubMapId));
 			subMapIndexContainer.push_back(make_pair(preSubMapId, curSubMapId));
