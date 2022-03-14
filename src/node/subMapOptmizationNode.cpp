@@ -2246,11 +2246,11 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         pubKeyFrameOdometryGlobal.publish(laserOdometryROS);
 
         // Publish TF
-        static tf::TransformBroadcaster br;
-        tf::Transform t_odom_to_lidar = tf::Transform(tf::createQuaternionFromRPY(transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]),
-                                                      tf::Vector3(transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5]));
-        tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, lidarFrame);
-        br.sendTransform(trans_odom_to_lidar);
+        // static tf::TransformBroadcaster br;
+        // tf::Transform t_odom_to_lidar = tf::Transform(tf::createQuaternionFromRPY(transformTobeSubMapped[0], transformTobeSubMapped[1], transformTobeSubMapped[2]),
+        //                                               tf::Vector3(transformTobeSubMapped[3], transformTobeSubMapped[4], transformTobeSubMapped[5]));
+        // tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, lidarFrame);
+        // br.sendTransform(trans_odom_to_lidar);
 
         // Publish odometry for ROS (incremental)
         static bool lastIncreOdomPubFlag = false;
@@ -3425,6 +3425,13 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         laserOdometry.pose.pose.position.z = z;
         laserOdometry.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw);
         pubOdometryGlobal.publish(laserOdometry);
+
+        static tf::TransformBroadcaster br;
+        tf::Transform t_odom_to_lidar = tf::Transform(tf::createQuaternionFromRPY(roll, pitch, yaw), 
+																										tf::Vector3(x, y, z));
+        tf::StampedTransform trans_map_to_lidar = tf::StampedTransform(t_odom_to_lidar,  laserOdometry.header.stamp, odometryFrame, lidarFrame);
+        br.sendTransform(trans_map_to_lidar);
+
 	}
     
 
@@ -3948,7 +3955,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			this->transform_bbx(curSubMapPtr->local_bound, curSubMapPtr->local_cp, curSubMapPtr->bound, curSubMapPtr->cp, tran_map);
 			
 			bounds_t bbx_intersection;
-			get_intersection_bbx(curSubMapPtr->bound, preSubMap->bound, bbx_intersection, 5.0);
+			get_intersection_bbx(curSubMapPtr->bound, preSubMap->bound, bbx_intersection, 10.0);
 
 			laserCloudCornerFromSubMap->points.insert(laserCloudCornerFromSubMap->points.end(), 
 													preSubMap->submap_pole->points.begin(), 
@@ -4413,9 +4420,13 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
     {
         if (laserCloudCornerLastDSNum > edgeFeatureMinValidNum && laserCloudSurfLastDSNum > surfFeatureMinValidNum)
         {
-            ROS_WARN("laserCloudCornerFromSubMap: %d laserCloudSurfFromSubMap: %d .", laserCloudCornerFromSubMap->points.size(), laserCloudSurfFromSubMap->points.size());
-            ROS_WARN("laserCloudCornerLastDSNum: %d laserCloudSurfLastDSNum: %d .", laserCloudCornerLastDSNum, laserCloudSurfLastDSNum);
-            
+
+			int subMapCloudCornerLastDSNum = laserCloudCornerFromSubMap->points.size();
+			int subMapCloudSurfLastDSNum = laserCloudSurfFromSubMap->points.size();
+
+			ROS_WARN("\033[1;32m OptmizationThread -> subMapCloudCornerLastDSNum: %d.\033[0m", subMapCloudCornerLastDSNum);
+			ROS_WARN("\033[1;32m OptmizationThread -> subMapCloudSurfLastDSNum: %d.\033[0m", subMapCloudSurfLastDSNum);
+
             kdtreeCornerFromSubMap->setInputCloud(laserCloudCornerFromSubMap);
             kdtreeSurfFromSubMap->setInputCloud(laserCloudSurfFromSubMap);
 
@@ -4425,9 +4436,11 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
                 laserCloudOri->clear();
                 coeffSel->clear();
 
-                cornerOptimization();
-
-                surfOptimization();
+				if(subMapCloudCornerLastDSNum>0)
+                	cornerOptimization();
+				
+				if(subMapCloudSurfLastDSNum>0)
+                	surfOptimization();
 
                 combineOptimizationCoeffs();
 
@@ -4906,7 +4919,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         nav_msgs::Odometry laserOdometryROS;
 
         laserOdometryROS.header.stamp = timeSubMapInfoStamp;
-        laserOdometryROS.header.frame_id = odometryFrame;
+        laserOdometryROS.header.frame_id = odometryFrame;//
         laserOdometryROS.child_frame_id = "odom_mapping";
         laserOdometryROS.pose.pose.position.x = transformTobeMapped[3];
         laserOdometryROS.pose.pose.position.y = transformTobeMapped[4];

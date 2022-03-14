@@ -214,7 +214,8 @@ class OdomEstimationNode : public ParamServer
 		if(deltaR < 0.005 || deltaT < 0.05)
 		{
 			calculateTranslation();
-			if (abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
+			if (keyFrameId <= 8 ||
+				abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
 				abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
 				abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) 
 			{
