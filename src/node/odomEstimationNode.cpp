@@ -262,6 +262,9 @@ class OdomEstimationNode : public ParamServer
 		pcl::fromROSMsg(cloudInfo.cloud_corner_sharp, *laserCloudSharpCornerLast);
 		pcl::fromROSMsg(cloudInfo.cloud_surface_sharp, *laserCloudSharpSurfLast);
 
+		// pcl::fromROSMsg(cloudInfo.cloud_corner, *laserCloudSharpCornerLast);
+		// pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSharpSurfLast);
+
 		// Downsample cloud from current scan
 		// laserCloudSharpCornerLast->clear();
 		// downSizeFilterCorner.setInputCloud(laserCloudCornerLast);
