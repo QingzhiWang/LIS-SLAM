@@ -1148,8 +1148,15 @@ std::string epsc_inten_path = "/home/wqz/AWorkSpace/TestData/0332/epsc_inten.txt
 
 std::string global_path = "/home/wqz/AWorkSpace/TestData/0332/global.txt"; //ADD
 
+std::string epsc_de_path = "/home/wqz/AWorkSpace/TestData/0332/epsc_de.txt"; //ADD
+std::string sepsc_de_path = "/home/wqz/AWorkSpace/TestData/0332/sepsc_de.txt"; //ADD
+
 std::chrono::time_point<std::chrono::system_clock> start_time, end_time;
 float  test = 0;
+
+float cur_epsc_time = 0;
+float cur_sepsc_time = 0;
+
 
 
 int rings = 20;
@@ -1210,15 +1217,15 @@ double calculate_intensity_dis( const cv::Mat& desc1, const cv::Mat& desc2, int&
 bool is_loop_pair(const cv::Mat & desc1, const cv::Mat& desc2, double& geo_score, double& inten_score){
     int angle =0;
 
-start_time = std::chrono::system_clock::now();
+// start_time = std::chrono::system_clock::now();
     geo_score = calculate_geometry_dis(desc1,desc2,angle);
-end_time  = std::chrono::system_clock::now();
-std::ofstream foutC_epsc_geo(epsc_geo_path, std::ios::app);
-foutC_epsc_geo.setf(std::ios::scientific, std::ios::floatfield);
-foutC_epsc_geo.precision(6);
-test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
-foutC_epsc_geo <<  test << endl ;	
-foutC_epsc_geo.close();
+// end_time  = std::chrono::system_clock::now();
+// std::ofstream foutC_epsc_geo(epsc_geo_path, std::ios::app);
+// foutC_epsc_geo.setf(std::ios::scientific, std::ios::floatfield);
+// foutC_epsc_geo.precision(6);
+// test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+// foutC_epsc_geo <<  test << endl ;	
+// foutC_epsc_geo.close();
 
 
 
@@ -1227,15 +1234,15 @@ foutC_epsc_geo.close();
 	{
 
 
-start_time = std::chrono::system_clock::now();
+// start_time = std::chrono::system_clock::now();
         inten_score = calculate_intensity_dis(desc1,desc2,angle);
-end_time  = std::chrono::system_clock::now();
-std::ofstream foutC_epsc_inten(epsc_inten_path, std::ios::app);
-foutC_epsc_inten.setf(std::ios::scientific, std::ios::floatfield);
-foutC_epsc_inten.precision(6);
-test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
-foutC_epsc_inten << test << endl ;	
-foutC_epsc_inten.close();
+// end_time  = std::chrono::system_clock::now();
+// std::ofstream foutC_epsc_inten(epsc_inten_path, std::ios::app);
+// foutC_epsc_inten.setf(std::ios::scientific, std::ios::floatfield);
+// foutC_epsc_inten.precision(6);
+// test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+// foutC_epsc_inten << test << endl ;	
+// foutC_epsc_inten.close();
 
 
         std::cout<<"inten_score: "<<inten_score<<std::endl;
@@ -1297,6 +1304,8 @@ void EPSCGeneration::loopDetectionTest(
 	cv::Mat EPSC_cur, SEPSC_cur;
 
   	cv::Mat cur_dis = project(pc_filtered_semantic);
+
+	bool  isFlag = false;
 	for (int i = 0; i < (int)posArr.size(); i++) 
 	{
 		double delta_travel_distance = travelDistanceArr.back() - travelDistanceArr[i];
@@ -1304,18 +1313,20 @@ void EPSCGeneration::loopDetectionTest(
 		if (delta_travel_distance > SKIP_NEIBOUR_DISTANCE && pos_distance < delta_travel_distance * INFLATION_COVARIANCE) 
 		{
 
+			isFlag = true;
+
 ID++;
 
 
-start_time = std::chrono::system_clock::now();
-			project(pc_filtered_semantic);
-end_time  = std::chrono::system_clock::now();
-std::ofstream foutC_sepsc_pro(sepsc_pro_path, std::ios::app);
-foutC_sepsc_pro.setf(std::ios::scientific, std::ios::floatfield);
-foutC_sepsc_pro.precision(6);
-test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
-foutC_sepsc_pro << test << endl ;	
-foutC_sepsc_pro.close();
+// start_time = std::chrono::system_clock::now();
+// project(pc_filtered_semantic);
+// end_time  = std::chrono::system_clock::now();
+// std::ofstream foutC_sepsc_pro(sepsc_pro_path, std::ios::app);
+// foutC_sepsc_pro.setf(std::ios::scientific, std::ios::floatfield);
+// foutC_sepsc_pro.precision(6);
+// test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+// foutC_sepsc_pro << test << endl ;	
+// foutC_sepsc_pro.close();
 
 
 			// ROS_INFO("Matched_id: %d, delta_travel_distance: %f, pos_distance : %f", i, delta_travel_distance, pos_distance);
@@ -1323,15 +1334,15 @@ foutC_sepsc_pro.close();
 
 			float yaw_diff = yaw_t - yawArr[i];
 
-start_time = std::chrono::system_clock::now();
+// start_time = std::chrono::system_clock::now();
 			Eigen::Affine3f transform = globalICP(before_dis, cur_dis, yaw_diff);
-end_time  = std::chrono::system_clock::now();
-std::ofstream foutC_global(global_path, std::ios::app);
-foutC_global.setf(std::ios::scientific, std::ios::floatfield);
-foutC_global.precision(6);
-test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
-foutC_global << test << endl ;	
-foutC_global.close();
+// end_time  = std::chrono::system_clock::now();
+// std::ofstream foutC_global(global_path, std::ios::app);
+// foutC_global.setf(std::ios::scientific, std::ios::floatfield);
+// foutC_global.precision(6);
+// test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+// foutC_global << test << endl ;	
+// foutC_global.close();
 
 
 			float diff_x, diff_y, diff_z;
@@ -1349,18 +1360,20 @@ foutC_global.close();
 
 			if (UsingEPSCFlag) 
 			{
+start_time = std::chrono::system_clock::now();
+
 				auto desc1 = EPSCArr[i];
 				double epsc_angle = angle;
 
-start_time = std::chrono::system_clock::now();
+// start_time = std::chrono::system_clock::now();
 				EPSC_cur = calculateEPSC(trans_cloud_corner, trans_cloud_surf);
-end_time  = std::chrono::system_clock::now();
-std::ofstream foutC_epsc(epsc_path, std::ios::app);
-foutC_epsc.setf(std::ios::scientific, std::ios::floatfield);
-foutC_epsc.precision(6);
-test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
-foutC_epsc << test << endl ;	
-foutC_epsc.close();
+// end_time  = std::chrono::system_clock::now();
+// std::ofstream foutC_epsc(epsc_path, std::ios::app);
+// foutC_epsc.setf(std::ios::scientific, std::ios::floatfield);
+// foutC_epsc.precision(6);
+// test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+// foutC_epsc << test << endl ;	
+// foutC_epsc.close();
 
 
 				auto score = calculateDistance(desc1, EPSC_cur, epsc_angle);
@@ -1377,7 +1390,7 @@ foutC_epsc.close();
 					best_score_epsc_transform = epsc_transform;
 				}
 
-				// EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
+				EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
 				double geo_score=0;
 				double inten_score =0;
 
@@ -1398,35 +1411,43 @@ foutC_epsc.close();
 				// 	}
 				// }
 
+
+end_time  = std::chrono::system_clock::now();
+test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+cur_epsc_time += test;
+
 			}
 
 			if (UsingSEPSCFlag) 
 			{
-				auto desc1 = SEPSCArr[i];
 
 start_time = std::chrono::system_clock::now();
+
+				auto desc1 = SEPSCArr[i];
+
+// start_time = std::chrono::system_clock::now();
 				SEPSC_cur = calculateSEPSC(trans_cloud_semantic);
-end_time  = std::chrono::system_clock::now();
-std::ofstream foutC_sepsc(sepsc_path, std::ios::app);
-foutC_sepsc.setf(std::ios::scientific, std::ios::floatfield);
-foutC_sepsc.precision(6);
-test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
-foutC_sepsc << test << endl ;
-foutC_sepsc.close();
+// end_time  = std::chrono::system_clock::now();
+// std::ofstream foutC_sepsc(sepsc_path, std::ios::app);
+// foutC_sepsc.setf(std::ios::scientific, std::ios::floatfield);
+// foutC_sepsc.precision(6);
+// test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+// foutC_sepsc << test << endl ;
+// foutC_sepsc.close();
 
 
 				double sepsc_angle = angle;
 
 
-start_time = std::chrono::system_clock::now();
+// start_time = std::chrono::system_clock::now();
 				auto score = calculateDistance(desc1, SEPSC_cur, sepsc_angle);
-end_time  = std::chrono::system_clock::now();
-std::ofstream foutC_sepsc_dis(sepsc_dis_path, std::ios::app);
-foutC_sepsc_dis.setf(std::ios::scientific, std::ios::floatfield);
-foutC_sepsc_dis.precision(6);
-test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
-foutC_sepsc_dis << test << endl ;
-foutC_sepsc_dis.close();
+// end_time  = std::chrono::system_clock::now();
+// std::ofstream foutC_sepsc_dis(sepsc_dis_path, std::ios::app);
+// foutC_sepsc_dis.setf(std::ios::scientific, std::ios::floatfield);
+// foutC_sepsc_dis.precision(6);
+// test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+// foutC_sepsc_dis << test << endl ;
+// foutC_sepsc_dis.close();
 
 
 				std::cout << "SEPSC_score: " << score << std::endl;
@@ -1442,6 +1463,11 @@ foutC_sepsc_dis.close();
 					best_score_sepsc_transform = sepsc_transform;
 				}
 			}
+
+end_time  = std::chrono::system_clock::now();
+test = ((std::chrono::duration<float>)(end_time - start_time)).count()*1000;
+cur_sepsc_time += test;
+
 		}
 	}
 
@@ -1449,6 +1475,25 @@ foutC_sepsc_dis.close();
 	posArr.push_back(current_t);
 	yawArr.push_back(yaw_t);
 	ProjectArr.push_back(cur_dis);
+
+if(isFlag)
+{
+	std::ofstream foutC_epsc_de(epsc_de_path, std::ios::app);
+	foutC_epsc_de.setf(std::ios::scientific, std::ios::floatfield);
+	foutC_epsc_de.precision(6);
+	foutC_epsc_de << cur_epsc_time << endl ;
+	foutC_epsc_de.close();
+
+	std::ofstream foutC_sepsc_de(sepsc_de_path, std::ios::app);
+	foutC_sepsc_de.setf(std::ios::scientific, std::ios::floatfield);
+	foutC_sepsc_de.precision(6);
+	foutC_sepsc_de << cur_sepsc_time << endl ;
+	foutC_sepsc_de.close();
+}
+
+cur_epsc_time = 0;
+cur_sepsc_time = 0;
+
 
 
 	if (UsingEPSCFlag) 
