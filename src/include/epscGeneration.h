@@ -14,30 +14,30 @@
 #define INFLATION_COVARIANCE 0.01  // 0.03
 
 // define threshold for loop closure detection
-// #define GEOMETRY_THRESHOLD 0.55     // 0.67  0.57(--)
-// #define INTENSITY_THRESHOLD 0.7900  // 0.91
-#define DISTANCE_THRESHOLD 0.7900  
-#define LABEL_THRESHOLD 0.7900  
+#define GEOMETRY_THRESHOLD 0.57    // 0.67  0.57(--)
+#define INTENSITY_THRESHOLD 0.8200  // 0.91
+#define DISTANCE_THRESHOLD 0.8200  //0.79
+#define LABEL_THRESHOLD 0.8200  //0.79
 
 #define LIDAR_HEIGHT 5.0
 
 
-class EPSCGeneration : public SemanticLabelParam {
+class EPSCGeneration : public SemanticLabelParam , public ParamServer{
 private:  
 	std::vector<int> order_vec = {0,  0,  0,  0,  0,  0,  0,  0, 0,  10,
 									11, 12, 13, 15, 16, 14, 17, 9, 18, 19};
-	bool UsingISCFlag = false;
-	bool UsingSCFlag = false;
-	bool UsingPoseFlag = false;
-	bool UsingSEPSCFlag = false;
-	bool UsingEPSCFlag = false;
-	bool UsingSSCFlag = false;
-	bool UsingFEPSCFlag = true;
+	// bool UsingISCFlag = false;
+	// bool UsingSCFlag = false;
+	// bool UsingPoseFlag = false;
+	// bool UsingSEPSCFlag = false;
+	// bool UsingEPSCFlag = true;
+	// bool UsingSSCFlag = false;
+	// bool UsingFEPSCFlag = false;
 
 	bool show = false;
 	std::shared_ptr<pcl::visualization::CloudViewer> viewer;
 
-	double max_dis = 70;
+	double max_dis = 60;
 	double min_dis = 3;
 
 	int rings = 20;
@@ -159,6 +159,11 @@ public:
 						const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc,
 						const pcl::PointCloud<PointXYZIL>::Ptr& semantic_pc,
 						Eigen::Affine3f& odom);
+
+	void loopDetectionTest(const pcl::PointCloud<pcl::PointXYZI>::Ptr& corner_pc,
+						const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc,
+						const pcl::PointCloud<PointXYZIL>::Ptr& semantic_pc,
+						Eigen::Affine3f& odom);						
 };
 
 #endif  // _ISC_GENERATION_H_

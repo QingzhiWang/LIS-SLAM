@@ -330,6 +330,15 @@ class ParamServer {
 	int historyKeyframeSearchNum;
 	float historyKeyframeFitnessScore;
 
+	bool UsingISCFlag;
+	bool UsingSCFlag;
+	bool UsingPoseFlag;
+	bool UsingSEPSCFlag;
+	bool UsingEPSCFlag;
+	bool UsingSSCFlag;
+	bool UsingFEPSCFlag;
+
+
 
 	//新增 make Submap
 	int subMapFramesSize;
@@ -436,6 +445,18 @@ class ParamServer {
 		nh.param<float>("lis_slam/historyKeyframeSearchTimeDiff", historyKeyframeSearchTimeDiff, 30.0);
 		nh.param<int>("lis_slam/historyKeyframeSearchNum", historyKeyframeSearchNum, 25);
 		nh.param<float>("lis_slam/historyKeyframeFitnessScore", historyKeyframeFitnessScore, 0.3);
+
+		nh.param<bool>("lis_slam/UsingISCFlag", UsingISCFlag, false);
+		nh.param<bool>("lis_slam/UsingSCFlag", UsingSCFlag, false);
+		nh.param<bool>("lis_slam/UsingPoseFlag", UsingPoseFlag, false);
+		nh.param<bool>("lis_slam/UsingSEPSCFlag", UsingSEPSCFlag, false);
+		nh.param<bool>("lis_slam/UsingEPSCFlag", UsingEPSCFlag, false);
+		nh.param<bool>("lis_slam/UsingSSCFlag", UsingSSCFlag, false);
+		nh.param<bool>("lis_slam/UsingFEPSCFlag", UsingFEPSCFlag, true);
+
+
+		nh.param<bool>("lis_slam/loopClosureEnableFlag", loopClosureEnableFlag, false);
+
 
 		//新增subMapMaxTime
 		nh.param<float>("lis_slam/subMapMaxTime", subMapMaxTime, 2.0);

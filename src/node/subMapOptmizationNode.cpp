@@ -2358,23 +2358,34 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 				out_msg.header.frame_id = lidarFrame;
 				out_msg.header.stamp = curKeyFramePtr->timeInfoStamp;
 				out_msg.encoding = sensor_msgs::image_encodings::RGB8;
-				out_msg.image = epscGen.getLastFEPSCRGB();
-				pubFEPSC.publish(out_msg.toImageMsg());
-
-				// out_msg.image = epscGen.getLastSEPSCRGB();
-				// pubSEPSC.publish(out_msg.toImageMsg());
-
-				out_msg.image = epscGen.getLastEPSCRGB();
-				pubEPSC.publish(out_msg.toImageMsg());
-
-				out_msg.image = epscGen.getLastSCRGB();
-				pubSC.publish(out_msg.toImageMsg()); 
-
-				out_msg.image = epscGen.getLastISCRGB();
-				pubISC.publish(out_msg.toImageMsg());   
-
-				out_msg.image = epscGen.getLastSSCRGB();
-				pubSSC.publish(out_msg.toImageMsg());
+				
+				
+				if (UsingSEPSCFlag){
+					out_msg.image = epscGen.getLastSEPSCRGB();
+					pubSEPSC.publish(out_msg.toImageMsg());
+				}
+				if (UsingEPSCFlag){
+					out_msg.image = epscGen.getLastEPSCRGB();
+					pubEPSC.publish(out_msg.toImageMsg());
+				}
+				if (UsingFEPSCFlag){
+					out_msg.image = epscGen.getLastFEPSCRGB();
+					pubFEPSC.publish(out_msg.toImageMsg());
+				}
+				if (UsingSCFlag){
+					out_msg.image = epscGen.getLastSCRGB();
+					pubSC.publish(out_msg.toImageMsg()); 
+				}	
+				if (UsingISCFlag){
+					out_msg.image = epscGen.getLastISCRGB();
+					pubISC.publish(out_msg.toImageMsg());   
+				}
+				if (UsingSSCFlag){
+					out_msg.image = epscGen.getLastSSCRGB();
+					pubSSC.publish(out_msg.toImageMsg());
+				}				
+				
+				
 
 				// curKeyFramePtr->global_descriptor = epscGen.getLastSEPSCMONO();
 					

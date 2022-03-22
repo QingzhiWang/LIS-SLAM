@@ -15,20 +15,28 @@ lis_slam:
   saveTrajectory: false
   RESULT_PATH: "/home/wqz/AWorkSpace/TestData/trajectory/lis/09_pred.txt"
 
-  useImu: true       # If using IMU data, set to "true" 
+  useImu: false       # If using IMU data, set to "true" 
   useGPSVel : true
+
   loopClosureEnableFlag: true
+  UsingISCFlag : false
+  UsingSCFlag : false
+  UsingPoseFlag : false
+  UsingSEPSCFlag : false
+  UsingEPSCFlag : false
+  UsingSSCFlag : false
+  UsingFEPSCFlag : true
+
+
   
   useOdometryPitchPrediction: true              # 在结构性较强时可使用前端里程计pitch预测值
-  
-
 
   # Topics   velodyne_points  points_raw
-  pointCloudTopic: "points_raw"                 # Point cloud data
-  imuTopic: "imu_raw"                       # IMU data imu_correct imu_raw
-  odomTopic: "odometry"                         # IMU pre-preintegration odometry, same frequency as IMU
-  gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
-  gpsVelTopic : "/kitti/oxts/gps/vel"
+  # pointCloudTopic: "points_raw"                 # Point cloud data
+  # imuTopic: "imu_raw"                       # IMU data imu_correct imu_raw
+  # odomTopic: "odometry"                         # IMU pre-preintegration odometry, same frequency as IMU
+  # gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
+  # gpsVelTopic : "/kitti/oxts/gps/vel"
   lidarIntensity: "intensity"
 
   # Topics kitti(RAW)
@@ -46,10 +54,10 @@ lis_slam:
   # gpsTopic: "odometry/gpsz"  
 
   # Topics  HCLT/KITTI(odometry)
-  # pointCloudTopic: "/velodyne_points"         # Point cloud data
-  # imuTopic: "/imu/data"                       # IMU data
-  # odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
-  # gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
+  pointCloudTopic: "/velodyne_points"         # Point cloud data
+  imuTopic: "/imu/data"                       # IMU data
+  odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
+  gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
 
   # Frames
@@ -63,8 +71,8 @@ lis_slam:
 
 
   downsampleRate: 1                          # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1 
-  lidarMinRange: 1.0                         # default: 1.0, minimum lidar range to be used
-  lidarMaxRange: 100.0                        # 70.0      # default: 1000.0, maximum lidar range to be used
+  lidarMinRange: 0.0                         # default: 1.0, minimum lidar range to be used
+  lidarMaxRange: 70.0                        # 70.0      # default: 1000.0, maximum lidar range to be used
 
   # GPS Settings
   useImuHeadingInitialization: false          # if using GPS data, set to "true"
@@ -130,7 +138,7 @@ lis_slam:
   surroundingKeyframeSearchRadius:  20.0               # 50.0         # meters, within n meters scan-to-map optimization (when loop closure disabled)
 
   #新增 make Submap
-  keyFrameMiniDistance: 1.5  # 0.2-indoor    1.5 kitti 
+  keyFrameMiniDistance: 1.4  # 0.2-indoor    1.5 kitti 
   keyFrameMiniYaw : 0.5      # 0.2-indoor    0.5-kitti
 
   #新增 submap voxel filter 
@@ -156,7 +164,7 @@ lis_slam:
   historyKeyframeSearchTimeDiff: 30.0          # 30.0     # seconds, key frame that is n seconds older will be considered for loop closure
   historyKeyframeSearchNum: 25                 # 25        # number of hostory key frames will be fused into a submap for loop closure
   
-  historyKeyframeFitnessScore: 0.3            # 0.4  # 0.7  # icp threshold, the smaller the better alignment
+  historyKeyframeFitnessScore: 0.5            # 0.4  # 0.7  # icp threshold, the smaller the better alignment
 
 
   # Visualization
