@@ -14,8 +14,8 @@
 #define INFLATION_COVARIANCE 0.01  // 0.03
 
 // define threshold for loop closure detection
-// #define GEOMETRY_THRESHOLD 0.55     // 0.67  0.57(--)
-// #define INTENSITY_THRESHOLD 0.7900  // 0.91
+#define GEOMETRY_THRESHOLD 0.55     // 0.67  0.57(--)
+#define INTENSITY_THRESHOLD 0.7900  // 0.91
 #define DISTANCE_THRESHOLD 0.7900  
 #define LABEL_THRESHOLD 0.7900  
 
@@ -29,10 +29,10 @@ private:
 	bool UsingISCFlag = false;
 	bool UsingSCFlag = false;
 	bool UsingPoseFlag = false;
-	bool UsingSEPSCFlag = false;
-	bool UsingEPSCFlag = false;
+	bool UsingSEPSCFlag = true;
+	bool UsingEPSCFlag = true;
 	bool UsingSSCFlag = false;
-	bool UsingFEPSCFlag = true;
+	bool UsingFEPSCFlag = false;
 
 	bool show = false;
 	std::shared_ptr<pcl::visualization::CloudViewer> viewer;
@@ -159,6 +159,11 @@ public:
 						const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc,
 						const pcl::PointCloud<PointXYZIL>::Ptr& semantic_pc,
 						Eigen::Affine3f& odom);
+
+	void loopDetectionTest(const pcl::PointCloud<pcl::PointXYZI>::Ptr& corner_pc,
+						const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc,
+						const pcl::PointCloud<PointXYZIL>::Ptr& semantic_pc,
+						Eigen::Affine3f& odom);						
 };
 
 #endif  // _ISC_GENERATION_H_

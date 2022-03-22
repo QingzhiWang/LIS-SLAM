@@ -40,7 +40,7 @@ class LaserProcessingNode : public ParamServer
 	{
 		if (useImu == true) {
 			subImu = nh.subscribe<sensor_msgs::Imu>( imuTopic, 2000, &LaserProcessingNode::imuHandler, this, ros::TransportHints().tcpNoDelay());
-			// subOdom = nh.subscribe<nav_msgs::Odometry>(odomTopic + "/lidar", 2000, &LaserProcessingNode::odometryHandler, this, ros::TransportHints().tcpNoDelay());
+			subOdom = nh.subscribe<nav_msgs::Odometry>(odomTopic + "/lidar", 2000, &LaserProcessingNode::odometryHandler, this, ros::TransportHints().tcpNoDelay());
 			subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>( "lis_slam/points_pretreatmented", 5, &LaserProcessingNode::cloudHandler, this, ros::TransportHints().tcpNoDelay());
 			ROS_WARN("useImu==true!");
 		} else {

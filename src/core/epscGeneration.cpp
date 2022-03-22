@@ -394,7 +394,7 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 		temp_cloud->height = 1;
 		temp_cloud->width = temp_cloud->points.size();
 		viewer->showCloud(temp_cloud);
-		usleep(1000000);
+		usleep(100);
 	
 	}
 		
@@ -404,13 +404,13 @@ Eigen::Affine3f EPSCGeneration::globalICP(cv::Mat &ssc_dis1, cv::Mat &ssc_dis2, 
 
 cv::Mat EPSCGeneration::calculateSC(const pcl::PointCloud<PointXYZIL>::Ptr filtered_pointcloud) 
 {
-	const char NO_POINT = -100;
+	// const char NO_POINT = -100;
 	cv::Mat sc = cv::Mat::zeros(cv::Size(sectors, rings), CV_16S);
 	// cv::Mat sc(sectors, rings, CV_8U, cv::Scalar(NO_POINT));
 
-	for ( int row_idx = 0; row_idx < sc.rows; row_idx++ )
-		for ( int col_idx = 0; col_idx < sc.cols; col_idx++ )
-			sc.at<char>(row_idx, col_idx) = NO_POINT;
+	// for ( int row_idx = 0; row_idx < sc.rows; row_idx++ )
+	// 	for ( int col_idx = 0; col_idx < sc.cols; col_idx++ )
+	// 		sc.at<char>(row_idx, col_idx) = NO_POINT;
 
 	for (int i = 0; i < (int)filtered_pointcloud->points.size(); i++) 
 	{
@@ -424,11 +424,11 @@ cv::Mat EPSCGeneration::calculateSC(const pcl::PointCloud<PointXYZIL>::Ptr filte
 		if (ring_id >= rings || ring_id < 0) continue;
 		if (sector_id >= sectors || sector_id < 0) continue;
 
-		int z_temp = (int)(filtered_pointcloud->points[i].z);
-		z_temp += LIDAR_HEIGHT;
-		z_temp *= 10;
-		if(z_temp > 255) z_temp = 255;
-		if(z_temp < 0) z_temp = 0;
+		// int z_temp = (int)(filtered_pointcloud->points[i].z) + LIDAR_HEIGHT;
+		int  z_temp = (int)(100.0 * (filtered_pointcloud->points[i].z + LIDAR_HEIGHT)  / 8.0);
+
+		// if(z_temp > 255) z_temp = 255;
+		// if(z_temp < 0) z_temp = 0;
 
 		if (sc.at<char>(ring_id, sector_id) < z_temp){
 			sc.at<char>(ring_id, sector_id) = z_temp;
@@ -438,10 +438,10 @@ cv::Mat EPSCGeneration::calculateSC(const pcl::PointCloud<PointXYZIL>::Ptr filte
 	}
 
 	// reset no points to zero (for cosine dist later)
-	for ( int row_idx = 0; row_idx < sc.rows; row_idx++ )
-		for ( int col_idx = 0; col_idx < sc.cols; col_idx++ )
-			if( sc.at<char>(row_idx, col_idx) == NO_POINT )
-				sc.at<char>(row_idx, col_idx) = 0;
+	// for ( int row_idx = 0; row_idx < sc.rows; row_idx++ )
+	// 	for ( int col_idx = 0; col_idx < sc.cols; col_idx++ )
+	// 		if( sc.at<char>(row_idx, col_idx) == NO_POINT )
+	// 			sc.at<char>(row_idx, col_idx) = 0;
 
 	return sc;
 }
@@ -1088,3 +1088,270 @@ cv::Mat EPSCGeneration::getLastSSCRGB()
 		return color_image;
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+double calculate_geometry_dis( const cv::Mat& desc1,  const cv::Mat& desc2, int& angle){
+    double similarity = 0.0;
+
+    for(int i=0;i<sectors;i++){
+        int match_count=0;
+        for(int p=0;p<sectors;p++){
+            int new_col = p+i>=sectors?p+i-sectors:p+i;
+            for(int q=0;q<rings;q++){
+                if((desc1.at<unsigned char>(q,p)== true && desc2.at<unsigned char>(q,new_col)== true) || (desc1.at<unsigned char>(q,p)== false && desc2.at<unsigned char>(q,new_col)== false)){
+                    match_count++;
+                }
+
+            }
+        }
+        if(match_count>similarity){
+            similarity=match_count;
+            angle = i;
+        }
+
+    }
+    return similarity/(sectors*rings);
+    
+}
+double calculate_intensity_dis( const cv::Mat& desc1, const cv::Mat& desc2, int& angle){
+    double difference = 1.0;
+    double angle_temp = angle;
+    for(int i=angle_temp-10;i<angle_temp+10;i++){
+
+        int match_count=0;
+        int total_points=0;
+        for(int p=0;p<sectors;p++){
+            int new_col = p+i;
+            if(new_col>=sectors)
+                new_col = new_col-sectors;
+            if(new_col<0)
+                new_col = new_col+sectors;
+            for(int q=0;q<rings;q++){
+                    match_count += abs(desc1.at<unsigned char>(q,p)-desc2.at<unsigned char>(q,new_col));
+                    total_points++;
+            }
+            
+        }
+        double diff_temp = ((double)match_count)/(sectors*rings*255);
+        if(diff_temp<difference)
+            difference=diff_temp;
+
+    }
+    return 1 - difference;
+    
+}
+bool is_loop_pair(const cv::Mat & desc1, const cv::Mat& desc2, double& geo_score, double& inten_score){
+    int angle =0;
+    geo_score = calculate_geometry_dis(desc1,desc2,angle);
+    std::cout<<"geo_score: "<<geo_score<<std::endl;
+    if(geo_score>GEOMETRY_THRESHOLD)
+	{
+        inten_score = calculate_intensity_dis(desc1,desc2,angle);
+        std::cout<<"inten_score: "<<inten_score<<std::endl;
+        if(inten_score>INTENSITY_THRESHOLD)
+		{
+            return true;
+        }
+    }
+    return false;
+}
+
+
+void EPSCGeneration::loopDetectionTest(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr &corner_pc,
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr &surf_pc,
+    const pcl::PointCloud<PointXYZIL>::Ptr &semantic_pc,
+    Eigen::Affine3f &odom) 
+{
+	pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered_corner(new pcl::PointCloud<pcl::PointXYZI>());
+	pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered_surf(new pcl::PointCloud<pcl::PointXYZI>());
+	pcl::PointCloud<PointXYZIL>::Ptr pc_filtered_semantic(new pcl::PointCloud<PointXYZIL>());
+
+	// 有问题！
+	// groundFilter(corner_pc, pc_filtered_corner);
+	// groundFilter(surf_pc, pc_filtered_surf);
+	// groundFilter(semantic_pc, pc_filtered_semantic);
+	pc_filtered_corner = corner_pc;
+	pc_filtered_surf = surf_pc;
+	pc_filtered_semantic = semantic_pc;
+
+
+	float x_t, y_t, z_t;
+	float roll_t, pitch_t, yaw_t;
+	pcl::getTranslationAndEulerAngles(odom, x_t, y_t, z_t, roll_t, pitch_t, yaw_t);
+  	Eigen::Vector3d current_t(x_t, y_t, 0.0);
+
+	// dont change push_back sequence
+	if (travelDistanceArr.size() == 0) {
+		travelDistanceArr.push_back(0);
+	} else {
+		double dis_temp = travelDistanceArr.back() + std::sqrt((posArr.back() - current_t).array().square().sum());
+		travelDistanceArr.push_back(dis_temp);
+	}
+
+	current_frame_id = posArr.size();
+	matched_frame_id.clear();
+	matched_frame_transform.clear();
+
+
+	int best_matched_id_epsc = -1;
+	double best_score_epsc = 0.0;
+	Eigen::Affine3f best_score_epsc_transform;
+
+
+	int best_matched_id_sepsc = -1;
+	double best_score_sepsc = 0.0;
+	Eigen::Affine3f best_score_sepsc_transform;
+
+	cv::Mat EPSC_cur, SEPSC_cur;
+
+  	cv::Mat cur_dis = project(pc_filtered_semantic);
+	for (int i = 0; i < (int)posArr.size(); i++) 
+	{
+		double delta_travel_distance = travelDistanceArr.back() - travelDistanceArr[i];
+		double pos_distance = std::sqrt((posArr[i] - posArr.back()).array().square().sum());
+		if (delta_travel_distance > SKIP_NEIBOUR_DISTANCE && pos_distance < delta_travel_distance * INFLATION_COVARIANCE) 
+		{
+			// ROS_INFO("Matched_id: %d, delta_travel_distance: %f, pos_distance : %f", i, delta_travel_distance, pos_distance);
+			cv::Mat before_dis = ProjectArr[i];
+
+			float yaw_diff = yaw_t - yawArr[i];
+
+			Eigen::Affine3f transform = globalICP(before_dis, cur_dis, yaw_diff);
+			float diff_x, diff_y, diff_z;
+			float ROLL, PITCH, angle;
+			pcl::getTranslationAndEulerAngles(transform, diff_x, diff_y, diff_z, ROLL, PITCH, angle);
+
+			pcl::PointCloud<PointXYZIL>::Ptr trans_cloud_semantic(new pcl::PointCloud<PointXYZIL>);
+			transformPointCloud(*pc_filtered_semantic, *trans_cloud_semantic, transform);
+			
+			pcl::PointCloud<pcl::PointXYZI>::Ptr trans_cloud_corner(new pcl::PointCloud<pcl::PointXYZI>);
+			pcl::PointCloud<pcl::PointXYZI>::Ptr trans_cloud_surf(new pcl::PointCloud<pcl::PointXYZI>);
+			transformPointCloud(*pc_filtered_corner, *trans_cloud_corner, transform);
+			transformPointCloud(*pc_filtered_surf, *trans_cloud_surf, transform);
+
+
+			if (UsingEPSCFlag) 
+			{
+				auto desc1 = EPSCArr[i];
+
+
+				// EPSC_cur = calculateEPSC(trans_cloud_corner, trans_cloud_surf);
+				// double epsc_angle = angle;
+				// auto score = calculateDistance(desc1, EPSC_cur, epsc_angle);
+				// // std::cout << "EPSC_score: " << score << std::endl;
+				// if (score > DISTANCE_THRESHOLD && score > best_score_epsc) 
+				// {
+				// 	best_score_epsc = score;
+				// 	best_matched_id_epsc = i;
+
+				// 	Eigen::Affine3f epsc_transform = Eigen::Affine3f::Identity();
+				// 	epsc_transform.translation() << diff_x, diff_y, 0;
+				// 	epsc_transform.rotate(Eigen::AngleAxisf(epsc_angle, Eigen::Vector3f::UnitZ()));
+
+				// 	best_score_epsc_transform = epsc_transform;
+				// }
+
+
+				EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
+				double geo_score=0;
+				double inten_score =0;
+				if(is_loop_pair(EPSC_cur, desc1,geo_score,inten_score)){
+					if(geo_score+inten_score>best_score_epsc){
+						best_score_epsc = geo_score+inten_score;
+						best_matched_id_epsc = i;
+
+						Eigen::Affine3f epsc_transform = Eigen::Affine3f::Identity();
+						epsc_transform.translation() << diff_x, diff_y, 0;
+						epsc_transform.rotate(Eigen::AngleAxisf(epsc_angle, Eigen::Vector3f::UnitZ()));
+
+						best_score_epsc_transform = epsc_transform;
+					}
+				}
+
+			}
+
+			if (UsingSEPSCFlag) 
+			{
+				auto desc1 = SEPSCArr[i];
+				SEPSC_cur = calculateSEPSC(trans_cloud_semantic);
+				double sepsc_angle = angle;
+				auto score = calculateDistance(desc1, SEPSC_cur, sepsc_angle);
+				// std::cout << "SEPSC_score: " << score << std::endl;
+				if (score > DISTANCE_THRESHOLD && score > best_score_sepsc) 
+				{
+					best_score_sepsc = score;
+					best_matched_id_sepsc = i;
+										
+					Eigen::Affine3f sepsc_transform = Eigen::Affine3f::Identity();
+					sepsc_transform.translation() << diff_x, diff_y, 0;
+					sepsc_transform.rotate(Eigen::AngleAxisf(sepsc_angle, Eigen::Vector3f::UnitZ()));
+
+					best_score_sepsc_transform = sepsc_transform;
+				}
+			}
+		}
+	}
+
+
+	posArr.push_back(current_t);
+	yawArr.push_back(yaw_t);
+	ProjectArr.push_back(cur_dis);
+
+
+	if (UsingEPSCFlag) 
+	{
+		EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
+		EPSCArr.push_back(EPSC_cur);
+		if (best_matched_id_epsc != -1) 
+		{
+			matched_frame_id.push_back(best_matched_id_epsc);
+			matched_frame_transform.push_back(best_score_epsc_transform);
+			ROS_WARN("EPSC: received loop closure candidate: current: %d, history: %d, total_score: %f",
+						current_frame_id, best_matched_id_epsc, best_score_epsc);
+		}
+	}
+
+	if (UsingSEPSCFlag) 
+	{
+		SEPSC_cur = calculateSEPSC(pc_filtered_semantic);
+		SEPSCArr.push_back(SEPSC_cur);
+		if (best_matched_id_sepsc != -1) 
+		{
+			matched_frame_id.push_back(best_matched_id_sepsc);
+			matched_frame_transform.push_back(best_score_sepsc_transform);
+			ROS_WARN("SEPSC: received loop closure candidate: current: %d, history: %d, total_score: %f",
+						current_frame_id, best_matched_id_sepsc, best_score_sepsc);
+		}
+	}
+}	

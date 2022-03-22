@@ -367,6 +367,8 @@ struct keyframe_t
 
     void free_all() 
     {
+		loop_container.clear();
+		
         semantic_raw.reset(new pcl::PointCloud<PointXYZIL>());
         semantic_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
         semantic_pole.reset(new pcl::PointCloud<PointXYZIL>());
@@ -571,6 +573,11 @@ struct submap_t
 
 	void free()
 	{
+    	keyframe_id_in_submap.clear();
+    	keyframe_poses_3D_map.clear();
+    	keyframe_poses_6D_map.clear();
+    	keyframe_global_descriptor.clear();
+
 		submap_dynamic.reset(new pcl::PointCloud<PointXYZIL>());
 		submap_pole.reset(new pcl::PointCloud<PointXYZIL>());
 		submap_ground.reset(new pcl::PointCloud<PointXYZIL>());
