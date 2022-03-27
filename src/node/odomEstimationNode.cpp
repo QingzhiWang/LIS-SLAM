@@ -462,7 +462,7 @@ class OdomEstimationNode : public ParamServer
 			laserCloudSurfVec.push_back(tmpSurf);
 			laserCloudCornerVec.push_back(tmpCorner);
 
-			while(laserCloudSurfVec.size() >= 25)
+			while(laserCloudSurfVec.size() >= 20)
 			{
 				laserCloudSurfVec.erase(laserCloudSurfVec.begin());
 				laserCloudCornerVec.erase(laserCloudCornerVec.begin());
@@ -619,7 +619,7 @@ class OdomEstimationNode : public ParamServer
 				if (LMOptimization(iterCount) == true) break;
 			}
 			
-			ROS_WARN("KEYFRAME ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
+			// ROS_WARN("KEYFRAME ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
 
 			transformUpdate();
 		} else {

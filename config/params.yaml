@@ -70,7 +70,7 @@ lis_slam:
   Horizon_SCAN: 1800                          # lidar horizontal resolution (Velodyne:1800, Ouster:512,1024,2048)
 
 
-  downsampleRate: 1                          # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1 
+  downsampleRate: 2                          # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1 
   lidarMinRange: 0.0                         # default: 1.0, minimum lidar range to be used
   lidarMaxRange: 70.0                        # 70.0      # default: 1000.0, maximum lidar range to be used
 

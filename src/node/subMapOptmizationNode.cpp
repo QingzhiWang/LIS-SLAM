@@ -825,16 +825,16 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		#if USING_LOAM_FEATURE
 			pcl::fromROSMsg(cloudInfo.cloud_corner, *currentKeyFrame->cloud_corner);
 			pcl::fromROSMsg(cloudInfo.cloud_surface, *currentKeyFrame->cloud_surface);     
-			// pcl::fromROSMsg(cloudInfo.cloud_corner_sharp, *currentKeyFrame->cloud_corner_down);
-			// pcl::fromROSMsg(cloudInfo.cloud_surface_sharp, *currentKeyFrame->cloud_surface_down);  
+			pcl::fromROSMsg(cloudInfo.cloud_corner_sharp, *currentKeyFrame->cloud_corner_down);
+			pcl::fromROSMsg(cloudInfo.cloud_surface_sharp, *currentKeyFrame->cloud_surface_down);  
 
-			SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.1);
-        	SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, 0.2);
+			// SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.1);
+        	// SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, 0.4);
 
-			*currentKeyFrame->semantic_pole  = *trans2LabelPointCloud(currentKeyFrame->cloud_corner, 18);
-			*currentKeyFrame->semantic_building = *trans2LabelPointCloud(currentKeyFrame->cloud_surface, 13);
-			*currentKeyFrame->semantic_pole_down = *trans2LabelPointCloud(currentKeyFrame->cloud_corner_down, 18);
-			*currentKeyFrame->semantic_building_down = *trans2LabelPointCloud(currentKeyFrame->cloud_surface_down, 13);
+			*currentKeyFrame->semantic_pole  = *trans2LabelPointCloud(currentKeyFrame->cloud_corner, 0);
+			*currentKeyFrame->semantic_building = *trans2LabelPointCloud(currentKeyFrame->cloud_surface, 0);
+			*currentKeyFrame->semantic_pole_down = *trans2LabelPointCloud(currentKeyFrame->cloud_corner_down, 0);
+			*currentKeyFrame->semantic_building_down = *trans2LabelPointCloud(currentKeyFrame->cloud_surface_down, 0);
 		#endif	
 
         //calculate bbx (local)
@@ -3849,7 +3849,15 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
                 }
 
 				extractSubMapCloud();
+
+			#if USING_SEMANTIC_FEATURE
 				subMap2SubMapOptimization();
+			#endif
+			
+			#if USING_LOAM_FEATURE
+				scan2SubMapOptimizationICP();
+			#endif
+
 				saveSubMapAndFactor();
 				correctPoses();
 				publishOdometry();
@@ -3997,7 +4005,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         	
 			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerFromSubMap: %d.\033[0m", laserCloudCornerFromSubMap->size());
 			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfFromSubMap: %d.\033[0m", laserCloudSurfFromSubMap->size());
-		publishLabelCloud(&pubTestPre, laserCloudSurfFromSubMap, timeSubMapInfoStamp, odometryFrame);
+		// publishLabelCloud(&pubTestPre, laserCloudSurfFromSubMap, timeSubMapInfoStamp, odometryFrame);
 
 
 			bbx_filter(laserCloudCornerFromSubMap, bbx_intersection);
@@ -4006,6 +4014,8 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerFromSubMap: %d.\033[0m", laserCloudCornerFromSubMap->size());
 			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfFromSubMap: %d.\033[0m", laserCloudSurfFromSubMap->size());
 		publishLabelCloud(&pubTestPreN, laserCloudSurfFromSubMap, timeSubMapInfoStamp, odometryFrame);
+		publishLabelCloud(&pubTestPre, laserCloudCornerFromSubMap, timeSubMapInfoStamp, odometryFrame);
+
 		
 			laserCloudCornerLast->clear();
 			laserCloudSurfLast->clear();
@@ -4027,7 +4037,7 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			
 			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerLast: %d.\033[0m", laserCloudCornerLast->size());
 			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfLast: %d.\033[0m", laserCloudSurfLast->size());
-		publishLabelCloud(&pubTestCur, laserCloudSurfLast, timeSubMapInfoStamp, odometryFrame);
+		// publishLabelCloud(&pubTestCur, laserCloudSurfLast, timeSubMapInfoStamp, odometryFrame);
 		
 			// tran_map = trans2Affine3f(transformTobeMapped);	
 			// *laserCloudCornerLast = *transformPointCloud(laserCloudCornerLast, tran_map);
@@ -4044,9 +4054,10 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudCornerLast: %d.\033[0m", laserCloudCornerLast->size());
 			// ROS_WARN("\033[1;32m OptmizationThread -> laserCloudSurfLast: %d.\033[0m", laserCloudSurfLast->size());
 		publishLabelCloud(&pubTestCurN, laserCloudSurfLast, timeSubMapInfoStamp, odometryFrame);
+		publishLabelCloud(&pubTestCur, laserCloudCornerLast, timeSubMapInfoStamp, odometryFrame);
 		
-			*laserCloudCornerLastDS = *laserCloudCornerLast;
-			*laserCloudSurfLastDS = *laserCloudSurfLast;
+			// *laserCloudCornerLastDS = *laserCloudCornerLast;
+			// *laserCloudSurfLastDS = *laserCloudSurfLast;
 			SubMapManager::voxel_downsample_pcl(laserCloudCornerLast, laserCloudCornerLastDS, 0.2);
 			SubMapManager::voxel_downsample_pcl(laserCloudSurfLast, laserCloudSurfLastDS, 0.5);
 		
@@ -4404,20 +4415,28 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
         
 		auto t2 = ros::Time::now();
         std::cout << " done" << std::endl;
-        std::cout << "score: " << score << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
+        // std::cout << "score: " << score << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
+		
+		ROS_WARN("\033[1;32m Score: %f    time:  %f [sec].\033[0m", score, (t2 - t1).toSec());
         
 		float X, Y, Z, ROLL, PITCH, YAW;
         Eigen::Affine3f tCorrect = correctionLidarFrame * initLidarFrame;  // pre-multiplying -> successive rotation about a fixed frame
         pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
         
-		std::cout << "TransformIn: [" << ROLL << ", " << PITCH << ", " << YAW << ", " 
-                                      << X << ", " << Y << ", " << Z << "]" << std::endl;
+		// std::cout << "TransformIn: [" << ROLL << ", " << PITCH << ", " << YAW << ", " 
+        //                               << X << ", " << Y << ", " << Z << "]" << std::endl;
 
-		if(score <= 3.0) 
+		ROS_WARN("\033[1;32m After Optimization : transformTobeMapped: %f,  %f,  %f, %f, %f, %f.\033[0m", ROLL, PITCH, YAW, X, Y, Z);
+		
+		if(score <= 0.7) 
 		{
+			transformTobeMapped[0] = ROLL;
+			transformTobeMapped[1] = PITCH;
 			transformTobeMapped[2] = YAW;
+
 			transformTobeMapped[3] = X;
 			transformTobeMapped[4] = Y;
+			transformTobeMapped[5] = Z;
 		}
 
 	}
@@ -4434,6 +4453,25 @@ class SubMapOptmizationNode : public SubMapManager<PointXYZIL> {
 		*sourcePC += *laserCloudCornerLast;
 
 		icpAlignment(sourcePC, targetPC, transformTobeMapped);
+
+		transformUpdate();
+
+		gtsam::Pose3 poseFrom = pclPointTogtsamPose3(SubMapPoses6D[preSubMapId]);
+		gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
+		noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
+
+		// std::cout<<"*********************************************************"<<std::endl;
+		// for(int i=0;i<6;i++)
+		// {
+		//     std::cout<<"After Optimization : transformTobeMapped["<<i<<"] : "<<transformTobeMapped[i]<<std::endl;
+		// }
+		// std::cout<<"*********************************************************"<<std::endl;
+
+		subMapIndexContainerAll.push_back(make_pair(preSubMapId, curSubMapId));
+		subMapIndexContainer.push_back(make_pair(preSubMapId, curSubMapId));
+		subMapPoseQueue.push_back(poseFrom.between(poseTo));
+		subMapNoiseQueue.push_back(odometryNoise);
+
 	}
 
 
