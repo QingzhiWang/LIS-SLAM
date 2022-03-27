@@ -32,8 +32,8 @@
 #define USING_SLIDING_TARGET true
 #define USING_MULTI_KEYFRAME_TARGET false
 
-#define USING_SEMANTIC_FEATURE true
-#define USING_LOAM_FEATURE false
+#define USING_SEMANTIC_FEATURE false
+#define USING_LOAM_FEATURE true
 
 
 
@@ -794,32 +794,49 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
             currentKeyFrame->init_pose = point6d;
         }
         
-        pcl::fromROSMsg(cloudInfo.semantic_raw, *currentKeyFrame->semantic_raw);
-        pcl::fromROSMsg(cloudInfo.semantic_dynamic, *currentKeyFrame->semantic_dynamic);
-        pcl::fromROSMsg(cloudInfo.semantic_pole, *currentKeyFrame->semantic_pole);
-        pcl::fromROSMsg(cloudInfo.semantic_ground, *currentKeyFrame->semantic_ground);
-        pcl::fromROSMsg(cloudInfo.semantic_building, *currentKeyFrame->semantic_building);
-        pcl::fromROSMsg(cloudInfo.semantic_outlier, *currentKeyFrame->semantic_outlier);
+		#if USING_SEMANTIC_FEATURE
+			pcl::fromROSMsg(cloudInfo.semantic_raw, *currentKeyFrame->semantic_raw);
+			pcl::fromROSMsg(cloudInfo.semantic_dynamic, *currentKeyFrame->semantic_dynamic);
+			pcl::fromROSMsg(cloudInfo.semantic_pole, *currentKeyFrame->semantic_pole);
+			pcl::fromROSMsg(cloudInfo.semantic_ground, *currentKeyFrame->semantic_ground);
+			pcl::fromROSMsg(cloudInfo.semantic_building, *currentKeyFrame->semantic_building);
+			pcl::fromROSMsg(cloudInfo.semantic_outlier, *currentKeyFrame->semantic_outlier);
 
-        pcl::fromROSMsg(cloudInfo.cloud_corner, *currentKeyFrame->cloud_corner);
-        pcl::fromROSMsg(cloudInfo.cloud_surface, *currentKeyFrame->cloud_surface);     
+			pcl::fromROSMsg(cloudInfo.cloud_corner, *currentKeyFrame->cloud_corner);
+			pcl::fromROSMsg(cloudInfo.cloud_surface, *currentKeyFrame->cloud_surface);     
 
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_raw, currentKeyFrame->semantic_raw_down, 0.5);  //0.4
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.2); //0.2
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, 0.05); //0.05
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.6); //0.6
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.4); //0.4
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.6); //0.5
+			SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_raw, currentKeyFrame->semantic_raw_down, 0.5);  //0.4
+			SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.2); //0.2
+			SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, 0.05); //0.05
+			SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.6); //0.6
+			SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.4); //0.4
+			SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.6); //0.5
 
-        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.5); //0.2
-        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, 0.5); //0.05
-        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.5); //0.6
-        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.5); //0.4
-        // SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.5); //0.5
-    
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.2);
-        SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, 0.4);
-        
+			// SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_dynamic, currentKeyFrame->semantic_dynamic_down, 0.5); //0.2
+			// SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_pole, currentKeyFrame->semantic_pole_down, 0.5); //0.05
+			// SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_ground, currentKeyFrame->semantic_ground_down, 0.5); //0.6
+			// SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_building, currentKeyFrame->semantic_building_down, 0.5); //0.4
+			// SubMapManager::voxel_downsample_pcl(currentKeyFrame->semantic_outlier, currentKeyFrame->semantic_outlier_down, 0.5); //0.5
+
+			SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.2);
+        	SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, 0.4);
+		#endif
+
+		#if USING_LOAM_FEATURE
+			pcl::fromROSMsg(cloudInfo.cloud_corner, *currentKeyFrame->cloud_corner);
+			pcl::fromROSMsg(cloudInfo.cloud_surface, *currentKeyFrame->cloud_surface);     
+			// pcl::fromROSMsg(cloudInfo.cloud_corner_sharp, *currentKeyFrame->cloud_corner_down);
+			// pcl::fromROSMsg(cloudInfo.cloud_surface_sharp, *currentKeyFrame->cloud_surface_down);  
+
+			SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_corner, currentKeyFrame->cloud_corner_down, 0.1);
+        	SubMapManager::voxel_downsample_pcl(currentKeyFrame->cloud_surface, currentKeyFrame->cloud_surface_down, 0.2);
+
+			*currentKeyFrame->semantic_pole  = *trans2LabelPointCloud(currentKeyFrame->cloud_corner, 18);
+			*currentKeyFrame->semantic_building = *trans2LabelPointCloud(currentKeyFrame->cloud_surface, 13);
+			*currentKeyFrame->semantic_pole_down = *trans2LabelPointCloud(currentKeyFrame->cloud_corner_down, 18);
+			*currentKeyFrame->semantic_building_down = *trans2LabelPointCloud(currentKeyFrame->cloud_surface_down, 13);
+		#endif	
+
         //calculate bbx (local)
         // this->get_cloud_bbx(currentKeyFrame->semantic_raw, currentKeyFrame->local_bound);
         this->get_cloud_bbx_cpt(currentKeyFrame->semantic_raw, currentKeyFrame->local_bound, currentKeyFrame->local_cp);
@@ -844,7 +861,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
         laserCloudCornerLastDS->clear();
         laserCloudSurfLastDS->clear();
 		
-	#if USING_SEMANTIC_FEATURE
 		laserCloudCornerLast->points.insert(laserCloudCornerLast->points.end(), 
 											currentKeyFrame->semantic_pole->points.begin(), 
 											currentKeyFrame->semantic_pole->points.end());
@@ -872,14 +888,6 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 		laserCloudSurfLastDS->points.insert(laserCloudSurfLastDS->points.end(), 
 											currentKeyFrame->semantic_ground_down->points.begin(), 
 											currentKeyFrame->semantic_ground_down->points.end());																						
-	#endif
-
-	#if USING_LOAM_FEATURE
-		*laserCloudCornerLast = *trans2LabelPointCloud(currentKeyFrame->cloud_corner);
-		*laserCloudCornerLastDS = *trans2LabelPointCloud(currentKeyFrame->cloud_corner_down);
-		*laserCloudSurfLast = *trans2LabelPointCloud(currentKeyFrame->cloud_surface);
-		*laserCloudSurfLastDS = *trans2LabelPointCloud(currentKeyFrame->cloud_surface_down);																				
-	#endif	
 
         laserCloudCornerLastDSNum = laserCloudCornerLastDS->points.size();
         laserCloudSurfLastDSNum = laserCloudSurfLastDS->points.size();
@@ -2807,6 +2815,9 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 				pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
 				*tmpCloud = *transformPointCloud(cureKeyframeCloud, key2PreSubMapTrans);
 				reg->setInputSource(tmpCloud);
+
+				// reg->setInputSource(cureKeyframeCloud);
+
 
 		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
 

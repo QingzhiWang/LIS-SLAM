@@ -211,6 +211,9 @@ public:
 		semanticInfo.cloud_corner = cloudInfo.cloud_corner;
 		semanticInfo.cloud_surface = cloudInfo.cloud_surface;
 
+		semanticInfo.cloud_corner_sharp = cloudInfo.cloud_corner_sharp;
+		semanticInfo.cloud_surface_sharp = cloudInfo.cloud_surface_sharp;
+
 		sensor_msgs::PointCloud2 tempCloud;
 		
 		pcl::toROSMsg(*semanticRGBCloudOut, tempCloud);

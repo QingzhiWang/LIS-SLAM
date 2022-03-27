@@ -878,11 +878,13 @@ public:
 
 		// 不能正确被转换 未找到原因 但是在下面操作可以完成转换
         // last_target_cblock->transform_feature(&last_target_cblock->relative_pose, false, true);
+
         *semantic_dynamic = *transformPointCloud(last_target_cblock->semantic_dynamic_down, &last_target_cblock->relative_pose);
         *semantic_pole = *transformPointCloud(last_target_cblock->semantic_pole_down, &last_target_cblock->relative_pose);
         *semantic_ground = *transformPointCloud(last_target_cblock->semantic_ground_down, &last_target_cblock->relative_pose);
         *semantic_building = *transformPointCloud(last_target_cblock->semantic_building_down, &last_target_cblock->relative_pose);
         *semantic_outlier = *transformPointCloud(last_target_cblock->semantic_outlier_down, &last_target_cblock->relative_pose);
+
 
         dynamic_dist_thre_max = std::max(dynamic_dist_thre_max, (float)(dynamic_dist_thre_min + 0.1));
         std::cout << "Map based filtering range(m): (0, " << near_dist_thre << "] U [" << dynamic_dist_thre_min << "," << dynamic_dist_thre_max << "]" << std::endl;

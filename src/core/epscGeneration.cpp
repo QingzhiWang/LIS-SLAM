@@ -1366,7 +1366,7 @@ start_time = std::chrono::system_clock::now();
 				double epsc_angle = angle;
 
 // start_time = std::chrono::system_clock::now();
-				EPSC_cur = calculateEPSC(trans_cloud_corner, trans_cloud_surf);
+				// EPSC_cur = calculateEPSC(trans_cloud_corner, trans_cloud_surf);
 // end_time  = std::chrono::system_clock::now();
 // std::ofstream foutC_epsc(epsc_path, std::ios::app);
 // foutC_epsc.setf(std::ios::scientific, std::ios::floatfield);
@@ -1376,19 +1376,19 @@ start_time = std::chrono::system_clock::now();
 // foutC_epsc.close();
 
 
-				auto score = calculateDistance(desc1, EPSC_cur, epsc_angle);
-				// std::cout << "EPSC_score: " << score << std::endl;
-				if (score > DISTANCE_THRESHOLD && score > best_score_epsc) 
-				{
-					best_score_epsc = score;
-					best_matched_id_epsc = i;
+				// auto score = calculateDistance(desc1, EPSC_cur, epsc_angle);
+				// // std::cout << "EPSC_score: " << score << std::endl;
+				// if (score > DISTANCE_THRESHOLD && score > best_score_epsc) 
+				// {
+				// 	best_score_epsc = score;
+				// 	best_matched_id_epsc = i;
 
-					Eigen::Affine3f epsc_transform = Eigen::Affine3f::Identity();
-					epsc_transform.translation() << diff_x, diff_y, 0;
-					epsc_transform.rotate(Eigen::AngleAxisf(epsc_angle, Eigen::Vector3f::UnitZ()));
+				// 	Eigen::Affine3f epsc_transform = Eigen::Affine3f::Identity();
+				// 	epsc_transform.translation() << diff_x, diff_y, 0;
+				// 	epsc_transform.rotate(Eigen::AngleAxisf(epsc_angle, Eigen::Vector3f::UnitZ()));
 
-					best_score_epsc_transform = epsc_transform;
-				}
+				// 	best_score_epsc_transform = epsc_transform;
+				// }
 
 				EPSC_cur = calculateEPSC(pc_filtered_corner, pc_filtered_surf);
 				double geo_score=0;
@@ -1397,19 +1397,19 @@ start_time = std::chrono::system_clock::now();
 				bool isLoop = is_loop_pair(EPSC_cur, desc1, geo_score, inten_score);
 
 
-				// if(isLoop)
-				// {
-				// 	if(geo_score+inten_score>best_score_epsc){
-				// 		best_score_epsc = geo_score+inten_score;
-				// 		best_matched_id_epsc = i;
+				if(isLoop)
+				{
+					if(geo_score+inten_score>best_score_epsc){
+						best_score_epsc = geo_score+inten_score;
+						best_matched_id_epsc = i;
 
-				// 		Eigen::Affine3f epsc_transform = Eigen::Affine3f::Identity();
-				// 		epsc_transform.translation() << diff_x, diff_y, 0;
-				// 		epsc_transform.rotate(Eigen::AngleAxisf(epsc_angle, Eigen::Vector3f::UnitZ()));
+						Eigen::Affine3f epsc_transform = Eigen::Affine3f::Identity();
+						epsc_transform.translation() << diff_x, diff_y, 0;
+						epsc_transform.rotate(Eigen::AngleAxisf(epsc_angle, Eigen::Vector3f::UnitZ()));
 
-				// 		best_score_epsc_transform = epsc_transform;
-				// 	}
-				// }
+						best_score_epsc_transform = epsc_transform;
+					}
+				}
 
 
 end_time  = std::chrono::system_clock::now();

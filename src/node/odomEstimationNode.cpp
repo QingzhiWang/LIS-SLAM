@@ -7,9 +7,10 @@
 #include "lis_slam/cloud_info.h"
 #include "utility.h"
 
+// #define USING_SUBMAP_TARGET true
 #define USING_SUBMAP_TARGET false
 #define USING_MULTI_FRAME_TARGET true
-
+// #define USING_MULTI_FRAME_TARGET false
 
 class OdomEstimationNode : public ParamServer 
 {
@@ -196,10 +197,13 @@ class OdomEstimationNode : public ParamServer
 
 			downSizeFilterCorner.setInputCloud(laserCloudCornerFromMap);
 			downSizeFilterCorner.filter(*laserCloudCornerFromMapDS);
-			laserCloudCornerFromMapDSNum = laserCloudCornerFromMapDS->size();
+			// *laserCloudCornerFromMapDS = *laserCloudCornerFromMap;
 
 			downSizeFilterSurf.setInputCloud(laserCloudSurfFromMap);
 			downSizeFilterSurf.filter(*laserCloudSurfFromMapDS);
+			// *laserCloudSurfFromMapDS = *laserCloudSurfFromMap;
+
+			laserCloudCornerFromMapDSNum = laserCloudCornerFromMapDS->size();
 			laserCloudSurfFromMapDSNum = laserCloudSurfFromMapDS->size();
 
 		#endif
@@ -214,7 +218,7 @@ class OdomEstimationNode : public ParamServer
 		if(deltaR < 0.005 || deltaT < 0.05)
 		{
 			calculateTranslation();
-			if (keyFrameId <= 8 ||
+			if (keyFrameId <= 5 ||
 				abs(transformCurFrame2PriFrame[2]) >= keyFrameMiniYaw ||
 				abs(transformCurFrame2PriFrame[3]) >= keyFrameMiniDistance ||
 				abs(transformCurFrame2PriFrame[4]) >= keyFrameMiniDistance) 
@@ -257,22 +261,22 @@ class OdomEstimationNode : public ParamServer
 
 	void currentCloudInit()
 	{
+		// pcl::fromROSMsg(cloudInfo.cloud_corner, *laserCloudCornerLast);
+		// pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSurfLast);
+		// pcl::fromROSMsg(cloudInfo.cloud_corner_sharp, *laserCloudSharpCornerLast);
+		// pcl::fromROSMsg(cloudInfo.cloud_surface_sharp, *laserCloudSharpSurfLast);
+
 		pcl::fromROSMsg(cloudInfo.cloud_corner, *laserCloudCornerLast);
 		pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSurfLast);
-		pcl::fromROSMsg(cloudInfo.cloud_corner_sharp, *laserCloudSharpCornerLast);
-		pcl::fromROSMsg(cloudInfo.cloud_surface_sharp, *laserCloudSharpSurfLast);
-
-		// pcl::fromROSMsg(cloudInfo.cloud_corner, *laserCloudSharpCornerLast);
-		// pcl::fromROSMsg(cloudInfo.cloud_surface, *laserCloudSharpSurfLast);
 
 		// Downsample cloud from current scan
-		// laserCloudSharpCornerLast->clear();
-		// downSizeFilterCorner.setInputCloud(laserCloudCornerLast);
-		// downSizeFilterCorner.filter(*laserCloudSharpCornerLast);
+		laserCloudSharpCornerLast->clear();
+		downSizeFilterCorner.setInputCloud(laserCloudCornerLast);
+		downSizeFilterCorner.filter(*laserCloudSharpCornerLast);
 
-		// laserCloudSharpSurfLast->clear();
-		// downSizeFilterSurf.setInputCloud(laserCloudSurfLast);
-		// downSizeFilterSurf.filter(*laserCloudSharpSurfLast);
+		laserCloudSharpSurfLast->clear();
+		downSizeFilterSurf.setInputCloud(laserCloudSurfLast);
+		downSizeFilterSurf.filter(*laserCloudSharpSurfLast);
 
 		laserCloudSharpCornerLastNum = laserCloudSharpCornerLast->size();
 		laserCloudSharpSurfLastNum = laserCloudSharpSurfLast->size();
@@ -458,7 +462,7 @@ class OdomEstimationNode : public ParamServer
 			laserCloudSurfVec.push_back(tmpSurf);
 			laserCloudCornerVec.push_back(tmpCorner);
 
-			while(laserCloudSurfVec.size() >= 18)
+			while(laserCloudSurfVec.size() >= 25)
 			{
 				laserCloudSurfVec.erase(laserCloudSurfVec.begin());
 				laserCloudCornerVec.erase(laserCloudCornerVec.begin());
@@ -601,7 +605,7 @@ class OdomEstimationNode : public ParamServer
 			kdtreeSurfFromMap->setInputCloud(laserCloudSurfFromMapDS);
 			
 			int iterCount = 0;
-			for (; iterCount < 10; iterCount++)  // 30
+			for (; iterCount < 15; iterCount++)  // 30
 			{
 				laserCloudOri->clear();
 				coeffSel->clear();
@@ -615,7 +619,7 @@ class OdomEstimationNode : public ParamServer
 				if (LMOptimization(iterCount) == true) break;
 			}
 			
-			// ROS_WARN("KEYFRAME ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
+			ROS_WARN("KEYFRAME ---> iterCount: %d, deltaR: %f, deltaT: %f", iterCount, deltaR, deltaT);
 
 			transformUpdate();
 		} else {

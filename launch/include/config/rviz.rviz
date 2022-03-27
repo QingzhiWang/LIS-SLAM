@@ -7,7 +7,7 @@ Panels:
         - /Global Options1
         - /links1
         - /Point Cloud1
-        - /Semantic Cloud1
+        - /Semantic Cloud1/semantic_cloud_rgb1
         - /Odometry1
         - /Odometry1/keyframe_imu1/Shape1
         - /Odometry1/lidar1/Shape1
@@ -348,7 +348,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: true
-          Enabled: false
+          Enabled: true
           Keep: 1000
           Name: front
           Position Tolerance: 0.10000000149011612
@@ -364,7 +364,7 @@ Visualization Manager:
             Value: Axes
           Topic: /odometry/front
           Unreliable: false
-          Value: false
+          Value: true
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -881,13 +881,13 @@ Visualization Manager:
             Min Value: -24.51360321044922
             Value: true
           Axis: Z
-          Channel Name: label
+          Channel Name: z
           Class: rviz/PointCloud2
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
           Enabled: true
-          Invert Rainbow: false
+          Invert Rainbow: true
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
           Name: Map (global)
@@ -895,7 +895,7 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 1
-          Size (m): 0.05999999865889549
+          Size (m): 0.05000000074505806
           Style: Flat Squares
           Topic: /lis_slam/mapping/map_global
           Unreliable: false
@@ -1028,7 +1028,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1043,7 +1043,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -1056,7 +1056,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -1071,7 +1071,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 0.800000011920929
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -1093,7 +1093,7 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 1.5
-          Size (m): 0.10000000149011612
+          Size (m): 0.11999999731779099
           Style: Flat Squares
           Topic: /Pre
           Unreliable: false
@@ -1176,7 +1176,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
-          Size (Pixels): 2.5
+          Size (Pixels): 2
           Size (m): 0.20000000298023224
           Style: Points
           Topic: /CurICP
@@ -1314,25 +1314,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 367.233154296875
+      Distance: 174.31094360351562
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 6.32610559463501
-        Y: -17.49766731262207
-        Z: -9.257298469543457
+        X: 27.9044132232666
+        Y: -17.76730728149414
+        Z: -31.64438247680664
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.369796633720398
+      Pitch: 1.5697963237762451
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 3.406636953353882
+      Yaw: 4.703454494476318
     Saved: ~
 Window Geometry:
   Displays:

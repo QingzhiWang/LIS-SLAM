@@ -262,8 +262,27 @@ pcl::PointCloud<PointXYZIL>::Ptr trans2LabelPointCloud(pcl::PointCloud<PointType
     return cloudOut;
 }
 
+pcl::PointCloud<PointXYZIL>::Ptr trans2LabelPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn,  int label)
+{
+    pcl::PointCloud<PointXYZIL>::Ptr cloudOut(new pcl::PointCloud<PointXYZIL>());
 
+    PointType *pointFrom;	
 
+	int cloudSize = cloudIn->size();
+    cloudOut->resize(cloudSize);
+
+    #pragma omp for
+    for (int i = 0; i < cloudSize; ++i) 
+    {
+      pointFrom = &cloudIn->points[i];
+      cloudOut->points[i].x = pointFrom->x;
+      cloudOut->points[i].y = pointFrom->y;
+      cloudOut->points[i].z = pointFrom->z;
+      cloudOut->points[i].intensity = pointFrom->intensity;
+      cloudOut->points[i].label = label;
+    }
+    return cloudOut;
+}
 
 
 float constraintTransformation(float value, float limit) 
