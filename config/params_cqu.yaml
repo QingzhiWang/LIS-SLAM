@@ -13,7 +13,7 @@ lis_slam:
   savePCDDirectory: "/AWorkSpace/TestData/map/lis/noLoop/kitti_00/"     # in your home folder, starts and ends with "/".
 
   saveTrajectory: false
-  RESULT_PATH: "/home/wqz/AWorkSpace/TestData/trajectory/lis/09_pred.txt"
+  RESULT_PATH: "/home/wqz/AWorkSpace/TestData/0327/CQU/LIS-SLAM-3-1.txt"
 
   useImu: false       # If using IMU data, set to "true" 
   useGPSVel : true

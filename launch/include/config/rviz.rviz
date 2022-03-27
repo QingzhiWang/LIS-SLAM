@@ -13,6 +13,7 @@ Panels:
         - /Odometry1/lidar1/Shape1
         - /Odometry1/lidar_imu1/Shape1
         - /Mapping1
+        - /Mapping1/Map (global)1
         - /Mapping1/Map (global)1/Autocompute Value Bounds1
         - /EPSC1
         - /Test1
@@ -327,7 +328,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
-      Enabled: true
+      Enabled: false
       Name: Semantic Cloud
     - Class: rviz/Group
       Displays:
@@ -348,7 +349,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: true
-          Enabled: true
+          Enabled: false
           Keep: 1000
           Name: front
           Position Tolerance: 0.10000000149011612
@@ -364,7 +365,7 @@ Visualization Manager:
             Value: Axes
           Topic: /odometry/front
           Unreliable: false
-          Value: true
+          Value: false
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -875,10 +876,10 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Alpha: 0.699999988079071
-          Autocompute Intensity Bounds: true
+          Autocompute Intensity Bounds: false
           Autocompute Value Bounds:
-            Max Value: 5.130220890045166
-            Min Value: -24.51360321044922
+            Max Value: 20.689233779907227
+            Min Value: -4.753530502319336
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -889,14 +890,16 @@ Visualization Manager:
           Enabled: true
           Invert Rainbow: true
           Max Color: 255; 255; 255
+          Max Intensity: 56
           Min Color: 0; 0; 0
+          Min Intensity: 1
           Name: Map (global)
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
           Size (Pixels): 1
-          Size (m): 0.05000000074505806
-          Style: Flat Squares
+          Size (m): 0.05999999865889549
+          Style: Boxes
           Topic: /lis_slam/mapping/map_global
           Unreliable: false
           Use Fixed Frame: true
@@ -907,7 +910,9 @@ Visualization Manager:
           Marker Topic: /lis_slam/mapping/loop_closure_constraints_test
           Name: Test Loop constraint
           Namespaces:
-            {}
+            loop_edges: true
+            loop_nodes: true
+            test_loop_nodes_id: true
           Queue Size: 1
           Value: true
         - Class: rviz/MarkerArray
@@ -1314,25 +1319,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 292.525634765625
+      Distance: 265.2543029785156
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -10.46601676940918
-        Y: -17.18644142150879
-        Z: -43.36453628540039
+        X: 0.19524972140789032
+        Y: -17.07408905029297
+        Z: -106.3595962524414
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3797956705093384
+      Pitch: 1.3047963380813599
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 0.23027513921260834
+      Yaw: 1.9502689838409424
     Saved: ~
 Window Geometry:
   Displays:

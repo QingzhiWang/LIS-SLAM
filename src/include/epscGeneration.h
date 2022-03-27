@@ -41,7 +41,7 @@ private:
 	double min_dis = 3;
 
 	int rings = 20;
-	int sectors = 90; //180
+	int sectors = 60; //180
 	double ring_step = (max_dis - min_dis) / rings;
 	double sector_step = 2 * M_PI / sectors;
 
