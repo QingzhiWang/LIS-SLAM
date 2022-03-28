@@ -818,7 +818,7 @@ void EPSCGeneration::loopDetection(
 				// double epsc_angle = angle;
 				double epsc_angle = yaw_diff;
 				auto score = calculateDistance(desc1, EPSC_cur, epsc_angle);
-				// std::cout << "EPSC_score: " << score << std::endl;
+				std::cout << "EPSC_score: " << score << std::endl;
 				if (score > DISTANCE_THRESHOLD && score > best_score_epsc) 
 				{
 					best_score_epsc = score;

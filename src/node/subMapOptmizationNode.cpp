@@ -2794,22 +2794,28 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 			
-	
-				auto preKey2SubMapPoses = subMapInfo[loopSubMapPre[i]]->keyframe_poses_6D_map;
-				if (preKey2SubMapPoses.find(loopKeyPreLast[i]) != preKey2SubMapPoses.end())
-				{
-					// 使用 EPSC 检测的位姿 作为初始位姿
-					ROS_WARN("Using EPSC Init Pose !");
-					Eigen::Affine3f preKey2PreSubMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->keyframe_poses_6D_map[loopKeyPreLast[i]]);
-					key2PreSubMapTrans = preKey2PreSubMapTrans * curKey2PreKeyInitTrans[i];
-				} else {
-					// 使用 Pose 作为初始位姿
-					ROS_WARN("Using SubMap Init Pose !");
+			#if USING_SEMANTIC_FEATURE
+				// auto preKey2SubMapPoses = subMapInfo[loopSubMapPre[i]]->keyframe_poses_6D_map;
+				// if (preKey2SubMapPoses.find(loopKeyPreLast[i]) != preKey2SubMapPoses.end())
+				// {
+				// 	// 使用 EPSC 检测的位姿 作为初始位姿
+				// 	ROS_WARN("Using EPSC Init Pose !");
+				// 	Eigen::Affine3f preKey2PreSubMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->keyframe_poses_6D_map[loopKeyPreLast[i]]);
+				// 	key2PreSubMapTrans = preKey2PreSubMapTrans * curKey2PreKeyInitTrans[i];
+				// } else {
+				// 	// 使用 Pose 作为初始位姿
+				// 	ROS_WARN("Using SubMap Init Pose !");
+				// 	Eigen::Affine3f subMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->submap_pose_6D_optimized);
+				// 	Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
+				// 	key2PreSubMapTrans = subMapTrans.inverse() * keyTrans;
+				// }
+			#endif
+			
+			#if USING_LOAM_FEATURE
 					Eigen::Affine3f subMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->submap_pose_6D_optimized);
 					Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
 					key2PreSubMapTrans = subMapTrans.inverse() * keyTrans;
-				}
-				// key2PreSubMapTrans = correctionKey2PreSubMap * key2PreSubMapTrans;
+			#endif	
 
 				// Align clouds
 				pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());

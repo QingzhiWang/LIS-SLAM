@@ -16,7 +16,7 @@
 // define threshold for loop closure detection
 #define GEOMETRY_THRESHOLD 0.15    // 0.67  0.57(--)
 #define INTENSITY_THRESHOLD 0.7800  // 0.91
-#define DISTANCE_THRESHOLD 0.7800  //0.79
+#define DISTANCE_THRESHOLD 0.7500  //0.79
 #define LABEL_THRESHOLD 0.7800  //0.79
 
 #define LIDAR_HEIGHT 5.0

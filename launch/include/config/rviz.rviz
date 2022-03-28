@@ -875,7 +875,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
-        - Alpha: 0.699999988079071
+        - Alpha: 0.07000000029802322
           Autocompute Intensity Bounds: false
           Autocompute Value Bounds:
             Max Value: 20.689233779907227
@@ -898,7 +898,7 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 1
-          Size (m): 0.05999999865889549
+          Size (m): 0.17000000178813934
           Style: Boxes
           Topic: /lis_slam/mapping/map_global
           Unreliable: false
@@ -910,9 +910,7 @@ Visualization Manager:
           Marker Topic: /lis_slam/mapping/loop_closure_constraints_test
           Name: Test Loop constraint
           Namespaces:
-            loop_edges: true
-            loop_nodes: true
-            test_loop_nodes_id: true
+            {}
           Queue Size: 1
           Value: true
         - Class: rviz/MarkerArray
@@ -1326,18 +1324,18 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.19524972140789032
-        Y: -17.07408905029297
-        Z: -106.3595962524414
+        X: -26.206809997558594
+        Y: 1.7809123992919922
+        Z: -104.031982421875
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3047963380813599
+      Pitch: 1.5047963857650757
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 1.9502689838409424
+      Yaw: 4.530277252197266
     Saved: ~
 Window Geometry:
   Displays:
