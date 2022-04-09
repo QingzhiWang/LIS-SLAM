@@ -909,7 +909,9 @@ Visualization Manager:
           Marker Topic: /lis_slam/mapping/loop_closure_constraints_test
           Name: Test Loop constraint
           Namespaces:
-            {}
+            loop_edges: true
+            loop_nodes: true
+            test_loop_nodes_id: true
           Queue Size: 1
           Value: true
         - Class: rviz/MarkerArray
@@ -917,7 +919,9 @@ Visualization Manager:
           Marker Topic: /lis_slam/mapping/loop_closure_constraints
           Name: Loop constraint
           Namespaces:
-            {}
+            loop_edges: true
+            loop_nodes: true
+            loop_nodes_id: true
           Queue Size: 1
           Value: true
         - Class: rviz/MarkerArray
@@ -1325,11 +1329,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 5.768243312835693
+      Scale: 6.0962724685668945
       Target Frame: base_link
       Value: TopDownOrtho (rviz)
-      X: -9.179588317871094
-      Y: 12.51412582397461
+      X: 3.9042322635650635
+      Y: -24.51205062866211
     Saved: ~
 Window Geometry:
   Displays:

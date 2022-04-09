@@ -3,7 +3,7 @@
     <arg name="project" default="lis_slam"/>
     
     <!-- Parameters -->
-    <rosparam file="$(find lis_slam)/config/params_cqu.yaml" command="load" />
+    <rosparam file="$(find lis_slam)/config/params.yaml" command="load" />
 
     <!--- LOAM -->
     <include file="$(find lis_slam)/launch/include/module_loam.launch" />

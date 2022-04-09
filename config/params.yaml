@@ -16,7 +16,7 @@ lis_slam:
   RESULT_PATH: "/home/wqz/AWorkSpace/TestData/trajectory/lis/09_pred.txt"
 
   useImu: false       # If using IMU data, set to "true" 
-  useGPSVel : true
+  useGPSVel : false
 
   loopClosureEnableFlag: true
   UsingISCFlag : false
@@ -27,16 +27,15 @@ lis_slam:
   UsingSSCFlag : false
   UsingFEPSCFlag : true
 
-
   
   useOdometryPitchPrediction: true              # 在结构性较强时可使用前端里程计pitch预测值
 
   # Topics   velodyne_points  points_raw
-  # pointCloudTopic: "points_raw"                 # Point cloud data
-  # imuTopic: "imu_raw"                       # IMU data imu_correct imu_raw
-  # odomTopic: "odometry"                         # IMU pre-preintegration odometry, same frequency as IMU
-  # gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
-  # gpsVelTopic : "/kitti/oxts/gps/vel"
+  pointCloudTopic: "points_raw"                 # Point cloud data
+  imuTopic: "imu_raw"                       # IMU data imu_correct imu_raw
+  odomTopic: "odometry"                         # IMU pre-preintegration odometry, same frequency as IMU
+  gpsTopic: "/odometry/navsat"                  # GPS odometry topic from navsat, see module_navsat.launch file
+  gpsVelTopic : "/kitti/oxts/gps/vel"
   lidarIntensity: "intensity"
 
   # Topics kitti(RAW)
@@ -54,10 +53,10 @@ lis_slam:
   # gpsTopic: "odometry/gpsz"  
 
   # Topics  HCLT/KITTI(odometry)
-  pointCloudTopic: "/velodyne_points"         # Point cloud data
-  imuTopic: "/imu/data"                       # IMU data
-  odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
-  gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
+  # pointCloudTopic: "/velodyne_points"         # Point cloud data
+  # imuTopic: "/imu/data"                       # IMU data
+  # odomTopic: "odometry"                       # IMU pre-preintegration odometry, same frequency as IMU
+  # gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
 
   # Frames

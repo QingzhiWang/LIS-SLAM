@@ -15,9 +15,9 @@
 
 // define threshold for loop closure detection
 #define GEOMETRY_THRESHOLD 0.15    // 0.67  0.57(--)
-#define INTENSITY_THRESHOLD 0.7800  // 0.91
+#define INTENSITY_THRESHOLD 0.7900  // 0.91
 #define DISTANCE_THRESHOLD 0.7500  //0.79
-#define LABEL_THRESHOLD 0.7800  //0.79
+#define LABEL_THRESHOLD 0.7900  //0.79
 
 #define LIDAR_HEIGHT 5.0
 
@@ -41,7 +41,7 @@ private:
 	double min_dis = 3;
 
 	int rings = 20;
-	int sectors = 60; //180
+	int sectors = 80; //180
 	double ring_step = (max_dis - min_dis) / rings;
 	double sector_step = 2 * M_PI / sectors;
 
