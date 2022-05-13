@@ -1,6 +1,3 @@
-// This code partly draws on  lio_sam
-// Author of  EPSC-LOAM : QZ Wang
-// Email wangqingzhi27@outlook.com
 
 #ifndef _FEATURE_EXTRACTION_H_
 #define _FEATURE_EXTRACTION_H_

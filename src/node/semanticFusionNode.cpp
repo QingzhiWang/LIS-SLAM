@@ -1,5 +1,3 @@
-// Author of  EPSC-LOAM : QZ Wang
-// Email wangqingzhi27@outlook.com
 
 #include "lis_slam/cloud_info.h"
 #include "lis_slam/semantic_info.h"

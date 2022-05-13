@@ -1,5 +1,3 @@
-// Author of  EPSC-LOAM : QZ Wang
-// Email wangqingzhi27@outlook.com
 
 #ifndef _LASER_PRETREATMENT_H_
 #define _LASER_PRETREATMENT_H_

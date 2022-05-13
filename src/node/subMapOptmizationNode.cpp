@@ -1,5 +1,4 @@
-// Author of  EPSC-LOAM : QZ Wang
-// Email wangqingzhi27@outlook.com
+
 #define PCL_NO_PRECOMPILE
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>

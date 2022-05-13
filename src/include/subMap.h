@@ -1,5 +1,3 @@
-// Author of  EPSC-LOAM : QZ Wang
-// Email wangqingzhi27@outlook.com
 
 #ifndef _SUBMAP_H_
 #define _SUBMAP_H_

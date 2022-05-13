@@ -1,5 +1,3 @@
-// Author of  EPSC-LOAM : QZ Wang
-// Email wangqingzhi27@outlook.com
 
 #ifndef RANGENETAPI_H_
 #define RANGENETAPI_H_

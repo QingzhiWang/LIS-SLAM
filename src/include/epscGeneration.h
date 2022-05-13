@@ -1,6 +1,3 @@
-// This code partly draws on ISCLOAM SSC
-// Author of  EPSC-LOAM : QZ Wang
-// Email wangqingzhi27@outlook.com
 
 #ifndef _EPSC_GENERATION_H_
 #define _EPSC_GENERATION_H_

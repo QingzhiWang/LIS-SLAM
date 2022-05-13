@@ -1,5 +1,3 @@
-// Author of  EPSC-LOAM : QZ Wang
-// Email wangqingzhi27@outlook.com
 
 #ifndef _DISTORTION_ADJUST_H_
 #define _DISTORTION_ADJUST_H_
