@@ -5,7 +5,7 @@
 We have implemented an accurate and stable laser SLAM algorithm framework, LIS-SLAM, through a semantic information-aided LiDAR/IMU fused pose estimation method, a semantic information-fused loop closure detection method and a global optimisation method based on a local SubMap.
 
 <p align='center'>
-    <img src="./assets/doc/system.png" alt="drawing" width="400"/>
+    <img src="./assets/doc/system.png" alt="drawing" width="500"/>
 </p>
 
 - The geometric feature-based point cloud matching algorithm (LOAM) improves the stability of feature association by introducing semantic information ([RangeNet++](https://github.com/PRBonn/rangenet_lib.git)), and optimises point cloud matching by attaching corresponding weights to each error term using semantic information. To enhance the ability to handle unstructured and degraded scenes, tightly coupled LiDAR/IMU fusion pose estimation is implemented.
@@ -20,7 +20,7 @@ We have implemented an accurate and stable laser SLAM algorithm framework, LIS-S
 ## 1. System architecture
 
 <p align='center'>
-    <img src="./assets/doc/system_code.png" alt="drawing" width="400"/>
+    <img src="./assets/doc/system_code.png" alt="drawing" width="500"/>
 </p>
 
 ## 2. Prerequisites
@@ -60,13 +60,13 @@ In order to infer with TensorRT during inference with the C++ libraries:
 
 ##### GTSAM
 Follow [GTSAM Installation](https://github.com/borglab/gtsam/releases).
-  ```
-  wget -O ~/Downloads/gtsam.zip https://github.com/borglab/gtsam/archive/4.0.2.zip
-  cd ~/Downloads/ && unzip gtsam.zip -d ~/Downloads/
-  cd ~/Downloads/gtsam-4.0.2/
-  mkdir build && cd build
-  cmake -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF ..
-  sudo make install -j8
+  ```sh
+  $ wget -O ~/Downloads/gtsam.zip https://github.com/borglab/gtsam/archive/4.0.2.zip
+  $ cd ~/Downloads/ && unzip gtsam.zip -d ~/Downloads/
+  $ cd ~/Downloads/gtsam-4.0.2/
+  $ mkdir build && cd build
+  $ cmake -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF ..
+  $ sudo make install -j8
   ```
 
 ##### PCL
@@ -75,12 +75,12 @@ Follow [PCL Installation](http://www.pointclouds.org/downloads/linux.html)
 ## 3. Build LIS-SLAM
 Clone the repository and catkin_make:
 
-  ```
-  cd ~/catkin_ws/src
-  git clone https://gitee.com/QingzhiWang/lis-slam.git
-  cd ../
-  catkin_make
-  source ~/catkin_ws/devel/setup.bash
+  ```sh
+  $ cd ~/catkin_ws/src
+  $ git clone https://gitee.com/QingzhiWang/lis-slam.git
+  $ cd ../
+  $ catkin_make
+  $ source ~/catkin_ws/devel/setup.bash
   ```
 
 ## 4. Prepare test data
@@ -100,9 +100,9 @@ Clone the repository and catkin_make:
 ## 5. Your datasets
 Modify related parameters in params.yawl.
 
-  ```
-  roslaunch lis_slam run.launch
-  rosbag play YOUR_DATASET_FOLDER/your-bag.bag
+  ```sh
+  $ roslaunch lis_slam run.launch
+  $ rosbag play YOUR_DATASET_FOLDER/your-bag.bag
   ```
 
 
@@ -110,9 +110,9 @@ Modify related parameters in params.yawl.
 Download [KITTI Odometry dataset](http://www.cvlibs.net/datasets/kitti/eval_odometry.php) to YOUR_DATASET_FOLDER and convert KITTI dataset to bag file. 
 Modify related parameters in params.yawl.
 
-  ```
-  roslaunch lis_slam run.launch
-  rosbag play YOUR_DATASET_FOLDER/your-bag.bag
+  ```sh
+  $ roslaunch lis_slam run.launch
+  $ rosbag play YOUR_DATASET_FOLDER/your-bag.bag
   ```
 
 ## 7.Acknowledgements
