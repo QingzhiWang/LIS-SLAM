@@ -2,7 +2,7 @@
 
 ## Advanced implementation of EPSC-LOAM
 
-We have implemented an accurate and stable laser SLAM algorithm framework, LIS-SLAM, through a semantic information-aided LiDAR/IMU fused pose estimation method, a semantic information-fused loop closure detection method and a global optimisation method based on a local SubMap.
+The accurate and stable laser SLAM algorithm framework LIS-SLAM is implemented through a semantic information assisted LiDAR/IMU fusion attitude estimation method, a semantic information fusion loop closure detection method and a global optimisation method based on SubMap.
 
 <p align='center'>
     <img src="./assets/doc/system.png" alt="drawing" width="500"/>
