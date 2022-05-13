@@ -4,6 +4,10 @@
 
 We have implemented an accurate and stable laser SLAM algorithm framework, LIS-SLAM, through a semantic information-aided LiDAR/IMU fused pose estimation method, a semantic information-fused loop closure detection method and a global optimisation method based on a local SubMap.
 
+<p align='center'>
+    <img src="./assets/doc/system.png" alt="drawing" width="800"/>
+</p>
+
 - The geometric feature-based point cloud matching algorithm (LOAM) improves the stability of feature association by introducing semantic information ([RangeNet++](https://github.com/PRBonn/rangenet_lib.git)), and optimises point cloud matching by attaching corresponding weights to each error term using semantic information. To enhance the ability to handle unstructured and degraded scenes, tightly coupled LiDAR/IMU fusion pose estimation is implemented.
 
 - Meanwhile, two improved loop closure detection methods are proposed to address the performance degradation of Scan Context-based loop closure detection methods in outdoor unstructured environments. First, performance in unstructured environments is enhanced by using statistical information from edge planar features to construct global descriptors (EPSC) to improve the processing of noisy data. Secondly, semantic information is used to achieve fast scene localisation, solve the matching problem caused by viewpoint changes, and further complete the scene similarity matching by extracting the global descriptor (SEPSC) fused with semantic information on the basis of the initial alignment of the point cloud.
@@ -23,6 +27,7 @@ We have implemented an accurate and stable laser SLAM algorithm framework, LIS-S
 ##### System dependencies
 - Ubuntu 64-bit 16.04 or 18.04.
 - ROS Kinetic or Melodic. [ROS Installation](http://wiki.ros.org/ROS/Installation)
+
 First you need to install the nvidia driver and CUDA.
 
 - CUDA Installation guide: [Link](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
@@ -35,7 +40,7 @@ First you need to install the nvidia driver and CUDA.
   $ sudo apt-get update 
   $ sudo apt-get install -yqq  build-essential python3-dev python3-pip apt-utils git cmake libboost-all-dev libyaml-cpp-dev libopencv-dev
   ```
-  
+
 ##### Python dependencies
 
 - Then install the Python packages needed:
@@ -44,7 +49,7 @@ First you need to install the nvidia driver and CUDA.
   $ sudo apt install python-empy
   $ sudo pip install catkin_tools trollius numpy
   ```
-  
+
 ##### TensorRT
 
 In order to infer with TensorRT during inference with the C++ libraries:
@@ -67,7 +72,6 @@ Follow [GTSAM Installation](https://github.com/borglab/gtsam/releases).
 ##### PCL
 Follow [PCL Installation](http://www.pointclouds.org/downloads/linux.html)
 
-
 ## 3. Build LIS-SLAM
 Clone the repository and catkin_make:
 
@@ -81,7 +85,7 @@ Clone the repository and catkin_make:
 
 ## 4. Prepare test data
 ##### Laser data
-  - The conversion of laser data is provided in laserPretreatment.cpp. You only need to modify 'N_Scan' and 'horizon_SCAN' of your 3D Lidar in config/params.yaml.
+  - The conversion of laser data is provided in laserPretreatment.cpp. You only need to modify 'N_Scan' and 'horizon_SCAN' of your 3D Lidar in "config/params.yaml".
 
 ##### IMU data
   - **IMU alignment**. LIS-SLAM transforms IMU raw data from the IMU frame to the Lidar frame, which follows the ROS REP-105 convention (x - forward, y - left, z - upward). To make the system function properly, the correct extrinsic transformation（'extrinsicRot' and 'extrinsicRPY'） needs to be provided in "config/params.yaml" file. 
