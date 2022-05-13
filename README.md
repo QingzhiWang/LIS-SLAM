@@ -2,13 +2,14 @@
 
 ## Advanced implementation of EPSC-LOAM
 
-通过语义信息辅助的 LiDAR/IMU 融合位姿估计方法、语义信息融合的回环检测方法和基于局部子图 (SubMap) 的全局优化方法，实现了精确、稳定的激光 SLAM 算法框架 LIS-SLAM。
+We have implemented an accurate and stable laser SLAM algorithm framework, LIS-SLAM, through a semantic information-aided LiDAR/IMU fused pose estimation method, a semantic information-fused loop closure detection method and a global optimisation method based on a local SubMap.
 
-- 基于几何特征的点云匹配算法（LOAM），通过引入语义信息（RangeNet++）辅助提升特征关联的稳定性，并利用语义信息为每个误差项附加相应的权重优化点云匹配；同时，为了增强处理非结构化及退化场景的能力，在其基础上实现了 LiDAR/IMU 紧耦合的融合位姿估计。
+- The geometric feature-based point cloud matching algorithm (LOAM) improves the stability of feature association by introducing semantic information ([RangeNet++](https://github.com/PRBonn/rangenet_lib.git)), and optimises point cloud matching by attaching corresponding weights to each error term using semantic information. To enhance the ability to handle unstructured and degraded scenes, tightly coupled LiDAR/IMU fusion pose estimation is implemented.
 
-- 针对基于扫描上下文 (Scan Context) 的回环检测方法在室外非结构化环境中性能下降问题，提出两种改进的回环检测方法。 首先，通过利用边缘平面特征的统计信息构建全局描述子（EPSC）提高对噪声数据的处理能力，从而增强在非结构化环境中的性能。其次，利用语义信息实现场景快速定位，解决由于视点变化引起的匹配问题，并在完成点云初始配准的基础上通过提取语义信息融合的全局描述子（SEPSC），进一步完成场景的相似性匹配。
+- Meanwhile, two improved loop closure detection methods are proposed to address the performance degradation of Scan Context-based loop closure detection methods in outdoor unstructured environments. First, performance in unstructured environments is enhanced by using statistical information from edge planar features to construct global descriptors (EPSC) to improve the processing of noisy data. Secondly, semantic information is used to achieve fast scene localisation, solve the matching problem caused by viewpoint changes, and further complete the scene similarity matching by extracting the global descriptor (SEPSC) fused with semantic information on the basis of the initial alignment of the point cloud.
 
-- 通过构建 SubMap 并将其作为优化单元，利用因子图优化方法实现全局位姿优化，一方面有效解决了室外大规模场景中后端优化计算效率下降的问题，另外通过利用 SubMap 中更加完整的特征信息实现多层级的点云匹配，进一步提升位姿估计的精度。
+- By constructing a SubMap and using it as an optimisation unit, the global pose optimisation is achieved by using the factor map optimisation method, which effectively solves the problem of reduced efficiency of back-end optimisation computation in large-scale outdoor scenes on the one hand, and further improves the accuracy of pose estimation by using the more complete feature information in the SubMap to achieve multi-level point cloud matching on the other.
+
 
 **Modifier:** [QZ Wang](http://www.wang.qingzhi@outlook.com)
 
@@ -19,11 +20,40 @@
 </p>
 
 ## 2. Prerequisites
-### 2.1 **Ubuntu** and **ROS**
-Ubuntu 64-bit 16.04 or 18.04.
-ROS Kinetic or Melodic. [ROS Installation](http://wiki.ros.org/ROS/Installation)
+##### System dependencies
+- Ubuntu 64-bit 16.04 or 18.04.
+- ROS Kinetic or Melodic. [ROS Installation](http://wiki.ros.org/ROS/Installation)
+First you need to install the nvidia driver and CUDA.
 
-### 2.2 **GTSAM**
+- CUDA Installation guide: [Link](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
+
+注意这里推荐使用deb方式安装，同时注意CUDA和TensorRT版本对应。
+
+- other dependencies:
+
+  ```sh
+  $ sudo apt-get update 
+  $ sudo apt-get install -yqq  build-essential python3-dev python3-pip apt-utils git cmake libboost-all-dev libyaml-cpp-dev libopencv-dev
+  ```
+  
+##### Python dependencies
+
+- Then install the Python packages needed:
+
+  ```sh
+  $ sudo apt install python-empy
+  $ sudo pip install catkin_tools trollius numpy
+  ```
+  
+##### TensorRT
+
+In order to infer with TensorRT during inference with the C++ libraries:
+
+- Install TensorRT: [Link](https://developer.nvidia.com/tensorrt).
+- Our code and the pretrained model now only works with **TensorRT version 5** (Note that you need at least version 5.1.0).
+- To make the code also works for higher versions of TensorRT, one could have a look at [here](https://github.com/PRBonn/rangenet_lib/issues/9).
+
+##### GTSAM
 Follow [GTSAM Installation](https://github.com/borglab/gtsam/releases).
   ```
   wget -O ~/Downloads/gtsam.zip https://github.com/borglab/gtsam/archive/4.0.2.zip
@@ -34,37 +64,40 @@ Follow [GTSAM Installation](https://github.com/borglab/gtsam/releases).
   sudo make install -j8
   ```
 
-### 2.3 **PCL**
-Follow [PCL Installation](http://www.pointclouds.org/downloads/linux.html).
+##### PCL
+Follow [PCL Installation](http://www.pointclouds.org/downloads/linux.html)
 
 
-### 2.4 **RangeNet++**
-
-
-
-## 3. Build EPSC-LOAM
+## 3. Build LIS-SLAM
 Clone the repository and catkin_make:
 
   ```
   cd ~/catkin_ws/src
-  git clone https://gitee.com/QZ_Wang/epsc_laom.git
+  git clone https://gitee.com/QingzhiWang/lis-slam.git
   cd ../
   catkin_make
   source ~/catkin_ws/devel/setup.bash
   ```
 
 ## 4. Prepare test data
-### 4.1 Laser data
-  - The conversion of laser data is provided in laserPretreatment.cpp. You only need to modify N_Scan and horizon_SCAN of your 3D Lidar in params.yaml.
+##### Laser data
+  - The conversion of laser data is provided in laserPretreatment.cpp. You only need to modify 'N_Scan' and 'horizon_SCAN' of your 3D Lidar in config/params.yaml.
 
-### 4.2 IMU data
-  - **IMU alignment**. EPSC-SAM transforms IMU raw data from the IMU frame to the Lidar frame, which follows the ROS REP-105 convention (x - forward, y - left, z - upward). To make the system function properly, the correct extrinsic transformation（"extrinsicRot" and "extrinsicRPY"） needs to be provided in "params.yaml" file. 
+##### IMU data
+  - **IMU alignment**. LIS-SLAM transforms IMU raw data from the IMU frame to the Lidar frame, which follows the ROS REP-105 convention (x - forward, y - left, z - upward). To make the system function properly, the correct extrinsic transformation（'extrinsicRot' and 'extrinsicRPY'） needs to be provided in "config/params.yaml" file. 
+
+##### Rangenet_lib model
+- To run the demo, you need a pre-trained model, which can be downloaded here, [model](https://www.ipb.uni-bonn.de/html/projects/semantic_suma/darknet53.tar.gz). The model path needs to modify 'MODEL_PATH' in "config/params.yaml" file. 
+
+- For more details about how to train and evaluate a model, please refer to [LiDAR-Bonnetal](https://github.com/PRBonn/lidar-bonnetal).
+
+**Notice**: for the first time running, it will take several minutes to generate a `.trt` model for C++ interface.
 
 ## 5. Your datasets
 Modify related parameters in params.yawl.
 
   ```
-  roslaunch epsc_loam run.launch
+  roslaunch lis_slam run.launch
   rosbag play YOUR_DATASET_FOLDER/your-bag.bag
   ```
 
@@ -74,11 +107,11 @@ Download [KITTI Odometry dataset](http://www.cvlibs.net/datasets/kitti/eval_odom
 Modify related parameters in params.yawl.
 
   ```
-  roslaunch epsc_loam run.launch
+  roslaunch lis_slam run.launch
   rosbag play YOUR_DATASET_FOLDER/your-bag.bag
   ```
 
 ## 7.Acknowledgements
-LIS-SLAM is based on LOAM(J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time) LIO-SAM,SC-LEGO-LAOM and iscloam.
+LIS-SLAM is based on LOAM(J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time) LIO-SAM,Rangenet_lib.
 
 
