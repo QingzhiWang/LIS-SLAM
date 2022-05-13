@@ -2494,247 +2494,247 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 
 
-    bool detectLoopClosureForSubMapICP(keyframe_Ptr cur_keyframe, int &loopKeyCur, vector<int> &loopSubMapPre, int &bestMatched) 
-    {
-        pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
-        pcl::PointCloud<PointXYZIL>::Ptr prevKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
+    // bool detectLoopClosureForSubMapICP(keyframe_Ptr cur_keyframe, int &loopKeyCur, vector<int> &loopSubMapPre, int &bestMatched) 
+    // {
+    //     pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
+    //     pcl::PointCloud<PointXYZIL>::Ptr prevKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
 
-		*cureKeyframeCloud += *cur_keyframe->semantic_dynamic;
-		*cureKeyframeCloud += *cur_keyframe->semantic_pole;
-		*cureKeyframeCloud += *cur_keyframe->semantic_ground;
-		*cureKeyframeCloud += *cur_keyframe->semantic_building;
+	// 	*cureKeyframeCloud += *cur_keyframe->semantic_dynamic;
+	// 	*cureKeyframeCloud += *cur_keyframe->semantic_pole;
+	// 	*cureKeyframeCloud += *cur_keyframe->semantic_ground;
+	// 	*cureKeyframeCloud += *cur_keyframe->semantic_building;
 
-        std::cout << "matching..." << std::flush;
-        auto t1 = ros::Time::now();
-		static OptimizedICPGN myICP(30, 10);
+    //     std::cout << "matching..." << std::flush;
+    //     auto t1 = ros::Time::now();
+	// 	static OptimizedICPGN myICP(30, 10);
 
 
-        int bestID = -1;
-        double bestScore = std::numeric_limits<double>::max();
-		Eigen::Affine3f correctionLidarFrame;
-		Eigen::Affine3f key2PreSubMapTrans;
-        static Eigen::Affine3f correctionKey2PreSubMap = Eigen::Affine3f::Identity();
+    //     int bestID = -1;
+    //     double bestScore = std::numeric_limits<double>::max();
+	// 	Eigen::Affine3f correctionLidarFrame;
+	// 	Eigen::Affine3f key2PreSubMapTrans;
+    //     static Eigen::Affine3f correctionKey2PreSubMap = Eigen::Affine3f::Identity();
 
-        for (int i = 0; i < loopSubMapPre.size(); i++) 
-        {
-            auto thisPreId = subMapInfo.find(loopSubMapPre[i]);
-            if (thisPreId != subMapInfo.end()) 
-			{
-                std::cout << "loopContainerHandler: loopSubMapPre : " << loopSubMapPre[i] << std::endl;
+    //     for (int i = 0; i < loopSubMapPre.size(); i++) 
+    //     {
+    //         auto thisPreId = subMapInfo.find(loopSubMapPre[i]);
+    //         if (thisPreId != subMapInfo.end()) 
+	// 		{
+    //             std::cout << "loopContainerHandler: loopSubMapPre : " << loopSubMapPre[i] << std::endl;
                 
-				prevKeyframeCloud->clear();
-                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_dynamic;
-                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_pole;
-                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_ground;
-                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_building;
-                // *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_outlier;
-				myICP.SetTargetCloud(prevKeyframeCloud);
+	// 			prevKeyframeCloud->clear();
+    //             *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_dynamic;
+    //             *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_pole;
+    //             *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_ground;
+    //             *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_building;
+    //             // *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_outlier;
+	// 			myICP.SetTargetCloud(prevKeyframeCloud);
 
-		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
+	// 	publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 			
-				Eigen::Affine3f subMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->submap_pose_6D_optimized);
-				Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
-				key2PreSubMapTrans = subMapTrans.inverse() * keyTrans;
-				key2PreSubMapTrans = correctionKey2PreSubMap * key2PreSubMapTrans;
+	// 			Eigen::Affine3f subMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->submap_pose_6D_optimized);
+	// 			Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
+	// 			key2PreSubMapTrans = subMapTrans.inverse() * keyTrans;
+	// 			key2PreSubMapTrans = correctionKey2PreSubMap * key2PreSubMapTrans;
 
-				// Align clouds
-				pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
-				*tmpCloud = *transformPointCloud(cureKeyframeCloud, key2PreSubMapTrans);
-		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
+	// 			// Align clouds
+	// 			pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+	// 			*tmpCloud = *transformPointCloud(cureKeyframeCloud, key2PreSubMapTrans);
+	// 	publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
                 
-				Eigen::Matrix4f predict_pose = Eigen::Matrix4f::Identity();
-				Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
-				pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
-				myICP.Match(cureKeyframeCloud, predict_pose, unused_result, result_pose);
+	// 			Eigen::Matrix4f predict_pose = Eigen::Matrix4f::Identity();
+	// 			Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
+	// 			pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
+	// 			myICP.Match(cureKeyframeCloud, predict_pose, unused_result, result_pose);
 		
-		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
+	// 	publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
 
-                double score = myICP.GetFitnessScore();
+    //             double score = myICP.GetFitnessScore();
 
-                if (myICP.HasConverged() == false || score > bestScore) 
-                    continue;
-                bestScore = score;
-                bestMatched = loopSubMapPre[i];
-                bestID = i;
-                correctionLidarFrame = result_pose;
+    //             if (myICP.HasConverged() == false || score > bestScore) 
+    //                 continue;
+    //             bestScore = score;
+    //             bestMatched = loopSubMapPre[i];
+    //             bestID = i;
+    //             correctionLidarFrame = result_pose;
             
-            } else {
-                bestMatched = -1;
-                ROS_WARN("loopSubMapPre do not find !");
-            }
-        }
+    //         } else {
+    //             bestMatched = -1;
+    //             ROS_WARN("loopSubMapPre do not find !");
+    //         }
+    //     }
 
-        if (loopKeyCur == -1 || bestMatched == -1) 
-            return false;
+    //     if (loopKeyCur == -1 || bestMatched == -1) 
+    //         return false;
 
-        auto t2 = ros::Time::now();
-        std::cout << " done" << std::endl;
-        std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
+    //     auto t2 = ros::Time::now();
+    //     std::cout << " done" << std::endl;
+    //     std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
 
-        // if (bestScore < 1.0) 
-        // {
-		// 	correctionKey2PreSubMap = correctionLidarFrame;
-        //     std::cout << "correctionKey2PreSubMap update !" << std::endl;
-        // }
+    //     // if (bestScore < 1.0) 
+    //     // {
+	// 	// 	correctionKey2PreSubMap = correctionLidarFrame;
+    //     //     std::cout << "correctionKey2PreSubMap update !" << std::endl;
+    //     // }
 
-        if (bestScore > historyKeyframeFitnessScore) 
-        {
-            std::cout << "loop not found..." << std::endl;
-            return false;
-        }
-        std::cout << "loop found!!" << std::endl;
+    //     if (bestScore > historyKeyframeFitnessScore) 
+    //     {
+    //         std::cout << "loop not found..." << std::endl;
+    //         return false;
+    //     }
+    //     std::cout << "loop found!!" << std::endl;
 		
-		correctionKey2PreSubMap = correctionLidarFrame;
+	// 	correctionKey2PreSubMap = correctionLidarFrame;
 
-		Eigen::Affine3f key2CurSubMapTrans;
-		int loopSubMapCur = -1;
-		auto it = keyframeInSubmapIndex.find(loopKeyCur);
-		if(it != keyframeInSubmapIndex.end()){
-			key2CurSubMapTrans = pclPointToAffine3f(cur_keyframe->relative_pose);
-			loopSubMapCur = cur_keyframe->submap_id;
-			std::cout << "Find loopSubMapCur: " << loopSubMapCur << " keyframeInSubmapIndex: " << keyframeInSubmapIndex[loopKeyCur] << std::endl;
-		}else{	
-			ROS_WARN("loopClosureThread -->> Dont find loopSubMapCur %d in keyframeInSubmapIndex !", loopSubMapCur);
-			return false;
-		}
+	// 	Eigen::Affine3f key2CurSubMapTrans;
+	// 	int loopSubMapCur = -1;
+	// 	auto it = keyframeInSubmapIndex.find(loopKeyCur);
+	// 	if(it != keyframeInSubmapIndex.end()){
+	// 		key2CurSubMapTrans = pclPointToAffine3f(cur_keyframe->relative_pose);
+	// 		loopSubMapCur = cur_keyframe->submap_id;
+	// 		std::cout << "Find loopSubMapCur: " << loopSubMapCur << " keyframeInSubmapIndex: " << keyframeInSubmapIndex[loopKeyCur] << std::endl;
+	// 	}else{	
+	// 		ROS_WARN("loopClosureThread -->> Dont find loopSubMapCur %d in keyframeInSubmapIndex !", loopSubMapCur);
+	// 		return false;
+	// 	}
 
-        float X, Y, Z, ROLL, PITCH, YAW;
-        Eigen::Affine3f tCorrect = correctionLidarFrame * key2PreSubMapTrans * key2CurSubMapTrans.inverse();  // pre-multiplying -> successive rotation about a fixed frame
-        pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
-        gtsam::Pose3 pose = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
-        gtsam::Vector Vector6(6);
-        float noiseScore = 0.01;
-        // float noiseScore = bestScore*0.01;
-        Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
-        noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
+    //     float X, Y, Z, ROLL, PITCH, YAW;
+    //     Eigen::Affine3f tCorrect = correctionLidarFrame * key2PreSubMapTrans * key2CurSubMapTrans.inverse();  // pre-multiplying -> successive rotation about a fixed frame
+    //     pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
+    //     gtsam::Pose3 pose = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
+    //     gtsam::Vector Vector6(6);
+    //     float noiseScore = 0.01;
+    //     // float noiseScore = bestScore*0.01;
+    //     Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
+    //     noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
 
-        // Add pose constraint
-        // mtx.lock();
-        loopIndexQueue.push_back(make_pair(loopSubMapCur, bestMatched));
-        loopPoseQueue.push_back(pose);
-        loopNoiseQueue.push_back(constraintNoise);
-        // mtx.unlock();
+    //     // Add pose constraint
+    //     // mtx.lock();
+    //     loopIndexQueue.push_back(make_pair(loopSubMapCur, bestMatched));
+    //     loopPoseQueue.push_back(pose);
+    //     loopNoiseQueue.push_back(constraintNoise);
+    //     // mtx.unlock();
 
-        // add loop constriant
-        loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
+    //     // add loop constriant
+    //     loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
 
-        return true;
-    }
+    //     return true;
+    // }
 
 
-    bool detectLoopClosureForSubMapTEASER(keyframe_Ptr cur_keyframe, int &loopKeyCur, vector<int> &loopSubMapPre, int &bestMatched) 
-    {
-        pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
-        pcl::PointCloud<PointXYZIL>::Ptr prevKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
+    // bool detectLoopClosureForSubMapTEASER(keyframe_Ptr cur_keyframe, int &loopKeyCur, vector<int> &loopSubMapPre, int &bestMatched) 
+    // {
+    //     pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
+    //     pcl::PointCloud<PointXYZIL>::Ptr prevKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
 
-		*cureKeyframeCloud += *cur_keyframe->semantic_dynamic;
-		*cureKeyframeCloud += *cur_keyframe->semantic_pole;
-		*cureKeyframeCloud += *cur_keyframe->semantic_ground;
-		*cureKeyframeCloud += *cur_keyframe->semantic_building;
+	// 	*cureKeyframeCloud += *cur_keyframe->semantic_dynamic;
+	// 	*cureKeyframeCloud += *cur_keyframe->semantic_pole;
+	// 	*cureKeyframeCloud += *cur_keyframe->semantic_ground;
+	// 	*cureKeyframeCloud += *cur_keyframe->semantic_building;
 
-        std::cout << "matching..." << std::flush;
-        auto t1 = ros::Time::now();
+    //     std::cout << "matching..." << std::flush;
+    //     auto t1 = ros::Time::now();
 
-        int bestID = -1;
-        double bestScore = std::numeric_limits<double>::max();
-		Eigen::Affine3f correctionLidarFrame;
-		Eigen::Affine3f key2PreSubMapTrans;
-        static Eigen::Affine3f correctionKey2PreSubMap = Eigen::Affine3f::Identity();
+    //     int bestID = -1;
+    //     double bestScore = std::numeric_limits<double>::max();
+	// 	Eigen::Affine3f correctionLidarFrame;
+	// 	Eigen::Affine3f key2PreSubMapTrans;
+    //     static Eigen::Affine3f correctionKey2PreSubMap = Eigen::Affine3f::Identity();
 
-        for (int i = 0; i < loopSubMapPre.size(); i++) 
-        {
-            auto thisPreId = subMapInfo.find(loopSubMapPre[i]);
-            if (thisPreId != subMapInfo.end()) 
-			{
-                std::cout << "loopContainerHandler: loopSubMapPre : " << loopSubMapPre[i] << std::endl;
+    //     for (int i = 0; i < loopSubMapPre.size(); i++) 
+    //     {
+    //         auto thisPreId = subMapInfo.find(loopSubMapPre[i]);
+    //         if (thisPreId != subMapInfo.end()) 
+	// 		{
+    //             std::cout << "loopContainerHandler: loopSubMapPre : " << loopSubMapPre[i] << std::endl;
                 
-				prevKeyframeCloud->clear();
-                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_dynamic;
-                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_pole;
-                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_ground;
-                *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_building;
-                // *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_outlier;
-        		SubMapManager::voxel_downsample_pcl(prevKeyframeCloud, prevKeyframeCloud, 0.1);
-		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
+	// 			prevKeyframeCloud->clear();
+    //             *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_dynamic;
+    //             *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_pole;
+    //             *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_ground;
+    //             *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_building;
+    //             // *prevKeyframeCloud += *subMapInfo[loopSubMapPre[i]]->submap_outlier;
+    //     		SubMapManager::voxel_downsample_pcl(prevKeyframeCloud, prevKeyframeCloud, 0.1);
+	// 	publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 			
-				Eigen::Affine3f subMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->submap_pose_6D_optimized);
-				Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
-				key2PreSubMapTrans = subMapTrans.inverse() * keyTrans;
-				key2PreSubMapTrans = correctionKey2PreSubMap * key2PreSubMapTrans;
+	// 			Eigen::Affine3f subMapTrans = pclPointToAffine3f(subMapInfo[loopSubMapPre[i]]->submap_pose_6D_optimized);
+	// 			Eigen::Affine3f keyTrans = pclPointToAffine3f(cur_keyframe->optimized_pose);
+	// 			key2PreSubMapTrans = subMapTrans.inverse() * keyTrans;
+	// 			key2PreSubMapTrans = correctionKey2PreSubMap * key2PreSubMapTrans;
 
-				// Align clouds
-				pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
-				*tmpCloud = *transformPointCloud(cureKeyframeCloud, key2PreSubMapTrans);
-		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
+	// 			// Align clouds
+	// 			pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+	// 			*tmpCloud = *transformPointCloud(cureKeyframeCloud, key2PreSubMapTrans);
+	// 	publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
                 
 
-				Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
-				int result = coarse_reg_teaser(prevKeyframeCloud, tmpCloud, result_pose, 0.2, 8);
+	// 			Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
+	// 			int result = coarse_reg_teaser(prevKeyframeCloud, tmpCloud, result_pose, 0.2, 8);
 
-                bestScore = result;
-                bestMatched = loopSubMapPre[i];
-                bestID = i;
-                correctionLidarFrame = result_pose;
+    //             bestScore = result;
+    //             bestMatched = loopSubMapPre[i];
+    //             bestID = i;
+    //             correctionLidarFrame = result_pose;
 				
-				pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
-				*unused_result = *transformPointCloud(tmpCloud, correctionLidarFrame);
-		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
-            } else {
-                bestMatched = -1;
-                ROS_WARN("loopSubMapPre do not find !");
-            }
-        }
+	// 			pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
+	// 			*unused_result = *transformPointCloud(tmpCloud, correctionLidarFrame);
+	// 	publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
+    //         } else {
+    //             bestMatched = -1;
+    //             ROS_WARN("loopSubMapPre do not find !");
+    //         }
+    //     }
 
-        if (loopKeyCur == -1 || bestMatched == -1) 
-            return false;
+    //     if (loopKeyCur == -1 || bestMatched == -1) 
+    //         return false;
 
-        auto t2 = ros::Time::now();
-        std::cout << " done" << std::endl;
-        std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
+    //     auto t2 = ros::Time::now();
+    //     std::cout << " done" << std::endl;
+    //     std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
 
-        // if (bestScore > historyKeyframeFitnessScore) 
-        // {
-        //     std::cout << "loop not found..." << std::endl;
-        //     return false;
-        // }
-        std::cout << "loop found!!" << std::endl;
+    //     // if (bestScore > historyKeyframeFitnessScore) 
+    //     // {
+    //     //     std::cout << "loop not found..." << std::endl;
+    //     //     return false;
+    //     // }
+    //     std::cout << "loop found!!" << std::endl;
 		
-		correctionKey2PreSubMap = correctionLidarFrame;
+	// 	correctionKey2PreSubMap = correctionLidarFrame;
 
-		Eigen::Affine3f key2CurSubMapTrans;
-		int loopSubMapCur = -1;
-		auto it = keyframeInSubmapIndex.find(loopKeyCur);
-		if(it != keyframeInSubmapIndex.end()){
-			key2CurSubMapTrans = pclPointToAffine3f(cur_keyframe->relative_pose);
-			loopSubMapCur = cur_keyframe->submap_id;
-			std::cout << "Find loopSubMapCur: " << loopSubMapCur << " keyframeInSubmapIndex: " << keyframeInSubmapIndex[loopKeyCur] << std::endl;
-		}else{	
-			ROS_WARN("loopClosureThread -->> Dont find loopSubMapCur %d in keyframeInSubmapIndex !", loopSubMapCur);
-			return false;
-		}
+	// 	Eigen::Affine3f key2CurSubMapTrans;
+	// 	int loopSubMapCur = -1;
+	// 	auto it = keyframeInSubmapIndex.find(loopKeyCur);
+	// 	if(it != keyframeInSubmapIndex.end()){
+	// 		key2CurSubMapTrans = pclPointToAffine3f(cur_keyframe->relative_pose);
+	// 		loopSubMapCur = cur_keyframe->submap_id;
+	// 		std::cout << "Find loopSubMapCur: " << loopSubMapCur << " keyframeInSubmapIndex: " << keyframeInSubmapIndex[loopKeyCur] << std::endl;
+	// 	}else{	
+	// 		ROS_WARN("loopClosureThread -->> Dont find loopSubMapCur %d in keyframeInSubmapIndex !", loopSubMapCur);
+	// 		return false;
+	// 	}
 
-        float X, Y, Z, ROLL, PITCH, YAW;
-        Eigen::Affine3f tCorrect = correctionLidarFrame * key2PreSubMapTrans * key2CurSubMapTrans.inverse();  // pre-multiplying -> successive rotation about a fixed frame
-        pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
-        gtsam::Pose3 pose = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
-        gtsam::Vector Vector6(6);
-        float noiseScore = 0.01;
-        // float noiseScore = bestScore*0.01;
-        Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
-        noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
+    //     float X, Y, Z, ROLL, PITCH, YAW;
+    //     Eigen::Affine3f tCorrect = correctionLidarFrame * key2PreSubMapTrans * key2CurSubMapTrans.inverse();  // pre-multiplying -> successive rotation about a fixed frame
+    //     pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
+    //     gtsam::Pose3 pose = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
+    //     gtsam::Vector Vector6(6);
+    //     float noiseScore = 0.01;
+    //     // float noiseScore = bestScore*0.01;
+    //     Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
+    //     noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
 
-        // Add pose constraint
-        // mtx.lock();
-        loopIndexQueue.push_back(make_pair(loopSubMapCur, bestMatched));
-        loopPoseQueue.push_back(pose);
-        loopNoiseQueue.push_back(constraintNoise);
-        // mtx.unlock();
+    //     // Add pose constraint
+    //     // mtx.lock();
+    //     loopIndexQueue.push_back(make_pair(loopSubMapCur, bestMatched));
+    //     loopPoseQueue.push_back(pose);
+    //     loopNoiseQueue.push_back(constraintNoise);
+    //     // mtx.unlock();
 
-        // add loop constriant
-        loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
+    //     // add loop constriant
+    //     loopIndexContainer.insert(std::make_pair(loopSubMapCur, bestMatched));
 
-        return true;
-    }
+    //     return true;
+    // }
 
 
     bool detectLoopClosureForSubMap(
@@ -2918,127 +2918,127 @@ class SubMapOdometryNode : public SubMapManager<PointXYZIL>
 
 
 
-    bool detectLoopClosure(int &loopKeyCur, vector<int> &loopKeyPre,
-                           vector<Eigen::Affine3f> &matched_init_transform,
-                           int &bestMatched) 
-    {
-        pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
-        pcl::PointCloud<PointXYZIL>::Ptr prevKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
+    // bool detectLoopClosure(int &loopKeyCur, vector<int> &loopKeyPre,
+    //                        vector<Eigen::Affine3f> &matched_init_transform,
+    //                        int &bestMatched) 
+    // {
+    //     pcl::PointCloud<PointXYZIL>::Ptr cureKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
+    //     pcl::PointCloud<PointXYZIL>::Ptr prevKeyframeCloud( new pcl::PointCloud<PointXYZIL>());
 
-        auto thisCurId = keyFrameInfo.find(loopKeyCur);
-        if (thisCurId != keyFrameInfo.end()) {
-            loopKeyCur = (int)keyFrameInfo[loopKeyCur]->keyframe_id;
-			*cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_dynamic;
-			*cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_pole;
-			*cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_ground;
-			*cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_building;
-            // *cureKeyframeCloud = *keyFrameInfo[loopKeyCur]->semantic_raw;
-        } else {
-            loopKeyCur = -1;
-            ROS_WARN("LoopKeyCur do not find !");
-            return false;
-        }
+    //     auto thisCurId = keyFrameInfo.find(loopKeyCur);
+    //     if (thisCurId != keyFrameInfo.end()) {
+    //         loopKeyCur = (int)keyFrameInfo[loopKeyCur]->keyframe_id;
+	// 		*cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_dynamic;
+	// 		*cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_pole;
+	// 		*cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_ground;
+	// 		*cureKeyframeCloud += *keyFrameInfo[loopKeyCur]->semantic_building;
+    //         // *cureKeyframeCloud = *keyFrameInfo[loopKeyCur]->semantic_raw;
+    //     } else {
+    //         loopKeyCur = -1;
+    //         ROS_WARN("LoopKeyCur do not find !");
+    //         return false;
+    //     }
 
-        std::cout << "matching..." << std::flush;
-        auto t1 = ros::Time::now();
+    //     std::cout << "matching..." << std::flush;
+    //     auto t1 = ros::Time::now();
 
-        // ICP Settings
-        static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
-        reg.setMaxCorrespondenceDistance(20);
-        reg.setMaximumIterations(40);
-        reg.setTransformationEpsilon(1e-4);
-        reg.setEuclideanFitnessEpsilon(1e-4);
-        reg.setRANSACIterations(0);
+    //     // ICP Settings
+    //     static pcl::IterativeClosestPoint<PointXYZIL, PointXYZIL> reg;
+    //     reg.setMaxCorrespondenceDistance(20);
+    //     reg.setMaximumIterations(40);
+    //     reg.setTransformationEpsilon(1e-4);
+    //     reg.setEuclideanFitnessEpsilon(1e-4);
+    //     reg.setRANSACIterations(0);
 
-        int bestID = -1;
-        double bestScore = std::numeric_limits<double>::max();
-        Eigen::Affine3f correctionLidarFrame;
+    //     int bestID = -1;
+    //     double bestScore = std::numeric_limits<double>::max();
+    //     Eigen::Affine3f correctionLidarFrame;
 
-        for (int i = 0; i < loopKeyPre.size(); i++) 
-        {
+    //     for (int i = 0; i < loopKeyPre.size(); i++) 
+    //     {
 
-		publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
+	// 	publishLabelCloud(&pubTestCur, cureKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 
-            // Align clouds
-            pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
-            *tmpCloud = *transformPointCloud(cureKeyframeCloud, matched_init_transform[i]);
-            reg.setInputSource(tmpCloud);
+    //         // Align clouds
+    //         pcl::PointCloud<PointXYZIL>::Ptr tmpCloud( new pcl::PointCloud<PointXYZIL>());
+    //         *tmpCloud = *transformPointCloud(cureKeyframeCloud, matched_init_transform[i]);
+    //         reg.setInputSource(tmpCloud);
 
-		float x, y, z, roll, pitch, yaw;
-        pcl::getTranslationAndEulerAngles(matched_init_transform[i], x, y, z, roll, pitch, yaw);
-		std::cout << "matched_init_transform[" << i << "]: " 
-				  << x << ", " << y << ", " << z << ", " 
-				  << roll << ", " << pitch << ", " << yaw << std::endl;
-		publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
+	// 	float x, y, z, roll, pitch, yaw;
+    //     pcl::getTranslationAndEulerAngles(matched_init_transform[i], x, y, z, roll, pitch, yaw);
+	// 	std::cout << "matched_init_transform[" << i << "]: " 
+	// 			  << x << ", " << y << ", " << z << ", " 
+	// 			  << roll << ", " << pitch << ", " << yaw << std::endl;
+	// 	publishLabelCloud(&pubTestCurLoop, tmpCloud, timeLaserInfoStamp, odometryFrame);
 
-            auto thisPreId = keyFrameInfo.find(loopKeyPre[i]);
-            if (thisPreId != keyFrameInfo.end()) {
-                int PreID = (int)keyFrameInfo[loopKeyPre[i]]->keyframe_id;
-                std::cout << "loopContainerHandler: loopKeyPre : " << PreID << std::endl;
+    //         auto thisPreId = keyFrameInfo.find(loopKeyPre[i]);
+    //         if (thisPreId != keyFrameInfo.end()) {
+    //             int PreID = (int)keyFrameInfo[loopKeyPre[i]]->keyframe_id;
+    //             std::cout << "loopContainerHandler: loopKeyPre : " << PreID << std::endl;
 
-                prevKeyframeCloud->clear();
-				*prevKeyframeCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_dynamic;
-				*prevKeyframeCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_pole;
-				*prevKeyframeCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_ground;
-				*prevKeyframeCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_building;
-                // *prevKeyframeCloud = *keyFrameInfo[loopKeyPre[i]]->semantic_raw;
-                reg.setInputTarget(prevKeyframeCloud);
+    //             prevKeyframeCloud->clear();
+	// 			*prevKeyframeCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_dynamic;
+	// 			*prevKeyframeCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_pole;
+	// 			*prevKeyframeCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_ground;
+	// 			*prevKeyframeCloud += *keyFrameInfo[loopKeyPre[i]]->semantic_building;
+    //             // *prevKeyframeCloud = *keyFrameInfo[loopKeyPre[i]]->semantic_raw;
+    //             reg.setInputTarget(prevKeyframeCloud);
         	
-		publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
+	// 	publishLabelCloud(&pubTestPre, prevKeyframeCloud, timeLaserInfoStamp, odometryFrame);
 
-                pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
-                reg.align(*unused_result);
-		publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
+    //             pcl::PointCloud<PointXYZIL>::Ptr unused_result( new pcl::PointCloud<PointXYZIL>());
+    //             reg.align(*unused_result);
+	// 	publishLabelCloud(&pubTestCurICP, unused_result, timeLaserInfoStamp, odometryFrame);
 
-                double score = reg.getFitnessScore();
-                if (reg.hasConverged() == false || score > bestScore) 
-                    continue;
-                bestScore = score;
-                bestMatched = PreID;
-                bestID = i;
-                correctionLidarFrame = reg.getFinalTransformation();
-            } else {
-                bestMatched = -1;
-                ROS_WARN("loopKeyPre do not find !");
-            }
-        }
+    //             double score = reg.getFitnessScore();
+    //             if (reg.hasConverged() == false || score > bestScore) 
+    //                 continue;
+    //             bestScore = score;
+    //             bestMatched = PreID;
+    //             bestID = i;
+    //             correctionLidarFrame = reg.getFinalTransformation();
+    //         } else {
+    //             bestMatched = -1;
+    //             ROS_WARN("loopKeyPre do not find !");
+    //         }
+    //     }
 
-        if (loopKeyCur == -1 || bestMatched == -1) 
-            return false;
+    //     if (loopKeyCur == -1 || bestMatched == -1) 
+    //         return false;
 
-        auto t2 = ros::Time::now();
-        std::cout << " done" << std::endl;
-        std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
+    //     auto t2 = ros::Time::now();
+    //     std::cout << " done" << std::endl;
+    //     std::cout << "best_score: " << bestScore << "    time: " << (t2 - t1).toSec() << "[sec]" << std::endl;
 
-        if (bestScore > historyKeyframeFitnessScore) 
-        {
-            std::cout << "loop not found..." << std::endl;
-            return false;
-        }
-        std::cout << "loop found!!" << std::endl;
+    //     if (bestScore > historyKeyframeFitnessScore) 
+    //     {
+    //         std::cout << "loop not found..." << std::endl;
+    //         return false;
+    //     }
+    //     std::cout << "loop found!!" << std::endl;
 
-        float X, Y, Z, ROLL, PITCH, YAW;
-        Eigen::Affine3f tCorrect = correctionLidarFrame * matched_init_transform[bestID];  // pre-multiplying -> successive rotation about a fixed frame
-        pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
-        gtsam::Pose3 pose = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
-        gtsam::Vector Vector6(6);
-        float noiseScore = 0.01;
-        // float noiseScore = bestScore*0.01;
-        Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
-        noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
+    //     float X, Y, Z, ROLL, PITCH, YAW;
+    //     Eigen::Affine3f tCorrect = correctionLidarFrame * matched_init_transform[bestID];  // pre-multiplying -> successive rotation about a fixed frame
+    //     pcl::getTranslationAndEulerAngles(tCorrect, X, Y, Z, ROLL, PITCH, YAW);
+    //     gtsam::Pose3 pose = Pose3(Rot3::RzRyRx(ROLL, PITCH, YAW), Point3(X, Y, Z));
+    //     gtsam::Vector Vector6(6);
+    //     float noiseScore = 0.01;
+    //     // float noiseScore = bestScore*0.01;
+    //     Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
+    //     noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
 
-        // Add pose constraint
-        // mtx.lock();
-        loopIndexQueue.push_back(make_pair(loopKeyCur, bestMatched));
-        loopPoseQueue.push_back(pose);
-        loopNoiseQueue.push_back(constraintNoise);
-        // mtx.unlock();
+    //     // Add pose constraint
+    //     // mtx.lock();
+    //     loopIndexQueue.push_back(make_pair(loopKeyCur, bestMatched));
+    //     loopPoseQueue.push_back(pose);
+    //     loopNoiseQueue.push_back(constraintNoise);
+    //     // mtx.unlock();
 
-        // add loop constriant
-        loopIndexContainer.insert(std::make_pair(loopKeyCur, bestMatched));
+    //     // add loop constriant
+    //     loopIndexContainer.insert(std::make_pair(loopKeyCur, bestMatched));
 
-        return true;
-    }
+    //     return true;
+    // }
 
 
 

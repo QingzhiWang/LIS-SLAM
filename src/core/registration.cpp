@@ -190,129 +190,129 @@ pcl::Registration<PointXYZIL, PointXYZIL>::Ptr select_registration_method(const 
 
 
 
-int coarse_reg_teaser(const pcl::PointCloud<PointXYZIL>::Ptr &target_pts,
-					  const pcl::PointCloud<PointXYZIL>::Ptr &source_pts,
-					  Eigen::Matrix4f &tran_mat, float noise_bound, int min_inlier_num)
-{
-	Eigen::Matrix4d tran_;
-	int teaser_state = 0; //(failed: -1, successful[need check]: 0, successful[reliable]: 1)
+// int coarse_reg_teaser(const pcl::PointCloud<PointXYZIL>::Ptr &target_pts,
+// 					  const pcl::PointCloud<PointXYZIL>::Ptr &source_pts,
+// 					  Eigen::Matrix4f &tran_mat, float noise_bound, int min_inlier_num)
+// {
+// 	Eigen::Matrix4d tran_;
+// 	int teaser_state = 0; //(failed: -1, successful[need check]: 0, successful[reliable]: 1)
 
-	if (target_pts->points.size() <= 3)
-	{
-		std::cout << "TEASER: too few correspondences" << std::endl;
-		return (-1);
-	}
+// 	if (target_pts->points.size() <= 3)
+// 	{
+// 		std::cout << "TEASER: too few correspondences" << std::endl;
+// 		return (-1);
+// 	}
 
-	int N = target_pts->points.size();
-	int M = source_pts->points.size();
+// 	int N = target_pts->points.size();
+// 	int M = source_pts->points.size();
 
-	float min_inlier_ratio = 0.01;
+// 	float min_inlier_ratio = 0.01;
 
-	Eigen::Matrix<double, 3, Eigen::Dynamic> tgt(3, N);
-	Eigen::Matrix<double, 3, Eigen::Dynamic> src(3, M);
+// 	Eigen::Matrix<double, 3, Eigen::Dynamic> tgt(3, N);
+// 	Eigen::Matrix<double, 3, Eigen::Dynamic> src(3, M);
   	
-	teaser::PointCloud tgt_cloud;
-  	teaser::PointCloud src_cloud;
+// 	teaser::PointCloud tgt_cloud;
+//   	teaser::PointCloud src_cloud;
 	
-	#pragma omp for
-	for (int i = 0; i < N; ++i)
-	{
-		tgt_cloud.push_back({
-				static_cast<float>(target_pts->points[i].x), 
-				static_cast<float>(target_pts->points[i].y),
-				static_cast<float>(target_pts->points[i].z)});
-		// tgt.col(i) << target_pts->points[i].x, target_pts->points[i].y, target_pts->points[i].z;
+// 	#pragma omp for
+// 	for (int i = 0; i < N; ++i)
+// 	{
+// 		tgt_cloud.push_back({
+// 				static_cast<float>(target_pts->points[i].x), 
+// 				static_cast<float>(target_pts->points[i].y),
+// 				static_cast<float>(target_pts->points[i].z)});
+// 		// tgt.col(i) << target_pts->points[i].x, target_pts->points[i].y, target_pts->points[i].z;
 		
-	}
+// 	}
 
-	#pragma omp for
-	for (int i = 0; i < M; ++i)
-	{
-		src_cloud.push_back({
-				static_cast<float>(source_pts->points[i].x), 
-				static_cast<float>(source_pts->points[i].y),
-				static_cast<float>(source_pts->points[i].z)});
-		// src.col(i) << source_pts->points[i].x, source_pts->points[i].y, source_pts->points[i].z;
-	}
+// 	#pragma omp for
+// 	for (int i = 0; i < M; ++i)
+// 	{
+// 		src_cloud.push_back({
+// 				static_cast<float>(source_pts->points[i].x), 
+// 				static_cast<float>(source_pts->points[i].y),
+// 				static_cast<float>(source_pts->points[i].z)});
+// 		// src.col(i) << source_pts->points[i].x, source_pts->points[i].y, source_pts->points[i].z;
+// 	}
 
-	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+// 	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
-	teaser::FPFHEstimation fpfh;
-	auto obj_descriptors = fpfh.computeFPFHFeatures(src_cloud, 0.02, 0.04);
-	auto scene_descriptors = fpfh.computeFPFHFeatures(tgt_cloud, 0.02, 0.04);
+// 	teaser::FPFHEstimation fpfh;
+// 	auto obj_descriptors = fpfh.computeFPFHFeatures(src_cloud, 0.02, 0.04);
+// 	auto scene_descriptors = fpfh.computeFPFHFeatures(tgt_cloud, 0.02, 0.04);
 
-	teaser::Matcher matcher;
-	auto correspondences = matcher.calculateCorrespondences(
-			src_cloud, tgt_cloud, *obj_descriptors, *scene_descriptors, false, true, false, 0.95);
+// 	teaser::Matcher matcher;
+// 	auto correspondences = matcher.calculateCorrespondences(
+// 			src_cloud, tgt_cloud, *obj_descriptors, *scene_descriptors, false, true, false, 0.95);
 
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> time_used_1 = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+// 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+// 	std::chrono::duration<double> time_used_1 = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
-	std::cout << "TEASER Compute FPFH Features and Correspondences done in [" << time_used_1.count() * 1000.0 << "] ms." << std::endl;
+// 	std::cout << "TEASER Compute FPFH Features and Correspondences done in [" << time_used_1.count() * 1000.0 << "] ms." << std::endl;
 
-	// Run TEASER++ registration
-	// Prepare solver parameters
-	teaser::RobustRegistrationSolver::Params params;
-	params.noise_bound = noise_bound;
-	params.cbar2 = 1.0;
-	params.estimate_scaling = false;
-	params.rotation_max_iterations = 100;
-	params.rotation_gnc_factor = 1.4;
-	// params.rotation_estimation_algorithm =
-	// 	teaser::RobustRegistrationSolver::ROTATION_ESTIMATION_ALGORITHM::FGR;
-	params.rotation_estimation_algorithm =
-		teaser::RobustRegistrationSolver::ROTATION_ESTIMATION_ALGORITHM::GNC_TLS;
-	params.use_max_clique = true;
-	params.kcore_heuristic_threshold = 0.5;
-	params.rotation_cost_threshold = 0.005; //1e-6
+// 	// Run TEASER++ registration
+// 	// Prepare solver parameters
+// 	teaser::RobustRegistrationSolver::Params params;
+// 	params.noise_bound = noise_bound;
+// 	params.cbar2 = 1.0;
+// 	params.estimate_scaling = false;
+// 	params.rotation_max_iterations = 100;
+// 	params.rotation_gnc_factor = 1.4;
+// 	// params.rotation_estimation_algorithm =
+// 	// 	teaser::RobustRegistrationSolver::ROTATION_ESTIMATION_ALGORITHM::FGR;
+// 	params.rotation_estimation_algorithm =
+// 		teaser::RobustRegistrationSolver::ROTATION_ESTIMATION_ALGORITHM::GNC_TLS;
+// 	params.use_max_clique = true;
+// 	params.kcore_heuristic_threshold = 0.5;
+// 	params.rotation_cost_threshold = 0.005; //1e-6
 
-	// Solve with TEASER++
-	std::cout << "----------------------------------------------------------------------------" << std::endl;
-	std::cout << "Begin TEASER global coarse registration with [" << N << "] pairs of correspondence" << std::endl;
-	// std::cout << "Begin TEASER global coarse registration with [" << correspondences.size() << "] pairs of correspondence" << std::endl;
-	teaser::RobustRegistrationSolver solver(params);
-	std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
-	// solver.solve(src, tgt);
-  	solver.solve(src_cloud, tgt_cloud, correspondences);
-	std::chrono::steady_clock::time_point toc = std::chrono::steady_clock::now();
-	std::chrono::duration<double> time_used = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic);
+// 	// Solve with TEASER++
+// 	std::cout << "----------------------------------------------------------------------------" << std::endl;
+// 	std::cout << "Begin TEASER global coarse registration with [" << N << "] pairs of correspondence" << std::endl;
+// 	// std::cout << "Begin TEASER global coarse registration with [" << correspondences.size() << "] pairs of correspondence" << std::endl;
+// 	teaser::RobustRegistrationSolver solver(params);
+// 	std::chrono::steady_clock::time_point tic = std::chrono::steady_clock::now();
+// 	// solver.solve(src, tgt);
+//   	solver.solve(src_cloud, tgt_cloud, correspondences);
+// 	std::chrono::steady_clock::time_point toc = std::chrono::steady_clock::now();
+// 	std::chrono::duration<double> time_used = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic);
 
-	std::cout << "TEASER global coarse registration done in [" << time_used.count() * 1000.0 << "] ms." << std::endl;
+// 	std::cout << "TEASER global coarse registration done in [" << time_used.count() * 1000.0 << "] ms." << std::endl;
 
-	auto solution = solver.getSolution();
-	std::vector<int> inliers;
-	//inliers = solver.getTranslationInliers();
-	inliers = solver.getRotationInliers();
+// 	auto solution = solver.getSolution();
+// 	std::vector<int> inliers;
+// 	//inliers = solver.getTranslationInliers();
+// 	inliers = solver.getRotationInliers();
 
-	std::cout << "[" << inliers.size() << "] inlier correspondences found." << std::endl;
+// 	std::cout << "[" << inliers.size() << "] inlier correspondences found." << std::endl;
 
-	//if (solution.valid && 1.0 * inliers.size() / N >= min_inlier_ratio)
-	if (solution.valid && inliers.size() >= min_inlier_num)
-	{
-		tran_.setIdentity();
-		tran_.block<3, 3>(0, 0) = solution.rotation;
-		tran_.block<3, 1>(0, 3) = solution.translation;
+// 	//if (solution.valid && 1.0 * inliers.size() / N >= min_inlier_ratio)
+// 	if (solution.valid && inliers.size() >= min_inlier_num)
+// 	{
+// 		tran_.setIdentity();
+// 		tran_.block<3, 3>(0, 0) = solution.rotation;
+// 		tran_.block<3, 1>(0, 3) = solution.translation;
 
-		std::cout << "Estimated transformation by TEASER is :\n"
-				  << tran_ << std::endl;
+// 		std::cout << "Estimated transformation by TEASER is :\n"
+// 				  << tran_ << std::endl;
 
-		tran_mat = tran_.cast<float>();
-		// certificate the result here
-		// teaser::DRSCertifier::Params cer_params;
-		// teaser::DRSCertifier certifier(cer_params);
-		// auto certification_result = certifier.certify(tran_mat,src,dst, theta);
+// 		tran_mat = tran_.cast<float>();
+// 		// certificate the result here
+// 		// teaser::DRSCertifier::Params cer_params;
+// 		// teaser::DRSCertifier certifier(cer_params);
+// 		// auto certification_result = certifier.certify(tran_mat,src,dst, theta);
 
-		if (inliers.size() >= 2 * min_inlier_num)
-			return (1); //reliable
-		else
-			return (0); //need check
-	}
-	else
-	{
-		std::cout << "TEASER failed" << std::endl;
-		return (-1);
-	}
-	return (-1);
-}
+// 		if (inliers.size() >= 2 * min_inlier_num)
+// 			return (1); //reliable
+// 		else
+// 			return (0); //need check
+// 	}
+// 	else
+// 	{
+// 		std::cout << "TEASER failed" << std::endl;
+// 		return (-1);
+// 	}
+// 	return (-1);
+// }
 
 

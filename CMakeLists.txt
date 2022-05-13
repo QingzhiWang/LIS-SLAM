@@ -49,23 +49,23 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 message("OPENCV [OK]: " ${OpenCV_INCLUDE_DIRS})
 
 #TEASER++
-find_package(teaserpp REQUIRED QUIET)
-include_directories(${teaserpp_INCLUDE_DIRS})
-message("Teaser++ [OK]")
+# find_package(teaserpp REQUIRED QUIET)
+# include_directories(${teaserpp_INCLUDE_DIRS})
+# message("Teaser++ [OK]")
 
 
-find_package (fast_gicp)
-include_directories(${fast_gicp_INCLUDE_DIRS})
-message("fast_gicp [OK]")
-message("fast_gicp Libs: ${fast_gicp_LIBRARIES}")
-message("fast_gicp Headers: ${fast_gicp_INCLUDE_DIRS}")
+# find_package (fast_gicp)
+# include_directories(${fast_gicp_INCLUDE_DIRS})
+# message("fast_gicp [OK]")
+# message("fast_gicp Libs: ${fast_gicp_LIBRARIES}")
+# message("fast_gicp Headers: ${fast_gicp_INCLUDE_DIRS}")
 
 
-find_library(VGICP_CUDA_FOUND NAMES fast_vgicp_cuda)
-message(STATUS "VGICP_CUDA_FOUND:" ${VGICP_CUDA_FOUND})
-if(VGICP_CUDA_FOUND)
-  	add_definitions(-DUSE_VGICP_CUDA)
-endif()
+# find_library(VGICP_CUDA_FOUND NAMES fast_vgicp_cuda)
+# message(STATUS "VGICP_CUDA_FOUND:" ${VGICP_CUDA_FOUND})
+# if(VGICP_CUDA_FOUND)
+#   	add_definitions(-DUSE_VGICP_CUDA)
+# endif()
 
 # libyaml-cpp (required)
 find_package (yaml-cpp)
@@ -129,8 +129,8 @@ set(DEP_LIBS ${DEP_LIBS} ${Eigen3_LIBS})
 set(DEP_LIBS ${DEP_LIBS} ${PCL_LIBRARIES})
 set(DEP_LIBS ${DEP_LIBS} ${OpenCV_LIBS})
 set(DEP_LIBS ${DEP_LIBS} ${GTSAM_LIBRARIES} gtsam)
-set(DEP_LIBS ${DEP_LIBS} teaserpp::teaser_registration teaserpp::teaser_features teaserpp::teaser_io ${TEASERPP_BLAS_LAPACK_LIBS})
-set(DEP_LIBS ${DEP_LIBS} ${fast_gicp_LIBRARIES})
+# set(DEP_LIBS ${DEP_LIBS} teaserpp::teaser_registration teaserpp::teaser_features teaserpp::teaser_io ${TEASERPP_BLAS_LAPACK_LIBS})
+# set(DEP_LIBS ${DEP_LIBS} ${fast_gicp_LIBRARIES})
 set(DEP_LIBS ${DEP_LIBS} ${TENSORRT_LIBRARIES})
 set(DEP_LIBS ${DEP_LIBS} ${YAML_CPP_LIBRARIES})
 
@@ -223,6 +223,6 @@ target_link_libraries(${PROJECT_NAME}_semanticFusion ${catkin_LIBRARIES} ${PCL_L
 
 # Loop Closure / Make SubMap / Mapping Optimization
 add_executable(${PROJECT_NAME}_subMapOptmization  src/node/subMapOptmizationNode.cpp src/core/epscGeneration.cpp src/core/common.cpp src/core/registration.cpp)
-add_dependencies(${PROJECT_NAME}_subMapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp fast_gicp)
+add_dependencies(${PROJECT_NAME}_subMapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 # target_compile_options(${PROJECT_NAME}_subMapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
-target_link_libraries(${PROJECT_NAME}_subMapOptmization ${catkin_LIBRARIES} ${DEP_LIBS} fast_gicp)
+target_link_libraries(${PROJECT_NAME}_subMapOptmization ${catkin_LIBRARIES} ${DEP_LIBS})
