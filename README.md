@@ -5,7 +5,7 @@
 We have implemented an accurate and stable laser SLAM algorithm framework, LIS-SLAM, through a semantic information-aided LiDAR/IMU fused pose estimation method, a semantic information-fused loop closure detection method and a global optimisation method based on a local SubMap.
 
 <p align='center'>
-    <img src="./assets/doc/system.png" alt="drawing" width="800"/>
+    <img src="./assets/doc/system.png" alt="drawing" width="600"/>
 </p>
 
 - The geometric feature-based point cloud matching algorithm (LOAM) improves the stability of feature association by introducing semantic information ([RangeNet++](https://github.com/PRBonn/rangenet_lib.git)), and optimises point cloud matching by attaching corresponding weights to each error term using semantic information. To enhance the ability to handle unstructured and degraded scenes, tightly coupled LiDAR/IMU fusion pose estimation is implemented.
