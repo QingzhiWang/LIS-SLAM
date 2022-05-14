@@ -2,18 +2,11 @@
 
 ## Advanced implementation of EPSC-LOAM
 
-The accurate and stable laser SLAM algorithm framework LIS-SLAM is implemented through a **semantic information-aided LiDAR/IMU fusion pose estimation** method, a **semantic information fusion loop closure detection** method and a **global optimisation method based on SubMap**.
+The accurate and stable laser SLAM algorithm framework LIS-SLAM is implemented through **semantic information-aided LiDAR/IMU fusion pose estimation** method, **semantic information fusion loop closure detection** method and **global optimisation method based on SubMap**.
 
 <p align='center'>
     <img src="./assets/doc/system.png" alt="drawing" width="500"/>
 </p>
-
-- **Semantic information-aided LiDAR/IMU fused pose estimation method.** The geometric feature-based point cloud matching algorithm (LOAM) improves the stability of feature association by introducing semantic information ([RangeNet++](https://github.com/PRBonn/rangenet_lib.git)), and optimises point cloud matching by attaching corresponding weights to each error term using semantic information. To enhance the ability to handle unstructured and degraded scenes, tightly coupled LiDAR/IMU fusion pose estimation is implemented.
-
-- **Loop closure detection method.** To address the performance degradation of Scan Context-based loop closure detection methods in outdoor unstructured environments. First, performance in unstructured environments is enhanced by using statistical information from edge planar features to construct global descriptors (EPSC) to improve the processing of noisy data. Secondly, semantic information is used to achieve fast scene localisation, solve the matching problem caused by viewpoint changes, and further complete the scene similarity matching by extracting the global descriptor (SEPSC) fused with semantic information on the basis of the initial alignment of the point cloud.
-
-- **Global optimisation method based on SubMap.** By constructing a SubMap and using it as an optimisation unit, the global pose optimisation is achieved by using the factor map optimisation method, which effectively solves the problem of reduced efficiency of back-end optimisation computation in large-scale outdoor scenes on the one hand, and further improves the accuracy of pose estimation by using the more complete feature information in the SubMap to achieve multi-level point cloud matching on the other.
-
 
 **Modifier:** [QZ Wang](http://www.wang.qingzhi@outlook.com)
 
