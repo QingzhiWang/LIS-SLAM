@@ -94,8 +94,10 @@ Clone the repository and catkin_make:
 Modify related parameters in params.yawl.
 
   ```sh
+  $ source devel/setup.bash
   $ roslaunch lis_slam run.launch
   $ rosbag play YOUR_DATASET_FOLDER/your-bag.bag
+  $ rosservice call /finish_map  # 完成地图构建时执行
   ```
 
 
@@ -104,8 +106,10 @@ Download [KITTI Odometry dataset](http://www.cvlibs.net/datasets/kitti/eval_odom
 Modify related parameters in params.yawl.
 
   ```sh
+  $ source devel/setup.bash
   $ roslaunch lis_slam run.launch
   $ rosbag play YOUR_DATASET_FOLDER/your-bag.bag
+  $ rosservice call /finish_map  # 完成地图构建时执行
   ```
 
 ## 7.Acknowledgements
