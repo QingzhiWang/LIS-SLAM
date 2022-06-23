@@ -10,6 +10,9 @@ The accurate and stable laser SLAM algorithm framework LIS-SLAM is implemented t
 
 **Modifier:** [QZ Wang](http://www.wang.qingzhi@outlook.com)
 
+**Follow:** [Gitee](https://gitee.com/QingzhiWang/lis-slam.git)
+
+
 ## 1. System architecture
 
 <p align='center'>
@@ -99,7 +102,10 @@ Modify related parameters in params.yawl.
   $ rosbag play YOUR_DATASET_FOLDER/your-bag.bag
   $ rosservice call /finish_map  # 完成地图构建时执行
   ```
-
+CQU Dateset:
+<p align='center'>
+    <img src="./assets/doc/CQU_2.png" alt="drawing" width="500"/>
+</p>
 
 ## 6. KITTI Example (Velodyne HDL-64)
 Download [KITTI Odometry dataset](http://www.cvlibs.net/datasets/kitti/eval_odometry.php) to YOUR_DATASET_FOLDER and convert KITTI dataset to bag file. 
@@ -111,6 +117,10 @@ Modify related parameters in params.yawl.
   $ rosbag play YOUR_DATASET_FOLDER/your-bag.bag
   $ rosservice call /finish_map  # 完成地图构建时执行
   ```
+KIITI Seq.05: 
+<p align='center'>
+    <img src="./assets/doc/kitti_5.png" alt="drawing" width="500"/>
+</p>
 
 ## 7.Acknowledgements
 LIS-SLAM is based on LOAM(J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time) LIO-SAM,Rangenet_lib.
